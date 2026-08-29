@@ -537,7 +537,10 @@
   }
   .floorplan-zoom-modal[hidden] { display: none; }
   .floorplan-zoom-box {
-    width: min(1380px, calc(100vw - 32px)); max-height: 94vh;
+    /* Keep the workstation viewer predictable on monitors with different resolutions.
+       125.333vh is 94vh at a 4:3 ratio, so the box always fits vertically as well as horizontally. */
+    width: min(1380px, calc(100vw - 32px), 125.333vh);
+    aspect-ratio: 4 / 3; max-height: 94vh;
     background: var(--page-plane); border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
     display: flex; flex-direction: column; box-shadow: 0 24px 72px rgba(0,0,0,0.42);
   }
@@ -560,7 +563,7 @@
     cursor: pointer; display: flex; align-items: center; justify-content: center; margin-left: 6px;
   }
   .floorplan-zoom-viewport {
-    flex: 1; min-height: 440px; background-repeat: no-repeat; background-color: #f4f4f4;
+    flex: 1 1 0; min-height: clamp(180px, 32vh, 420px); background-repeat: no-repeat; background-color: #f4f4f4;
     cursor: grab; touch-action: none; position: relative; overflow: hidden;
   }
   .floorplan-zoom-viewport.dragging { cursor: grabbing; }
@@ -708,7 +711,8 @@
      SKU(s) recorded as sitting there instead of only flipping a plain occupied/empty flag. */
   .floorplan-slot-edit {
     border-top: 1px solid var(--border); padding: 0 18px 16px;
-    background: var(--page-plane); max-height: 42vh; overflow-y: auto; flex-shrink: 0;
+    background: var(--page-plane); max-height: clamp(190px, 34vh, 360px); min-height: 0;
+    overflow-y: auto; overscroll-behavior: contain; flex: 0 1 auto;
   }
   .floorplan-slot-edit[hidden] { display: none; }
   .fse-head {
@@ -1104,7 +1108,7 @@
     .filter-bar select { min-width: 0; flex: 1; }
     .filter-status { margin-left: 0; width: 100%; }
     .floorplan-zoom-modal { padding: 0; }
-    .floorplan-zoom-box { width: 100vw; max-height: 100vh; height: 100vh; border-radius: 0; }
+    .floorplan-zoom-box { width: 100vw; max-height: 100vh; height: 100vh; aspect-ratio: auto; border-radius: 0; }
     .floorplan-zoom-head { flex-shrink: 0; padding: 10px 12px; }
     .floorplan-zoom-head .fz-hint { display: none; }
     .floorplan-zoom-viewport { min-height: clamp(170px, 26vh, 250px); }
