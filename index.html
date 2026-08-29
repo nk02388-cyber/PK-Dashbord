@@ -929,7 +929,7 @@
   .fse-section-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 9px; }
   .fse-section-title strong { font-size: 13px; }
   .fse-section-title small { color: var(--text-secondary); font-size: 10.5px; }
-  .fse-add-form { display: grid; grid-template-columns: 1.05fr 1.8fr 1fr 1fr .8fr 1fr auto; gap: 8px; align-items: end; }
+  .fse-add-form { display: grid; grid-template-columns: 1.05fr 1.7fr .9fr .95fr .72fr .78fr 1.15fr auto; gap: 8px; align-items: end; }
   .fse-add-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
   .fse-add-field > span { color: var(--text-secondary); font-size: 10.5px; font-weight: 700; }
   /* 21 Aug 2026 fix: background used to fall back to a hardcoded #fff always (`--card-bg` was
@@ -945,6 +945,10 @@
     font-size: 12.5px; background: var(--page-plane); color: var(--text-primary); outline: none;
   }
   .fse-add-form input:focus, .fse-edit-form input:focus { border-color: var(--series-1, #2a78d6); box-shadow: 0 0 0 3px rgba(42,120,214,.14); }
+  .fse-add-form input.is-autofilled {
+    border-color: var(--status-good, #2e7d32);
+    background: var(--status-good-wash, rgba(46,125,50,.09));
+  }
   .fse-add-btn {
     min-height: 36px; padding: 7px 16px; border-radius: 7px; border: 1px solid var(--series-1, #2a78d6);
     background: var(--series-1, #2a78d6); color: #fff; font-size: 12.5px; font-weight: 600; cursor: pointer;
@@ -967,6 +971,7 @@
   .fse-edit-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 9px; font-size: 12px; font-weight: 800; }
   .fse-edit-title span:last-child { color: var(--text-secondary); font-size: 10.5px; font-weight: 600; }
   .fse-edit-grid { display: grid; grid-template-columns: 1fr 1.8fr 1fr 1fr .8fr 1fr; gap: 8px; }
+  .fse-edit-field.fse-edit-note { grid-column: 1 / -1; }
   .fse-edit-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
   .fse-edit-field > span { color: var(--text-secondary); font-size: 10px; font-weight: 700; }
   .fse-edit-field input {
@@ -2102,6 +2107,7 @@
             <label class="fse-add-field"><span>วันรับ *</span><input type="date" id="fseAddReceiveDate" title="วันรับ Receive date" required aria-required="true"></label>
             <label class="fse-add-field"><span>จำนวนรับ *</span><input type="number" id="fseAddQty" placeholder="0" min="0" step="any" inputmode="decimal" required aria-required="true"></label>
             <label class="fse-add-field"><span>หน่วย *</span><input type="text" id="fseAddUnit" list="fseUnitOptions" placeholder="ขวด/กระปุก" autocomplete="off" required aria-required="true"></label>
+            <label class="fse-add-field"><span>หมายเหตุ</span><input type="text" id="fseAddNote" placeholder="ระบุเพิ่มเติม (ถ้ามี)" autocomplete="off"></label>
             <datalist id="fseUnitOptions">
               <option value="ขวด"></option><option value="กระปุก"></option><option value="ฝา"></option>
               <option value="ใบ"></option><option value="ม้วน"></option><option value="ดวง"></option>
@@ -3468,7 +3474,7 @@ function refreshSearchDatalist() {
   }).join('');
 }
 
-function addSlotItem(zoneCode, slotCode, code, name, lotNo, receiveDate, qty, unit) {
+function addSlotItem(zoneCode, slotCode, code, name, lotNo, receiveDate, qty, unit, note) {
   if (!SLOT_ITEMS[zoneCode]) SLOT_ITEMS[zoneCode] = {};
   if (!SLOT_ITEMS[zoneCode][slotCode]) SLOT_ITEMS[zoneCode][slotCode] = [];
   // remainingQty tracks the running balance as withdrawals (see withdrawSlotItem() below) are
@@ -3476,7 +3482,7 @@ function addSlotItem(zoneCode, slotCode, code, name, lotNo, receiveDate, qty, un
   // per-item audit trail (date/qty/unit/by) shown under the item in the panel. lotNo (added 20
   // Aug 2026, right after ชื่อสินค้า per Pornchai's request) is plain optional metadata -- not
   // required to save, not used in any calculation, just displayed in its own column.
-  SLOT_ITEMS[zoneCode][slotCode].push({ code, name, lotNo, receiveDate, qty, unit, remainingQty: qty, withdrawals: [] });
+  SLOT_ITEMS[zoneCode][slotCode].push({ code, name, lotNo, receiveDate, qty, unit, note: note || '', remainingQty: qty, withdrawals: [] });
   setOccupied(zoneCode, slotCode, true);
 }
 function removeSlotItem(zoneCode, slotCode, index) {
@@ -3493,6 +3499,7 @@ function updateSlotItem(zoneCode, slotCode, index, updates) {
   item.code = updates.code;
   item.name = updates.name;
   item.lotNo = updates.lotNo || '';
+  item.note = updates.note || '';
   if (updates.receiveDate) item.receiveDate = updates.receiveDate;
   else delete item.receiveDate;
   if (updates.qty != null) {
@@ -3572,6 +3579,7 @@ const fseAddLotNo = document.getElementById('fseAddLotNo');
 const fseAddReceiveDate = document.getElementById('fseAddReceiveDate');
 const fseAddQty = document.getElementById('fseAddQty');
 const fseAddUnit = document.getElementById('fseAddUnit');
+const fseAddNote = document.getElementById('fseAddNote');
 const fseAddBtn = document.getElementById('fseAddBtn');
 const fseMarkEmptyBtn = document.getElementById('fseMarkEmptyBtn');
 const fseMarkOccupiedBtn = document.getElementById('fseMarkOccupiedBtn');
@@ -3635,6 +3643,7 @@ function renderSlotEdit() {
         const metaParts = [];
         if (it.receiveDate) metaParts.push(`วันรับ ${escapeHtml(it.receiveDate)}`);
         if (it.qty != null && it.qty !== '') metaParts.push(`จำนวนรับ ${escapeHtml(String(it.qty))}`);
+        if (it.note) metaParts.push(`หมายเหตุ: ${escapeHtml(it.note)}`);
         const metaLine = metaParts.length ? `<span class="fse-item-meta">${metaParts.join(' · ')}</span>` : '';
 
         // "เบิก" (withdraw) feature, added 20 Aug 2026 per Pornchai's request: a per-item audit
@@ -3723,6 +3732,7 @@ function renderItemEditForm(i, item) {
         <label class="fse-edit-field"><span>วันรับ</span><input type="date" class="fe-date" value="${escapeHtml(item.receiveDate || '')}"></label>
         <label class="fse-edit-field"><span>จำนวนรับ</span><input type="number" class="fe-qty" value="${escapeHtml(qty)}" min="0" step="any" inputmode="decimal"></label>
         <label class="fse-edit-field"><span>หน่วย</span><input type="text" class="fe-unit" value="${escapeHtml(item.unit || '')}" list="fseUnitOptions" autocomplete="off"></label>
+        <label class="fse-edit-field fse-edit-note"><span>หมายเหตุ</span><input type="text" class="fe-note" value="${escapeHtml(item.note || '')}" placeholder="ระบุเพิ่มเติม (ถ้ามี)" autocomplete="off"></label>
       </div>
       <div class="fse-edit-actions">
         <button type="button" class="fse-edit-cancel" data-idx="${i}">ยกเลิก</button>
@@ -3893,6 +3903,42 @@ function updateAddBtnState() {
   fseAddBtn.disabled = !isAddFormValid();
 }
 
+function findKnownProduct(code) {
+  const key = String(code || '').trim().toUpperCase();
+  if (!key) return null;
+  const stockMatch = (STOCK.items || []).find(item => String(item.code || '').trim().toUpperCase() === key && item.name);
+  if (stockMatch) return stockMatch;
+  for (const zoneCode of Object.keys(SLOT_ITEMS)) {
+    for (const slotCode of Object.keys(SLOT_ITEMS[zoneCode] || {})) {
+      const slotMatch = (SLOT_ITEMS[zoneCode][slotCode] || []).find(item => String(item.code || '').trim().toUpperCase() === key && item.name);
+      if (slotMatch) return slotMatch;
+    }
+  }
+  return null;
+}
+
+function autofillAddProductDetails() {
+  const product = findKnownProduct(fseAddCode.value);
+  if (product) {
+    fseAddName.value = product.name || '';
+    fseAddName.dataset.autofilled = 'true';
+    fseAddName.classList.add('is-autofilled');
+    if (!fseAddUnit.value.trim() && product.unit) {
+      fseAddUnit.value = product.unit;
+      fseAddUnit.dataset.autofilled = 'true';
+      fseAddUnit.classList.add('is-autofilled');
+    }
+  } else {
+    if (fseAddName.dataset.autofilled === 'true') fseAddName.value = '';
+    fseAddName.dataset.autofilled = '';
+    fseAddName.classList.remove('is-autofilled');
+    if (fseAddUnit.dataset.autofilled === 'true') fseAddUnit.value = '';
+    fseAddUnit.dataset.autofilled = '';
+    fseAddUnit.classList.remove('is-autofilled');
+  }
+  updateAddBtnState();
+}
+
 // Common refresh after any add/remove/clear/mark mutation: rebuild the reverse index + search
 // suggestions, redraw the zoom grid (color/tooltip may have changed) and reposition it, restore
 // the editing highlight renderZoomSlots() just wiped, and redraw the panel's own item list.
@@ -3955,17 +4001,24 @@ fseAddForm.addEventListener('submit', (e) => {
   const receiveDate = fseAddReceiveDate.value;
   const qty = parseFloat(fseAddQty.value);
   const unit = fseAddUnit.value.trim();
-  addSlotItem(editingSlot.zone, editingSlot.slot, code, name, lotNo, receiveDate, qty, unit);
-  fseAddCode.value = ''; fseAddName.value = ''; fseAddLotNo.value = ''; fseAddReceiveDate.value = ''; fseAddQty.value = ''; fseAddUnit.value = '';
+  const note = fseAddNote.value.trim();
+  addSlotItem(editingSlot.zone, editingSlot.slot, code, name, lotNo, receiveDate, qty, unit, note);
+  fseAddCode.value = ''; fseAddName.value = ''; fseAddLotNo.value = ''; fseAddReceiveDate.value = ''; fseAddQty.value = ''; fseAddUnit.value = ''; fseAddNote.value = '';
+  fseAddName.dataset.autofilled = ''; fseAddName.classList.remove('is-autofilled');
+  fseAddUnit.dataset.autofilled = ''; fseAddUnit.classList.remove('is-autofilled');
   syncAfterSlotEdit();
   showFseFeedback('เพิ่มรายการเรียบร้อยแล้ว');
   fseAddCode.focus();
 });
 
-[fseAddCode, fseAddName, fseAddLotNo, fseAddReceiveDate, fseAddQty, fseAddUnit].forEach(el => {
+[fseAddCode, fseAddName, fseAddLotNo, fseAddReceiveDate, fseAddQty, fseAddUnit, fseAddNote].forEach(el => {
   el.addEventListener('input', updateAddBtnState);
   el.addEventListener('change', updateAddBtnState);
 });
+fseAddCode.addEventListener('input', autofillAddProductDetails);
+fseAddCode.addEventListener('change', autofillAddProductDetails);
+fseAddName.addEventListener('input', () => { fseAddName.dataset.autofilled = ''; fseAddName.classList.remove('is-autofilled'); });
+fseAddUnit.addEventListener('input', () => { fseAddUnit.dataset.autofilled = ''; fseAddUnit.classList.remove('is-autofilled'); });
 
 fseItemsList.addEventListener('click', (e) => {
   if (!editingSlot) return;
@@ -4002,6 +4055,7 @@ fseItemsList.addEventListener('click', (e) => {
       code: formEl.querySelector('.fe-code').value.trim(),
       name: formEl.querySelector('.fe-name').value.trim(),
       lotNo: formEl.querySelector('.fe-lot').value.trim(),
+      note: formEl.querySelector('.fe-note').value.trim(),
       receiveDate: formEl.querySelector('.fe-date').value,
       qty: qtyRaw === '' ? null : parseFloat(qtyRaw),
       unit: formEl.querySelector('.fe-unit').value.trim(),
