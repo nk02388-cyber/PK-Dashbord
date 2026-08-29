@@ -3654,7 +3654,7 @@ function renderSlotEdit() {
         const returnable = getReturnableQty(it);
         const withdrawBtn = `<button type="button" class="fse-item-withdraw-btn${withdrawOpenIndex === i ? ' active' : ''}" data-idx="${i}" aria-expanded="${withdrawOpenIndex === i}">เบิก</button>`;
         const returnBtn = `<button type="button" class="fse-item-return-btn${returnOpenIndex === i ? ' active' : ''}" data-idx="${i}" aria-expanded="${returnOpenIndex === i}" ${returnable <= 0 ? 'disabled title="ยังไม่มียอดเบิกที่รับคืนได้"' : ''}>รับคืน</button>`;
-        const editBtn = `<button type="button" class="fse-item-edit-btn${editItemIndex === i ? ' active' : ''}" data-idx="${i}" aria-expanded="${editItemIndex === i}">แก้ไขรายการ</button>`;
+        const editBtn = `<button type="button" class="fse-item-edit-btn${editItemIndex === i ? ' active' : ''}" data-idx="${i}" aria-expanded="${editItemIndex === i}" aria-label="แก้ไขรายการ ${escapeHtml(it.code || '')}"><span aria-hidden="true">แก้ไข</span></button>`;
         const editForm = editItemIndex === i ? renderItemEditForm(i, it) : '';
         const withdrawForm = withdrawOpenIndex === i ? renderWithdrawForm(i, it, remaining) : '';
         const returnForm = returnOpenIndex === i ? renderReturnForm(i, it, returnable) : '';
