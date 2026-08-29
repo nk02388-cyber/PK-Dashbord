@@ -36,7 +36,7 @@ create or replace function public.replace_stock_inventory(
 ) returns jsonb
 language plpgsql
 security definer
-set search_path = public, pg_temp
+set search_path = public, extensions, pg_temp
 as $$
 declare
   stock_result jsonb;
@@ -71,8 +71,11 @@ begin
       left(trim(x.wh), 30) as wh,
       left(coalesce(nullif(trim(x.cat), ''), 'อื่นๆ'), 120) as cat,
       x.ord
-    from jsonb_to_recordset(p_items) with ordinality
-      as x(code text, name text, unit text, qty numeric, value numeric, wh text, cat text, ord bigint)
+    from rows from (
+      jsonb_to_recordset(p_items) as (
+        code text, name text, unit text, qty numeric, value numeric, wh text, cat text
+      )
+    ) with ordinality as x(code, name, unit, qty, value, wh, cat, ord)
     where trim(coalesce(x.code, '')) <> ''
       and trim(coalesce(x.name, '')) <> ''
       and trim(coalesce(x.wh, '')) <> ''
@@ -163,8 +166,11 @@ revoke all on function public.get_latest_stock_inventory() from public;
 grant execute on function public.replace_stock_inventory(text, text, jsonb, text) to anon, authenticated;
 grant execute on function public.get_latest_stock_inventory() to anon, authenticated;
 
+-- Ask PostgREST to refresh its schema cache immediately after installing/updating RPCs.
+notify pgrst, 'reload schema';
+
 -- REQUIRED: replace the text below with a private PIN before running this statement.
 -- Never put the PIN in index.html or commit it to GitHub.
 -- update public.stock_inventory_settings
--- set pin_hash = crypt('YOUR-PRIVATE-PIN', gen_salt('bf')), updated_at = now()
+-- set pin_hash = extensions.crypt('YOUR-PRIVATE-PIN', extensions.gen_salt('bf')), updated_at = now()
 -- where singleton = true;

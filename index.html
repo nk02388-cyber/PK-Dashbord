@@ -2766,12 +2766,12 @@ function setOccupied(zoneCode, slotCode, occupied) {
 // yourself once this file is open on two different computers with normal internet (mark a slot
 // on one, confirm it appears on the other within a couple of seconds) -- the sync status chip at
 // the top of this tab will also tell you plainly if it's not connected.
-const SUPABASE_URL = 'https://ddumrwpkpgfrkocwcruz.supabase.co';
+const SUPABASE_URL = 'https://zgsxbuckjrplkpvtlbmn.supabase.co';
 // 21 Aug 2026: Pornchai's project shows Supabase's newer "Publishable key" format
 // (sb_publishable_...) rather than the older JWT-format anon key -- both authenticate as the
 // public/browser-safe role and work identically with supabase-js v2, so this just uses whichever
 // one he actually has live on his dashboard.
-const SUPABASE_ANON_KEY = 'sb_publishable_vLJuUDMtLdncyL7pklhgNA_ITcEBiIu';
+const SUPABASE_ANON_KEY = 'sb_publishable_kWbTxBFjBm4TrXxH_ReTFw_lZ2NUZQl';
 let supabaseClient = null;
 try {
   if (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase && window.supabase.createClient) {
