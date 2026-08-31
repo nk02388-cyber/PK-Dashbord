@@ -2073,7 +2073,7 @@
 
     <div class="panel">
       <div class="panel-sub" style="margin:0;">
-        ประเมินจากบรรจุภัณฑ์ในคลังที่พร้อมใช้ ไม่รวมวัตถุดิบและคลัง 800/900
+        ประเมินจากบรรจุภัณฑ์ในคลังพร้อมใช้ · Stock คลัง 800/900 แสดงเพื่ออ้างอิงและไม่รวมคำนวณ
       </div>
     </div>
 
@@ -5007,7 +5007,7 @@ function renderBomSummary() {
   document.getElementById('tabBadgeBompk').textContent = fmt0(bk.fg_blocked) + ' ติดขัด';
   const bomStockDate = String(STOCK.report_date || 'ปัจจุบัน').replace(/^ณ วันที่:\s*/, 'วันที่ ');
   document.getElementById('assumptionText').textContent =
-    'ใช้ Stock Inventory ' + bomStockDate + ' · ไม่รวมคลัง 800 (Hold) และ 900 (รอทำลาย)';
+    'ใช้ Stock Inventory ' + bomStockDate + ' · คำนวณเฉพาะคลังพร้อมใช้ (คลัง 800/900 แสดงเพื่ออ้างอิง แต่ไม่รวมคำนวณ)';
 }
 renderBomSummary();
 
@@ -5033,16 +5033,24 @@ function recalculateBomFromStock() {
   (STOCK.items || []).forEach(item => {
     const code = String(item.code || '').trim().toUpperCase();
     const wh = String(item.wh || '').trim();
-    if (!code || excludedWarehouses.has(wh)) return;
+    if (!code) return;
     let agg = stockByCode.get(code);
     if (!agg) {
-      agg = { qty: 0, value: 0, name: item.name || '', unit: item.unit || '' };
+      agg = { qty: 0, value: 0, excludedQty: 0, excludedValue: 0, excludedByWarehouse: {}, name: item.name || '', unit: item.unit || '' };
       stockByCode.set(code, agg);
     }
     const qty = Number(item.qty);
     const value = Number(item.value);
-    if (Number.isFinite(qty)) agg.qty += qty;
-    if (Number.isFinite(value)) agg.value += value;
+    if (excludedWarehouses.has(wh)) {
+      if (Number.isFinite(qty)) {
+        agg.excludedQty += qty;
+        agg.excludedByWarehouse[wh] = (agg.excludedByWarehouse[wh] || 0) + qty;
+      }
+      if (Number.isFinite(value)) agg.excludedValue += value;
+    } else {
+      if (Number.isFinite(qty)) agg.qty += qty;
+      if (Number.isFinite(value)) agg.value += value;
+    }
     if (!agg.name && item.name) agg.name = item.name;
     if (!agg.unit && item.unit) agg.unit = item.unit;
   });
@@ -5056,6 +5064,13 @@ function recalculateBomFromStock() {
       const stockQty = Math.max(0, agg && Number.isFinite(agg.qty) ? agg.qty : 0);
       line.stock_avail = stockQty;
       line.stock_unit_value = stockQty > 0 && agg && Number.isFinite(agg.value) ? agg.value / stockQty : null;
+      line.stock_excluded = Math.max(0, agg && Number.isFinite(agg.excludedQty) ? agg.excludedQty : 0);
+      line.stock_excluded_value = Math.max(0, agg && Number.isFinite(agg.excludedValue) ? agg.excludedValue : 0);
+      line.stock_excluded_warehouses = agg
+        ? Object.entries(agg.excludedByWarehouse)
+            .filter(([, qty]) => Number.isFinite(qty) && qty > 0)
+            .map(([warehouse, qty]) => ({ warehouse, qty }))
+        : [];
       line.in_stock = stockQty > 0;
       const qtyPerUnit = Number(line.qty_per_unit);
       line.producible = Number.isFinite(qtyPerUnit) && qtyPerUnit > 0
@@ -5121,11 +5136,14 @@ function renderFgBom(rawCode) {
     }
   });
 
+  const effBottleneckLine = detail.lines.find(l => l.pk_code === effBottleneckCode);
   const statusBadge = effProducible === null
     ? '<span class="fg-status-chip neutral">ไม่มีข้อมูลปริมาณที่ใช้ในสูตรนี้</span>'
     : (effProducible > 0
         ? `<span class="fg-status-chip good">ผลิตเป็น FG ได้ ${fmt0(effProducible)} Pcs</span>`
-        : '<span class="fg-status-chip critical">ผลิตไม่ได้ตอนนี้ (สต๊อกส่วนประกอบหมด)</span>');
+        : (effBottleneckLine && effBottleneckLine.stock_excluded > 0
+            ? '<span class="fg-status-chip critical">ผลิตไม่ได้ตอนนี้ (มี Stock เฉพาะคลังที่ไม่รวม)</span>'
+            : '<span class="fg-status-chip critical">ผลิตไม่ได้ตอนนี้ (สต๊อกส่วนประกอบหมด)</span>'));
 
   function fgRemainingStock(l) {
     if (l.qty_per_unit == null || effProducible == null) return null;
@@ -5158,6 +5176,20 @@ function renderFgBom(rawCode) {
     if (qty <= 100) return 'background:rgba(208,59,59,0.18);';
     if (qty <= 1000) return 'background:rgba(250,178,25,0.22);';
     return 'background:rgba(12,163,12,0.18);';
+  }
+
+  function excludedStockNote(l) {
+    if (!(l.stock_excluded > 0)) return '';
+    const warehouses = (l.stock_excluded_warehouses || [])
+      .map(item => `คลัง ${item.warehouse}: ${fmt3(item.qty)} Pcs`)
+      .join(' · ');
+    return `<span class="code" style="display:block; margin-top:4px; color:#9a5b00; font-weight:600; white-space:normal;">ไม่รวมคำนวณ · ${warehouses || fmt3(l.stock_excluded) + ' Pcs'}</span>`;
+  }
+
+  function stockStatusCell(l) {
+    if (l.in_stock) return '<span class="badge good">มีสต๊อกพร้อมใช้</span>';
+    if (l.stock_excluded > 0) return '<span class="badge warn">มีเฉพาะคลังที่ไม่รวม</span>';
+    return '<span class="badge critical">ไม่พบสต๊อก</span>';
   }
 
   function stockValueNum(l) {
@@ -5197,7 +5229,7 @@ function renderFgBom(rawCode) {
             <th class="num">No</th>
             <th>ส่วนประกอบ / รหัส</th>
             <th class="num">ใช้/หน่วยผลิต</th>
-            <th class="num">Stock ปัจจุบัน(Pcs)</th>
+            <th class="num">Stock พร้อมใช้ (Pcs)</th>
             <th class="num col-highlight">มูลค่า Stock คงเหลือ (บาท)</th>
             <th class="num col-highlight">ผลิตเป็น FG ได้(Pcs)</th>
             <th>สถานะ</th>
@@ -5217,10 +5249,10 @@ function renderFgBom(rawCode) {
               <td class="num">${idx + 1}</td>
               <td class="name-cell">${l.pk_name || '(ไม่พบในสต๊อก)'}<span class="code">${l.pk_code}${l.unit ? ' · หน่วย: ' + l.unit : ''}${isBottleneck ? ' · จุดคอขวด' : ''}${isExcluded ? ' · ตัดออกจากการคำนวณ' : ''}${sharedFgNote(l)}</span></td>
               <td class="num">${l.qty_per_unit != null ? fmt3(l.qty_per_unit) : '<span style="color:var(--text-muted)">ไม่ระบุ</span>'}</td>
-              <td class="num" style="${stockAvailBg(l.stock_avail)}">${fmt3(l.stock_avail)} Pcs</td>
+              <td class="num" style="${stockAvailBg(l.stock_avail)}">${fmt3(l.stock_avail)} Pcs${excludedStockNote(l)}</td>
               <td class="num col-highlight">${stockValueCell(l)}</td>
               <td class="num col-highlight">${l.producible != null ? fmt0(l.producible) : '-'}</td>
-              <td>${l.in_stock ? '<span class="badge good">มีสต๊อก</span>' : '<span class="badge critical">หมดสต๊อก</span>'}</td>
+              <td>${stockStatusCell(l)}</td>
               <td class="num col-highlight">${fgDiffCell(l)}</td>
               <td class="num col-highlight">${fgDiffValueCell(l)}</td>
               <td>${l.shared_fgs && l.shared_fgs.length ? '<span class="badge warn">ใช้ร่วม</span>' : '<span class="badge blue">ใช้เดียว</span>'}</td>
