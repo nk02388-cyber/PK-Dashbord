@@ -1470,7 +1470,7 @@
       <div class="stock-update-box" aria-label="อัปเดตข้อมูล Stock Inventory">
         <button class="stock-update-btn" id="stockUpdateBtn" type="button">↥ Update Stock</button>
         <input id="stockExcelInput" type="file" accept=".xlsx,.xls,.csv,.txt" multiple hidden>
-        <span class="stock-update-help">รองรับ Excel/TXT หลายไฟล์ · อัปเดต Stock Inventory โดยไม่กระทบผัง Zone</span>
+        <span class="stock-update-help">รองรับ Excel/TXT · เลือกข้อมูลให้ครบ 8 คลัง รวมไฟล์ 300 (คลัง 300-S)</span>
         <span class="stock-update-status" id="stockUpdateStatus" role="status" aria-live="polite">Stock Inventory วันที่ 29 ส.ค. 69</span>
       </div>
     </div>
@@ -4862,6 +4862,25 @@ function stockNumber(value) {
   return Number.isFinite(n) ? n : 0;
 }
 
+const STOCK_WAREHOUSE_ALIASES = {
+  '200':'200', '201':'201', '202':'202', '204':'204', '300':'300-S',
+  '300-S':'300-S', '401':'401', '800':'800', '900':'900'
+};
+const REQUIRED_STOCK_WAREHOUSES = ['200','201','202','204','300-S','401','800','900'];
+
+function normalizeStockWarehouse(value) {
+  return STOCK_WAREHOUSE_ALIASES[String(value || '').trim().toUpperCase()] || '';
+}
+
+function applyStockWarehouseLabels(stock) {
+  const supplier = (stock.warehouses || []).find(w => w.code === '300-S');
+  if (supplier) {
+    supplier.name = 'คลังฝาก PVC ชริ้ง (ซัพพลายเออร์)';
+    supplier.short = 'PVC ชริ้ง (ซัพพลายเออร์)';
+    supplier.en_label = 'Supplier';
+  }
+}
+
 function classifyStockItem(name, code) {
   const known = STOCK.items.find(it => it.code === code && it.cat);
   if (known) return known.cat;
@@ -4886,13 +4905,15 @@ function classifyStockItem(name, code) {
 
 function rowsFromMatrix(matrix, fileName, sheetName) {
   const rows = [];
-  let warehouse = (/\b(200|201|202|204|401|800|900)\b/.exec(fileName + ' ' + sheetName) || [])[1] || '';
+  const warehouseHint = (/\b(300-S|200|201|202|204|300|401|800|900)\b/i.exec(fileName + ' ' + sheetName) || [])[1] || '';
+  let warehouse = normalizeStockWarehouse(warehouseHint);
   let reportDate = '';
   for (const rawRow of matrix) {
     const row = rawRow.map(v => String(v == null ? '' : v).trim());
     const first = row[0] || '';
     if (!reportDate && /^ณ วันที่:/.test(first)) reportDate = first;
-    if (/^(200|201|202|204|401|800|900)$/.test(first) && row[1] && !row[2]) { warehouse = first; continue; }
+    const rowWarehouse = normalizeStockWarehouse(first);
+    if (rowWarehouse && row[1] && !row[2]) { warehouse = rowWarehouse; continue; }
     // Product codes are not always numeric. Examples in the warehouse exports include
     // SSHF-079 and other alphabetic prefixes. The old /^\d/ check silently dropped every
     // such row before it reached Supabase. Identify product rows from the report structure
@@ -4920,10 +4941,16 @@ async function parseStockFiles(files) {
     });
   }
   if (!items.length) throw new Error('ไม่พบแถวสินค้า โปรดใช้คอลัมน์ รหัสสินค้า, ชื่อสินค้า, หน่วยนับ, ปริมาณ, มูลค่า');
+  const uploadedWarehouses = new Set(items.map(item => item.wh));
+  const missingWarehouses = REQUIRED_STOCK_WAREHOUSES.filter(code => !uploadedWarehouses.has(code));
+  if (missingWarehouses.length) {
+    throw new Error('ข้อมูลคลังไม่ครบ กรุณาเลือกไฟล์ทั้ง 8 คลังพร้อมกัน · ขาดคลัง ' + missingWarehouses.join(', '));
+  }
   return { items, reportDate: reportDate || ('อัปเดต ' + new Date().toLocaleDateString('th-TH')) };
 }
 
 function rebuildStockControls() {
+  applyStockWarehouseLabels(STOCK);
   const selected = whFilter.value;
   whFilter.innerHTML = '<option value="all">ทุกคลัง (All warehouses)</option>' +
     STOCK.warehouses.filter(w => !DROPDOWN_EXCLUDE_CODES.includes(w.code)).map(w => `<option value="${w.code}">${w.code} (${w.en_label}) — ${w.short}</option>`).join('');

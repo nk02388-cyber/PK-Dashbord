@@ -91,15 +91,16 @@ begin
         when '201' then 'บรรจุภัณฑ์และแพ็คเกจจิ้ง-นครชัยศรี'
         when '202' then 'บรรจุภัณฑ์และแพ็คเกจจิ้ง-OEM'
         when '204' then 'บรรจุภัณฑ์และแพ็คเกจจิ้ง-ลูกค้า'
+        when '300-S' then 'คลังฝาก PVC ชริ้ง (ซัพพลายเออร์)'
         when '401' then 'คลังนำกลับมาใช้ใหม่-บรรจุภัณฑ์'
         when '800' then 'คลัง Hold'
         when '900' then 'คลัง รอทำลาย'
         else 'คลัง ' || wh end as name,
       case wh when '200' then 'PD - งานระหว่างทำ BCL' when '201' then 'BW - นครชัยศรี'
-        when '202' then 'BCL - OEM' when '204' then 'ลูกค้าฝาก' when '401' then 'นำกลับมาใช้ใหม่'
+        when '202' then 'BCL - OEM' when '204' then 'ลูกค้าฝาก' when '300-S' then 'PVC ชริ้ง (ซัพพลายเออร์)' when '401' then 'นำกลับมาใช้ใหม่'
         when '800' then 'Hold' when '900' then 'รอทำลาย' else wh end as short,
       case wh when '200' then 'Preparation' when '201' then 'BW' when '202' then 'OEM'
-        when '204' then 'Customer' when '401' then 'Re-work' when '800' then 'Hold'
+        when '204' then 'Customer' when '300-S' then 'Supplier' when '401' then 'Re-work' when '800' then 'Hold'
         when '900' then 'Reject' else wh end as en_label,
       count(*) items, sum(qty) qty, sum(value) value, bool_or(value <> 0) has_value
     from item_rows group by wh
