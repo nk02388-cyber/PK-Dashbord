@@ -4767,6 +4767,10 @@ function rebuildStockControls() {
   document.getElementById('reportDate').textContent = 'ข้อมูล ' + (STOCK.report_date || '');
   document.getElementById('tabBadgeStock').textContent = '฿' + fmtCompact(STOCK.kpis.total_value);
   renderStockAll(whFilter.value);
+  // The BOM tab must use the same latest Stock Inventory object. This guard lets the initial
+  // embedded Stock render before the BOM UI is initialized, while every later Supabase load or
+  // manual update recalculates BOM immediately.
+  if (window.__bomUiReady) recalculateBomFromStock();
 }
 
 async function loadLatestStockFromSupabase() {
@@ -4815,36 +4819,39 @@ loadLatestStockFromSupabase();
    TAB 2: BOM PK AVAILABILITY
    ====================================================================== */
 
-document.getElementById('assumptionText').textContent = BOMPK.assumptions.note +
-  ' (คลังที่ไม่รวม: ' + BOMPK.assumptions.excluded_warehouses.join(', ') + ')';
-
-const bk = BOMPK.kpis;
-const bompkKpiDefs = [
-  {label:'FG ที่มี BOM บรรจุภัณฑ์', value: fmt0(bk.total_fg_with_bom), sub: 'finished goods'},
-  {label:'ผลิตได้ตอนนี้', value: fmt0(bk.fg_available), sub: (100*bk.fg_available/bk.total_fg_computed).toFixed(1) + '% ของ FG', cls:'good'},
-  {label:'ติดขัดบรรจุภัณฑ์', value: fmt0(bk.fg_blocked), sub: (100*bk.fg_blocked/bk.total_fg_computed).toFixed(1) + '% ของ FG', cls:'critical'},
-  {label:'BOM lines ทั้งหมด', value: fmt0(bk.total_bom_lines), sub: 'รายการส่วนประกอบ'},
-  {label:'ส่วนประกอบไม่ซ้ำ', value: fmt0(bk.unique_components), sub: 'unique packaging codes'},
-];
-document.getElementById('bompkKpiRow').innerHTML = bompkKpiDefs.map(kd => `
-  <div class="kpi ${kd.cls||''}">
-    <div class="label">${kd.label}</div>
-    <div class="value">${kd.value}</div>
-    <div class="sub">${kd.sub}</div>
-  </div>
-`).join('');
-
-const totalFg = bk.total_fg_computed;
-const goodPct = 100 * bk.fg_available / totalFg;
-const critPct = 100 * bk.fg_blocked / totalFg;
-document.getElementById('splitBar').innerHTML = `
-  <div class="split-seg good" style="width:${goodPct}%">${goodPct >= 8 ? goodPct.toFixed(1) + '%' : ''}</div>
-  <div class="split-seg critical" style="width:${critPct}%">${critPct >= 8 ? critPct.toFixed(1) + '%' : ''}</div>
-`;
-document.getElementById('splitLegend').innerHTML = `
-  <span><span class="sw good"></span>ผลิตได้ — ${fmt0(bk.fg_available)} FG</span>
-  <span><span class="sw critical"></span>ติดขัด (สต๊อกหมด) — ${fmt0(bk.fg_blocked)} FG</span>
-`;
+function renderBomSummary() {
+  const bk = BOMPK.kpis;
+  const totalFg = bk.total_fg_computed || 0;
+  const goodPct = totalFg > 0 ? 100 * bk.fg_available / totalFg : 0;
+  const critPct = totalFg > 0 ? 100 * bk.fg_blocked / totalFg : 0;
+  const bompkKpiDefs = [
+    {label:'FG ที่มี BOM บรรจุภัณฑ์', value: fmt0(bk.total_fg_with_bom), sub: 'finished goods'},
+    {label:'ผลิตได้ตอนนี้', value: fmt0(bk.fg_available), sub: goodPct.toFixed(1) + '% ของ FG', cls:'good'},
+    {label:'ติดขัดบรรจุภัณฑ์', value: fmt0(bk.fg_blocked), sub: critPct.toFixed(1) + '% ของ FG', cls:'critical'},
+    {label:'BOM lines ทั้งหมด', value: fmt0(bk.total_bom_lines), sub: 'รายการส่วนประกอบ'},
+    {label:'ส่วนประกอบไม่ซ้ำ', value: fmt0(bk.unique_components), sub: 'unique packaging codes'},
+  ];
+  document.getElementById('bompkKpiRow').innerHTML = bompkKpiDefs.map(kd => `
+    <div class="kpi ${kd.cls||''}">
+      <div class="label">${kd.label}</div>
+      <div class="value">${kd.value}</div>
+      <div class="sub">${kd.sub}</div>
+    </div>
+  `).join('');
+  document.getElementById('splitBar').innerHTML = `
+    <div class="split-seg good" style="width:${goodPct}%">${goodPct >= 8 ? goodPct.toFixed(1) + '%' : ''}</div>
+    <div class="split-seg critical" style="width:${critPct}%">${critPct >= 8 ? critPct.toFixed(1) + '%' : ''}</div>
+  `;
+  document.getElementById('splitLegend').innerHTML = `
+    <span><span class="sw good"></span>ผลิตได้ — ${fmt0(bk.fg_available)} FG</span>
+    <span><span class="sw critical"></span>ติดขัด (สต๊อกหมด) — ${fmt0(bk.fg_blocked)} FG</span>
+  `;
+  document.getElementById('tabBadgeBompk').textContent = fmt0(bk.fg_blocked) + ' ติดขัด';
+  document.getElementById('assumptionText').textContent = BOMPK.assumptions.note +
+    ' (คลังที่ไม่รวม: ' + BOMPK.assumptions.excluded_warehouses.join(', ') + ')' +
+    (STOCK.report_date ? ' · คำนวณจาก Stock Inventory ' + STOCK.report_date : '');
+}
+renderBomSummary();
 
 // ---------- FG BOM lookup ----------
 const fgCodeList = document.getElementById('fgCodeList');
@@ -4856,6 +4863,80 @@ const fgBomResult = document.getElementById('fgBomResult');
 // pk_code lines the user has manually excluded from the producible/bottleneck calc,
 // keyed by FG code -> Set of excluded pk_codes. Kept in memory only (resets on reload).
 const fgLineExclusions = {};
+
+// Rebuilds every BOM availability figure from the current Stock Inventory. Stock rows are
+// aggregated by PK code across all production-eligible warehouses, preserving the established
+// rule that Hold (800) and Reject (900) stock cannot be used for production. This is called
+// after both get_latest_stock_inventory and replace_stock_inventory, so the Stock and BOM tabs
+// always describe the same snapshot.
+function recalculateBomFromStock() {
+  const excludedWarehouses = new Set((BOMPK.assumptions.excluded_warehouses || []).map(x => String(x).trim()));
+  const stockByCode = new Map();
+  (STOCK.items || []).forEach(item => {
+    const code = String(item.code || '').trim().toUpperCase();
+    const wh = String(item.wh || '').trim();
+    if (!code || excludedWarehouses.has(wh)) return;
+    let agg = stockByCode.get(code);
+    if (!agg) {
+      agg = { qty: 0, value: 0, name: item.name || '', unit: item.unit || '' };
+      stockByCode.set(code, agg);
+    }
+    const qty = Number(item.qty);
+    const value = Number(item.value);
+    if (Number.isFinite(qty)) agg.qty += qty;
+    if (Number.isFinite(value)) agg.value += value;
+    if (!agg.name && item.name) agg.name = item.name;
+    if (!agg.unit && item.unit) agg.unit = item.unit;
+  });
+
+  const available = [], blocked = [];
+  Object.entries(BOMPK.bom_detail).forEach(([fgCode, detail]) => {
+    let fgProducible = null;
+    let bottleneckLine = null;
+    detail.lines.forEach(line => {
+      const agg = stockByCode.get(String(line.pk_code || '').trim().toUpperCase());
+      const stockQty = Math.max(0, agg && Number.isFinite(agg.qty) ? agg.qty : 0);
+      line.stock_avail = stockQty;
+      line.stock_unit_value = stockQty > 0 && agg && Number.isFinite(agg.value) ? agg.value / stockQty : null;
+      line.in_stock = stockQty > 0;
+      const qtyPerUnit = Number(line.qty_per_unit);
+      line.producible = Number.isFinite(qtyPerUnit) && qtyPerUnit > 0
+        ? Math.max(0, Math.floor((stockQty / qtyPerUnit) + 1e-9))
+        : null;
+      if (line.producible != null && (fgProducible == null || line.producible < fgProducible)) {
+        fgProducible = line.producible;
+        bottleneckLine = line;
+      }
+    });
+    detail.producible = fgProducible;
+    detail.bottleneck_code = bottleneckLine ? bottleneckLine.pk_code : null;
+    if (fgProducible == null) return;
+    const summary = {
+      fg: fgCode,
+      fg_name: detail.fg_name,
+      producible: fgProducible,
+      line_count: detail.line_count,
+      bottleneck: bottleneckLine ? {
+        code: bottleneckLine.pk_code,
+        name: bottleneckLine.pk_name,
+        unit: bottleneckLine.unit,
+        qty_per_unit: bottleneckLine.qty_per_unit,
+        stock_avail: bottleneckLine.stock_avail,
+      } : null,
+    };
+    (fgProducible > 0 ? available : blocked).push(summary);
+  });
+
+  available.sort((a, b) => b.producible - a.producible || a.fg.localeCompare(b.fg));
+  blocked.sort((a, b) => a.fg.localeCompare(b.fg));
+  BOMPK.available_fg = available;
+  BOMPK.blocked_fg = blocked;
+  BOMPK.kpis.total_fg_computed = available.length + blocked.length;
+  BOMPK.kpis.fg_available = available.length;
+  BOMPK.kpis.fg_blocked = blocked.length;
+  renderBomSummary();
+  renderFgBom(fgBomSearch.value);
+}
 
 function renderFgBom(rawCode) {
   const q = (rawCode || '').trim();
@@ -5004,7 +5085,10 @@ function renderFgBom(rawCode) {
     <div class="row-count">คำนวณมูลค่าสต๊อกคงเหลือได้ ${fmt0(stockValues.length)}/${fmt0(detail.lines.length)} รายการ · คำนวณมูลค่าส่วนต่างได้ ${fmt0(diffValues.length)}/${fmt0(detail.lines.length)} รายการ</div>
   `;
 }
-renderFgBom('');
+// Initial embedded Stock is calculated once here; later Supabase loads/manual updates enter
+// through rebuildStockControls() and use the same recalculation path.
+window.__bomUiReady = true;
+recalculateBomFromStock();
 fgBomSearch.addEventListener('input', () => renderFgBom(fgBomSearch.value));
 fgBomSearch.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
