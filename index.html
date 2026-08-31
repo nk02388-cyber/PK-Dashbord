@@ -4893,10 +4893,16 @@ function rowsFromMatrix(matrix, fileName, sheetName) {
     const first = row[0] || '';
     if (!reportDate && /^ณ วันที่:/.test(first)) reportDate = first;
     if (/^(200|201|202|204|401|800|900)$/.test(first) && row[1] && !row[2]) { warehouse = first; continue; }
-    if (!warehouse || !/^\d/.test(first) || first === warehouse || first === 'รหัสสินค้า') continue;
+    // Product codes are not always numeric. Examples in the warehouse exports include
+    // SSHF-079 and other alphabetic prefixes. The old /^\d/ check silently dropped every
+    // such row before it reached Supabase. Identify product rows from the report structure
+    // instead: a warehouse must be known and a product name must be present. Unit is allowed
+    // to be blank because some valid exports omit it for individual items.
+    if (!warehouse || first === warehouse || first === 'รหัสสินค้า' || first === 'รหัสคลัง') continue;
     const name = row[1] || '';
-    if (!name) continue;
-    rows.push({ code:first, name, unit:row[2] || '', qty:stockNumber(row[3]), value:stockNumber(row[4]), wh:warehouse, cat:classifyStockItem(name, first) });
+    const unit = row[2] || '';
+    if (!first || !name) continue;
+    rows.push({ code:first, name, unit, qty:stockNumber(row[3]), value:stockNumber(row[4]), wh:warehouse, cat:classifyStockItem(name, first) });
   }
   return { rows, reportDate };
 }
