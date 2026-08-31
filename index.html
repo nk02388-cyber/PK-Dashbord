@@ -128,10 +128,9 @@
 
   /* Stock tab's total-value KPI: square card. 21 Aug 2026 -- explicitly NOT position:fixed
      any more (it used to float pinned/scrolling-with-viewport; Pornchai asked for it to stop
-     being "Fix" and instead move freely with the page). Renders in normal document flow by
-     default; only switches to position:absolute -- scrolling normally with the rest of the
-     page, not fixed to the viewport -- while being dragged (see initDraggableTotalKpi() near
-     renderStockAll() below). It also now lives physically inside #pane-stock in the HTML, so
+     being "Fix"). It renders in normal document flow and stays in the summary row; the card is
+     intentionally non-draggable so its position cannot be changed accidentally. It also lives
+     physically inside #pane-stock in the HTML, so
      it's structurally confined to the stock tab rather than toggled visible/hidden across tabs
      by script. Right-alignment (previously its own margin-left:auto) is now handled by the
      .kpi-side-row wrapper it shares with the speed meter (added same day, just below), so the
@@ -152,9 +151,8 @@
     display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
     background: var(--status-warning); border: 1px solid rgba(0,0,0,0.18); border-radius: 16px;
     padding: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.18);
-    cursor: grab; user-select: none; touch-action: none;
+    cursor: default; user-select: text; touch-action: auto;
   }
-  .kpi-total-fixed.dragging { cursor: grabbing; box-shadow: 0 14px 34px rgba(0,0,0,0.3); }
   /* Yellow fill (21 Aug 2026) needs its own dark text -- the theme's default text colors
      (white in dark mode) would be unreadable against a bright yellow background regardless
      of theme, so these are fixed dark tones rather than the usual var(--text-*) tokens. */
@@ -1475,13 +1473,9 @@
       </div>
 
       <!-- Speed meter (PK Capacity Storage) + total-value card, side by side, right-aligned as
-           one group. The total-value card lives inside the stock tab pane only (so it's
-           structurally impossible to show on the other two tabs) and is NOT position:fixed --
-           it scrolls away with the page like any other content. Renders in normal flow by
-           default (see .kpi-total-fixed CSS); dragging (see the script near renderStockAll()
-           below) switches it to position:absolute so it can be dropped anywhere on the page,
-           still scrolling with the content afterward -- dragging it away leaves the speed meter
-           card alone in this row, which is expected. -->
+           one group. The total-value card lives inside the stock tab pane only (so it is
+           structurally impossible to show on the other two tabs), scrolls normally with the
+           page, and is intentionally non-draggable to prevent accidental layout changes. -->
       <div class="kpi-side-row">
         <div class="speed-meter-card" id="pkSpeedMeterCard" title="PK Capacity Storage = ปริมาณที่ใช้งานไปรวม / Pallet No. รวม ทั้งสองอาคาร (คำนวณสดจากสถานะการวางพาเลทจริง)">
           <div class="sm-title">PK Capacity Storage</div>
@@ -1495,7 +1489,7 @@
           <div class="sm-value" id="pkSpeedMeterValue" style="color: var(--status-good);">9.6%</div>
           <div class="sm-sub" id="pkSpeedMeterSub">95/992 ช่อง</div>
         </div>
-        <div class="kpi-total-fixed" id="stockTotalKpiFixed" title="ลากเพื่อย้ายตำแหน่งการ์ดนี้ได้อิสระ">
+        <div class="kpi-total-fixed" id="stockTotalKpiFixed" title="มูลค่าคงเหลือรวม">
     <div class="label">มูลค่าคงเหลือรวม (บาท)</div>
     <div class="value">฿32.41M</div>
     <div class="sub">32,412,386 บาท</div>
@@ -4738,97 +4732,6 @@ stockExcelInput.addEventListener('change', async () => {
 });
 
 loadLatestStockFromSupabase();
-
-// ---------- Total-value KPI card: free dragging, NOT pinned to the viewport ----------
-// Pornchai's 21 Aug 2026 follow-up on top of the previous follow-up: the card should no
-// longer be `position: fixed` at all (it should scroll away with the page like normal
-// content), while still being freely draggable to any spot. So: default state is normal
-// document flow (position: static, see the CSS above); dragging switches it to
-// `position: absolute` -- positioned relative to the page/document, NOT the viewport, so
-// once dropped it scrolls normally with the rest of the content instead of staying stuck
-// on screen. Position is remembered in localStorage across reloads of this file -- safe
-// here since this is a plain downloaded HTML file opened directly by the user, not a
-// hosted/sandboxed page.
-(function initDraggableTotalKpi() {
-  const card = document.getElementById('stockTotalKpiFixed');
-  if (!card) return;
-  // v2: document-relative coordinates (position:absolute), not viewport-relative
-  // (position:fixed) like the previous version of this feature -- a different key avoids
-  // misapplying an old saved position under the new coordinate system.
-  const STORAGE_KEY = 'pkStockTotalKpiPosV2';
-  const draggable = () => !window.matchMedia('(max-width: 900px)').matches;
-
-  // Clamp to the currently-visible viewport, expressed in document (page) coordinates --
-  // a drag can only ever end somewhere the cursor is currently visible, so this keeps the
-  // card reachable without needing to know the full scrollable page height.
-  function clampToViewport(docLeft, docTop) {
-    const minLeft = window.scrollX + 4, maxLeft = window.scrollX + window.innerWidth - card.offsetWidth - 4;
-    const minTop = window.scrollY + 4, maxTop = window.scrollY + window.innerHeight - card.offsetHeight - 4;
-    return {
-      left: Math.min(Math.max(docLeft, minLeft), Math.max(maxLeft, minLeft)),
-      top: Math.min(Math.max(docTop, minTop), Math.max(maxTop, minTop)),
-    };
-  }
-
-  function placeAbsolute(docLeft, docTop) {
-    const c = clampToViewport(docLeft, docTop);
-    card.style.position = 'absolute';
-    card.style.margin = '0';
-    card.style.left = c.left + 'px';
-    card.style.top = c.top + 'px';
-  }
-
-  function resetToFlow() {
-    card.style.position = '';
-    card.style.margin = '';
-    card.style.left = '';
-    card.style.top = '';
-  }
-
-  function applyStoredPosition() {
-    if (!draggable()) { resetToFlow(); return; }
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return; // no saved position yet -- leave it in its default flow spot
-      const pos = JSON.parse(raw);
-      if (typeof pos.left !== 'number' || typeof pos.top !== 'number') return;
-      placeAbsolute(pos.left, pos.top);
-    } catch (e) { /* localStorage unavailable -- keep the default in-flow spot */ }
-  }
-
-  let drag = null;
-  card.addEventListener('pointerdown', (e) => {
-    if (!draggable()) return;
-    const rect = card.getBoundingClientRect(); // viewport-relative
-    drag = {
-      startX: e.clientX, startY: e.clientY,
-      startDocLeft: rect.left + window.scrollX, startDocTop: rect.top + window.scrollY,
-    };
-    card.classList.add('dragging');
-    placeAbsolute(drag.startDocLeft, drag.startDocTop); // switch to absolute without jumping
-    card.setPointerCapture(e.pointerId);
-  });
-  card.addEventListener('pointermove', (e) => {
-    if (!drag) return;
-    placeAbsolute(drag.startDocLeft + (e.clientX - drag.startX), drag.startDocTop + (e.clientY - drag.startY));
-  });
-  function endDrag() {
-    if (!drag) return;
-    drag = null;
-    card.classList.remove('dragging');
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        left: parseFloat(card.style.left) || 0,
-        top: parseFloat(card.style.top) || 0,
-      }));
-    } catch (e) { /* localStorage unavailable -- position just won't persist across reloads */ }
-  }
-  card.addEventListener('pointerup', endDrag);
-  card.addEventListener('pointercancel', endDrag);
-  window.addEventListener('resize', applyStoredPosition);
-
-  applyStoredPosition();
-})();
 
 /* ======================================================================
    TAB 2: BOM PK AVAILABILITY
