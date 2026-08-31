@@ -405,8 +405,9 @@
     background: var(--page-plane);
   }
   .floorplan-search label { font-size: 12.5px; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
+  .floorplan-search-control { position: relative; flex: 1; min-width: 220px; }
   .floorplan-search input[type="text"] {
-    flex: 1; min-width: 220px; padding: 7px 10px; border-radius: 7px; border: 1px solid var(--border);
+    width: 100%; padding: 7px 10px; border-radius: 7px; border: 1px solid var(--border);
     /* 21 Aug 2026: same hardcoded-white-background bug as .fse-item-row/.fse-add-form input
        (--card-bg is never a real theme token) -- fixed the same way, to --page-plane. */
     background: var(--page-plane); color: var(--text-primary); font: inherit; font-size: 13px;
@@ -417,6 +418,25 @@
     cursor: pointer; white-space: nowrap;
   }
   .floorplan-search button:hover { filter: brightness(0.94); }
+  .floorplan-search > button:disabled { opacity: 0.5; cursor: not-allowed; filter: none; }
+  .floorplan-search-suggestions {
+    position: absolute; z-index: 40; top: calc(100% + 6px); left: 0; right: 0;
+    max-height: 330px; overflow-y: auto; padding: 6px; border: 1px solid var(--border);
+    border-radius: 10px; background: var(--page-plane); box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+  }
+  .floorplan-search .floorplan-search-suggestion {
+    display: grid; grid-template-columns: minmax(130px, 0.36fr) minmax(180px, 1fr) auto;
+    gap: 10px; align-items: center; width: 100%; padding: 9px 10px; border: 0; border-radius: 7px;
+    background: transparent; color: var(--text-primary); text-align: left; cursor: pointer;
+  }
+  .floorplan-search .floorplan-search-suggestion:hover,
+  .floorplan-search .floorplan-search-suggestion.active { background: rgba(42,120,214,0.11); color: var(--text-primary); filter: none; }
+  .floorplan-search-suggestion .fs-code { font: 600 12px ui-monospace, SFMono-Regular, Consolas, monospace; color: var(--series-1); }
+  .floorplan-search-suggestion .fs-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; }
+  .floorplan-search-suggestion .fs-count { color: var(--text-muted); font-size: 11.5px; white-space: nowrap; }
+  .floorplan-search-suggestion mark { padding: 0; background: rgba(255, 193, 7, 0.32); color: inherit; font-weight: 700; }
+  .floorplan-search-empty { padding: 12px 10px; color: var(--text-muted); font-size: 12.5px; text-align: center; }
+  .floorplan-search-more { padding: 7px 10px 4px; color: var(--text-muted); font-size: 11.5px; text-align: center; }
   .floorplan-search-msg {
     flex-basis: 100%; font-size: 12.5px; padding: 8px 10px; border-radius: 7px; line-height: 1.5;
   }
@@ -427,6 +447,13 @@
     border: 1px solid var(--border); background: var(--page-plane); cursor: pointer; font-size: 12px;
   }
   .floorplan-search-msg .fs-jump:hover { filter: brightness(0.94); }
+  @media (max-width: 700px) {
+    .floorplan-search-control { flex-basis: 100%; order: 2; }
+    .floorplan-search > button { order: 3; margin-left: auto; }
+    .floorplan-search-msg { order: 4; }
+    .floorplan-search .floorplan-search-suggestion { grid-template-columns: minmax(0, 1fr) auto; white-space: normal; }
+    .floorplan-search-suggestion .fs-name { grid-column: 1 / -1; grid-row: 2; }
+  }
 
   /* 21 Aug 2026: multi-device live sync status chip (Supabase) -- see initSupabaseSync() near
      the bottom of the main script. Sits above the search box so it's visible the moment the
@@ -2068,10 +2095,13 @@
       </div>
 
       <div class="floorplan-search" id="floorplanSearch">
-      <label for="floorplanSearchInput">ค้นหาตำแหน่งด้วยรหัสสินค้า:</label>
-        <input type="text" id="floorplanSearchInput" list="floorplanSearchDatalist" placeholder="พิมพ์หรือเลือกรหัสสินค้า เช่น 311-1-0103-5101" autocomplete="off">
+      <label for="floorplanSearchInput">ค้นหาชื่อหรือรหัสสินค้า:</label>
+        <div class="floorplan-search-control">
+          <input type="text" id="floorplanSearchInput" placeholder="พิมพ์ชื่อหรือรหัสสินค้าบางส่วน" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="floorplanSearchSuggestions">
+          <div class="floorplan-search-suggestions" id="floorplanSearchSuggestions" role="listbox" hidden></div>
+        </div>
         <datalist id="floorplanSearchDatalist"><option value="300-0-0012-62">ม้วนเทปใส</option><option value="300-0013-62">ม้วนฟืมยืด</option><option value="31-0001-07-62">กล่องลูกฟูก 1x6 ใช้ร่วม JABS BODY LOTION 450 ml.</option><option value="31-0001-16-58">ซองตั้งติดจุกขาว8 MM ไดคัท แจ๊บส์ ไบรท์บูสเตอร์ยูวี บอดี้โลชั่น 30 มล.</option><option value="31-0001-32-62">กล่องลูกฟูก 1X6 แจ๊บส์ ไบรท์ บูสเตอร์ วอเตอร์ รีซิสแตนท์ ยูวี บอดี้ ครีม 450 ml</option><option value="31-0001-33-6201">กล่องลูกฟูก 1x6 แจ๊บส์ ไบรท์บูสเตอร์ ยูวี โพรเทคชั่น บอดี้โลชั่น 450มล.(แพ็คเดี่ยว)</option><option value="31-0003-22-61">กล่องยูนิต ทียู เพอร์เฟค คัลเลอร์ น้ำตาลบลอนด์เทาหม่น 60 มล.+ ไฮโดรเจน 6%</option><option value="31-0007-01-55">ฝาปั้มสีชมพู คอ33/410  ความยาวท่อ 16.00 cm. โซริโก๊ะ มิลค์ คอลลาเจน โลชั่น 500 มล.</option><option value="31-0007-01-62">กล่องลูกฟูก 1x24 โซริโก๊ะ มิลค์ คอลลาเจน โลชั่น 500 มล.</option><option value="31-0007-03-5501">ฝาปั๊มสีเเดง คอ33/410 โชริโก๊ะ กลูต้า</option><option value="31-0007-03-62">กล่องลูกฟูก 1x24 โซริโก๊ะ กลูต้าไธโอน ไวท์เทนนิ่ง โลชั่น 500 มล</option><option value="31-0007-05-62">กล่องลูกฟูก 1x24 โซบิวตี้ โซริโก๊ะ โกท มิลค์ โอเวอร์ไนท์ บอดี้ โลชั่น 500 มล.</option><option value="31-0007-08-62">กล่องลูกฟูก1X24 โซบิวตี้ โซริโก๊ะ นาโน ไวท์ บูสเตอร์ เซรั่ม 300 ML</option><option value="31-0007-17-62">กล่องลูกฟูกโซลิโกะอัลฟ่าอาร์บูติน</option><option value="31-0007-2-403-55">ฝาปั้ม 3 จุด สีส้ม คอ33/410 ความยาวท่อ 16.00 cm.  เดลิ สกิน ออร่า ไวท์ อินเทนซีฟ ไวท์เทนนิ่ง บอดี้ โลชั่น 500มล</option><option value="31-0007-22-51">ขวดโซริโกะเฮลตี้ไบร์ทคอลตี้ไบร์ทคอลลี้ไบร์ทคอลลาเจนเฮลตี้ไบร์ท</option><option value="31-0007-22-62">กล่องลูกฟูก 1x24 โซริโก๊ะ คอลลาเจน เฮลธี้ ไบร์ท โลชั่น 500 มล</option><option value="31-0007-23-62">กล่องลูกฟูก 1x24 โซริโก๊ะ กลูต้าไธโอน เฮลธี้ ไบร์ท โลชั่น 500 มล</option><option value="31-0113-05-57">ม้วนโอเคเฮอเบิล สีน้ำตาลคาราเมล</option><option value="31-0113-05-5701">ม้วนโอเคเฮอเบิลคัลเลอครีม</option><option value="31-0113-05-5702">ม้วนok developer</option><option value="31-0113-05-61">กล่องยูนิต 1X6 โอเค เฮอเบิล แฮร์ คัลเลอร์ ครีม - สีน้ำตาลคาราเมล 60 มล</option><option value="31-0113-06-61">กล่องยูนิต 1X6 โอเค เฮอเบิล แฮร์ คัลเลอร์ ครีม - สีน้ำตาลธรรมชาติ 60 มล</option><option value="31-0113-07-57">ม้วนโอเคเฮอเบิลสีดำประกายน้ำตาล</option><option value="31-0113-07-61">กล่องยูนิต 1X6 โอเค เฮอเบิล แฮร์ คัลเลอร์ ครีม - สีดำประกายน้ำตาล 60 มล</option><option value="31-0120-01-58">ม้วน911คัลเลอร์ครีม</option><option value="31-0120-01-6101">แผ่นพับคู่มือการใช้ ใช้ร่วม ไนล์ วัน วัน คัลเลอร์ ครีม 200 มล.</option><option value="31-0120-03-61">กล่องยูนิต ไนล์ วัน วัน บลิชชิ่ง คัลเลอร์ (ลิซ่า บลอนด์) 60+100 ML.</option><option value="31-0120-07-5701">ม้วนสีใช้ร่วม 911 NO.1 30ml.</option><option value="31-0120-07-5702">ม้วนไฮใช้ร่วม 911 NO.2</option><option value="31-0120-07-61">กล่องยูนิต1×6 S01 ไนล์วันวัน น้ำตาลธรรมชาติ  60ml</option><option value="31-0120-08-61">กล่องยูนิตไนล์วันวัน ช็อกโกบราวน์ 60 ml</option><option value="31-0120-09-57">ม้วนไนล์วันวัน แอชบราวน์ 60 มล.</option><option value="31-0120-09-61">กล่องยูนิต1×6 S03 ไนล์วันวัน แอชบราวน์ 60ml</option><option value="31-0191-04-51">ขวดแก้วสีใสสกรีน บีซาบี ซัมธิงส์ แดร์ โอ เดอ พาฟูม 50 มล(Somethings)</option><option value="311-1-0305-6202">กล่องลูกฟูก 1x12 เมจิค ทรีทเม้นท์ 250 g. (แบบไม่พิมพ์)</option><option value="311-2-0863-5801">ม้วนBM -01สีน้ำตาลรรนมชาติ</option><option value="311-2-0864-61">กล่องยูนิต 1X6 เมจิค คัลเลอร์ครีม BM-02 น้ำตาลประกายแดง 30 มล</option><option value="311-2-0866-61">กล่องยูนิตBM04</option><option value="311-2-0868-62">กล่องยูนิต 1X6 เมจิค คัลเลอร์ครีม BM-06 น้ำตาลคาราเมล 30 มล</option><option value="311-2-0872-62">กล่องยูนิต1x6 BM-10</option><option value="313-1-0302-6201">กล่องลูกฟูก 1X12 นิวเทรียนท์ ดราย&amp;ดาเมจ ทรีทเม้นท์ 250 มล</option><option value="313-1-0322-58">ม้วนดรายดราเมจทรีทเม้น30มล.</option><option value="313-2-0701-57">ม้วนในBT</option><option value="313-2-0701-5701">ม้วนนอก BT ใช้ร่วม</option><option value="313-2-0701-5702">ซองชีล3ด้านสีใสใช้ร่วมBT</option><option value="313-2-0701-5801">ถุงมือพลาสติกใช้กับงานสีผม PVC Gloves</option><option value="313-2-0701-6104">กล่องดิสเพลย์ 1x6ชิ้น BT-01 สีดำธรรมชาติ 30 มล. (Art work ใหม่)</option><option value="313-2-0701-6105">ซองกระดาษ Cover BT-01 ดำ 30มล.(Art ใหม่)</option><option value="313-2-0702-6105">ซองกระดาษ Cover BT-02 น้ำตาลเข้ม 30มล.(Art ใหม่)</option><option value="313-2-0702-62">กล่องลูกฟูกร่วม BT</option><option value="313-2-0704-6104">กล่องยูนิตBT04</option><option value="313-2-0704-6105">ซองกระดาษ Cover BT-04 น้ำตาลโค้ก 30มล.(Art ใหม่)</option><option value="314-4-2000-55">ฝาปั๊ม PP สีขาว Dispensor Pump 33/410 แพลนเต้ ชาวเวอร์ ครีม 500 ร่วม</option><option value="314-4-2003-6201">กล่องลูกฟูก1x12 ร่วมเเพลนเต้ ชาวเวอร์ครีม</option><option value="314-4-2301-5501">ฝาปั๊ม 3จุดสีแดงคามู850 มล</option><option value="314-4-2336-5501">ฝาปั้ม 3 จุด สีส้ม คอ33/410 ความยาวท่อ 14.6 cm. แพลนเต้ บอดี้โลชั่น ทรอปิคอลฟรุ๊ต 850มล.</option><option value="315-1-0307-57">ม้วนโลลิ่งสวีทตี้</option><option value="315-2-0701-5801">ม้วนนอกใช้ร่วมโลริ่ง</option><option value="316-4-2801-6201">กล่องลูกฟูก 1x24 คูล ซอลท์ สครับ</option><option value="SSHF-079">ชริ้งออโต้79</option><option value="sshf-079">ม้วนชริ้งออโต้</option></datalist>
-        <button type="button" id="floorplanSearchBtn">ไปที่ตำแหน่ง</button>
+        <button type="button" id="floorplanSearchBtn" disabled>ไปที่ตำแหน่ง</button>
         <div class="floorplan-search-msg" id="floorplanSearchMsg" hidden=""></div>
       </div>
 
@@ -3452,7 +3482,11 @@ function jumpToSlot(zoneCode, slotCode) {
 // --- Floor-plan search box: find an item's stored position by code, jump the zoom viewer to it ---
 const floorplanSearchInput = document.getElementById('floorplanSearchInput');
 const floorplanSearchDatalist = document.getElementById('floorplanSearchDatalist');
+const floorplanSearchSuggestions = document.getElementById('floorplanSearchSuggestions');
 const floorplanSearchMsg = document.getElementById('floorplanSearchMsg');
+const floorplanSearchBtn = document.getElementById('floorplanSearchBtn');
+let searchSuggestionItems = [];
+let activeSearchSuggestion = -1;
 
 // refreshSearchDatalist() (defined further below) populates the <datalist> from ITEM_TO_SLOTS;
 // call it once now for the initial Excel-derived data, and again any time an item is added or
@@ -3461,6 +3495,96 @@ const floorplanSearchMsg = document.getElementById('floorplanSearchMsg');
 refreshSearchDatalist();
 
 function escapeHtml(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
+
+function normalizeSearchText(value) {
+  return String(value || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase('th-TH')
+    .replace(/[\u0E48-\u0E4B]/g, '');
+}
+
+function getFloorplanSearchResults(query) {
+  const q = normalizeSearchText(query);
+  if (!q) return [];
+  return Object.keys(ITEM_TO_SLOTS).map(code => {
+    const entries = ITEM_TO_SLOTS[code] || [];
+    const name = (entries.find(e => e.name) || {}).name || '';
+    const normalizedCode = normalizeSearchText(code);
+    const normalizedName = normalizeSearchText(name);
+    let rank = Number.POSITIVE_INFINITY;
+    if (normalizedCode === q) rank = 0;
+    else if (normalizedName === q) rank = 1;
+    else if (normalizedCode.startsWith(q)) rank = 2;
+    else if (normalizedName.startsWith(q)) rank = 3;
+    else if (normalizedName.split(' ').some(word => word.startsWith(q))) rank = 4;
+    else if (normalizedCode.includes(q)) rank = 5;
+    else if (normalizedName.includes(q)) rank = 6;
+    return { code, name, entries, rank };
+  }).filter(item => Number.isFinite(item.rank)).sort((a, b) =>
+    a.rank - b.rank || a.code.localeCompare(b.code, 'th', { numeric: true, sensitivity: 'base' })
+  );
+}
+
+function highlightSearchMatch(text, query) {
+  const source = String(text || '');
+  const needle = String(query || '').trim();
+  const index = source.toLocaleLowerCase('th-TH').indexOf(needle.toLocaleLowerCase('th-TH'));
+  if (!needle || index < 0) return escapeHtml(source);
+  return escapeHtml(source.slice(0, index)) + '<mark>' + escapeHtml(source.slice(index, index + needle.length)) + '</mark>' + escapeHtml(source.slice(index + needle.length));
+}
+
+function hideSearchSuggestions() {
+  searchSuggestionItems = [];
+  activeSearchSuggestion = -1;
+  floorplanSearchSuggestions.hidden = true;
+  floorplanSearchSuggestions.innerHTML = '';
+  floorplanSearchInput.setAttribute('aria-expanded', 'false');
+  floorplanSearchInput.removeAttribute('aria-activedescendant');
+}
+
+function setActiveSearchSuggestion(index) {
+  const options = floorplanSearchSuggestions.querySelectorAll('.floorplan-search-suggestion');
+  if (!options.length) return;
+  activeSearchSuggestion = (index + options.length) % options.length;
+  options.forEach((option, optionIndex) => {
+    const isActive = optionIndex === activeSearchSuggestion;
+    option.classList.toggle('active', isActive);
+    option.setAttribute('aria-selected', String(isActive));
+  });
+  const activeOption = options[activeSearchSuggestion];
+  floorplanSearchInput.setAttribute('aria-activedescendant', activeOption.id);
+  activeOption.scrollIntoView({ block: 'nearest' });
+}
+
+function renderSearchSuggestions(query) {
+  const raw = String(query || '').trim();
+  floorplanSearchBtn.disabled = !raw;
+  if (!raw) {
+    hideSearchSuggestions();
+    return [];
+  }
+  const results = getFloorplanSearchResults(raw);
+  searchSuggestionItems = results.slice(0, 8);
+  activeSearchSuggestion = -1;
+  floorplanSearchSuggestions.innerHTML = results.length ? searchSuggestionItems.map((item, index) => `
+    <button type="button" class="floorplan-search-suggestion" id="floorplanSearchOption${index}" role="option" data-code="${escapeHtml(item.code)}" aria-selected="false">
+      <span class="fs-code">${highlightSearchMatch(item.code, raw)}</span>
+      <span class="fs-name">${highlightSearchMatch(item.name || 'ไม่ระบุชื่อสินค้า', raw)}</span>
+      <span class="fs-count">${item.entries.length} ตำแหน่ง</span>
+    </button>
+  `).join('') + (results.length > searchSuggestionItems.length
+    ? `<div class="floorplan-search-more">อีก ${results.length - searchSuggestionItems.length} รายการ · พิมพ์เพิ่มเพื่อจำกัดผลลัพธ์</div>` : '')
+    : '<div class="floorplan-search-empty">ไม่พบชื่อหรือรหัสสินค้าที่ตรงกัน</div>';
+  floorplanSearchSuggestions.hidden = false;
+  floorplanSearchInput.setAttribute('aria-expanded', 'true');
+  return results;
+}
+
+function selectSearchSuggestion(item) {
+  if (!item) return;
+  floorplanSearchInput.value = item.code;
+  floorplanSearchBtn.disabled = false;
+  hideSearchSuggestions();
+  renderSearchMatches(item.entries, item.code);
+}
 
 function renderSearchMatches(matches, queryLabel) {
   if (!matches.length) {
@@ -3489,28 +3613,61 @@ function renderSearchMatches(matches, queryLabel) {
 
 function performFloorplanSearch() {
   const raw = floorplanSearchInput.value.trim();
-  if (!raw) { floorplanSearchMsg.hidden = true; return; }
-  if (ITEM_TO_SLOTS[raw]) {
-    renderSearchMatches(ITEM_TO_SLOTS[raw], raw);
+  if (!raw) {
+    floorplanSearchMsg.hidden = true;
+    floorplanSearchBtn.disabled = true;
+    hideSearchSuggestions();
     return;
   }
-  // fall back to a case-insensitive substring match on code or item name, in case the exact
-  // code doesn't match (typo, partial code, or the user typed a product name instead)
-  const q = raw.toLowerCase();
-  let matches = [];
-  Object.keys(ITEM_TO_SLOTS).forEach(code => {
-    const entries = ITEM_TO_SLOTS[code];
-    const codeHit = code.toLowerCase().includes(q);
-    entries.forEach(e => {
-      if (codeHit || (e.name || '').toLowerCase().includes(q)) matches.push(e);
-    });
-  });
-  renderSearchMatches(matches, raw);
+  const exactCode = Object.keys(ITEM_TO_SLOTS).find(code => normalizeSearchText(code) === normalizeSearchText(raw));
+  if (exactCode) {
+    hideSearchSuggestions();
+    renderSearchMatches(ITEM_TO_SLOTS[exactCode], exactCode);
+    return;
+  }
+  const results = renderSearchSuggestions(raw);
+  if (!results.length) {
+    hideSearchSuggestions();
+    renderSearchMatches([], raw);
+  } else if (results.length === 1) {
+    selectSearchSuggestion(results[0]);
+  } else {
+    floorplanSearchMsg.className = 'floorplan-search-msg fs-multi';
+    floorplanSearchMsg.hidden = false;
+    floorplanSearchMsg.textContent = `พบ ${results.length} รหัสสินค้า · เลือกรายการที่ต้องการจากคำแนะนำ`;
+  }
 }
 
-document.getElementById('floorplanSearchBtn').addEventListener('click', performFloorplanSearch);
+floorplanSearchBtn.addEventListener('click', performFloorplanSearch);
+floorplanSearchInput.addEventListener('input', () => {
+  floorplanSearchMsg.hidden = true;
+  renderSearchSuggestions(floorplanSearchInput.value);
+});
+floorplanSearchInput.addEventListener('focus', () => {
+  if (floorplanSearchInput.value.trim()) renderSearchSuggestions(floorplanSearchInput.value);
+});
 floorplanSearchInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') { e.preventDefault(); performFloorplanSearch(); }
+  if (e.key === 'ArrowDown' && searchSuggestionItems.length) {
+    e.preventDefault();
+    setActiveSearchSuggestion(activeSearchSuggestion + 1);
+  } else if (e.key === 'ArrowUp' && searchSuggestionItems.length) {
+    e.preventDefault();
+    setActiveSearchSuggestion(activeSearchSuggestion - 1);
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (activeSearchSuggestion >= 0) selectSearchSuggestion(searchSuggestionItems[activeSearchSuggestion]);
+    else performFloorplanSearch();
+  } else if (e.key === 'Escape') {
+    hideSearchSuggestions();
+  }
+});
+floorplanSearchSuggestions.addEventListener('click', (e) => {
+  const option = e.target.closest('.floorplan-search-suggestion');
+  if (!option) return;
+  selectSearchSuggestion(searchSuggestionItems[Number(option.id.replace('floorplanSearchOption', ''))]);
+});
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#floorplanSearch')) hideSearchSuggestions();
 });
 floorplanSearchMsg.addEventListener('click', (e) => {
   const link = e.target.closest('.fs-jump');
@@ -3542,6 +3699,9 @@ function refreshSearchDatalist() {
     const name = (ITEM_TO_SLOTS[code][0] && ITEM_TO_SLOTS[code][0].name) || '';
     return `<option value="${code}">${name.replace(/"/g, '&quot;')}</option>`;
   }).join('');
+  if (floorplanSearchInput && floorplanSearchInput.value.trim() && !floorplanSearchSuggestions.hidden) {
+    renderSearchSuggestions(floorplanSearchInput.value);
+  }
 }
 
 function addSlotItem(zoneCode, slotCode, code, name, lotNo, receiveDate, qty, unit, note) {
