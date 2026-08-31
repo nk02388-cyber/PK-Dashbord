@@ -175,6 +175,26 @@
   .speed-meter-card .sm-value { font-size: 22px; font-weight: 800; letter-spacing: -0.01em; margin-top: -6px; }
   .speed-meter-card .sm-sub { font-size: 10.5px; color: var(--text-muted); margin-top: 2px; }
 
+  /* Live Packaging pallet-age summary. Uses the same traffic-light colors as the floor-plan
+     slots so warehouse staff can read the status without learning a second visual language. */
+  .packaging-age-card {
+    width: 270px; min-height: 172px; box-sizing: border-box;
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 16px;
+    padding: 12px 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.10);
+  }
+  .packaging-age-title { font-size: 12px; font-weight: 800; color: var(--text-primary); margin-bottom: 8px; }
+  .packaging-age-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 10.5px; }
+  .packaging-age-table th,
+  .packaging-age-table td { border: 1px solid var(--border); padding: 5px 6px; line-height: 1.15; }
+  .packaging-age-table th { background: var(--status-warning); color: #14110a; font-weight: 800; text-align: center; }
+  .packaging-age-table th:nth-child(1) { width: 30px; }
+  .packaging-age-table th:nth-child(2) { width: 70px; }
+  .packaging-age-table td.num { text-align: center; }
+  .packaging-age-swatch { display: block; width: 18px; height: 13px; margin: auto; border-radius: 3px; border: 1px solid rgba(0,0,0,.18); }
+  .packaging-age-swatch.green { background: var(--status-good); }
+  .packaging-age-swatch.yellow { background: #e6b414; }
+  .packaging-age-swatch.red { background: var(--status-critical); }
+
   .panel { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
   .panel h2 { font-size: 15px; margin: 0 0 2px 0; font-weight: 700; }
   .panel .panel-sub { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; }
@@ -1106,6 +1126,9 @@
     .top-summary-row .kpi-total-fixed {
       flex: 1 1 0; width: auto; min-width: 0;
     }
+    .top-summary-row .packaging-age-card {
+      flex: 1 1 100%; width: 100%; min-width: 0; min-height: 0;
+    }
     .bar-row { grid-template-columns: 90px 1fr 70px; }
     .bar-row .name { font-size: 11px; }
     .filter-bar select { min-width: 0; flex: 1; }
@@ -1287,7 +1310,7 @@
   }
   .filter-status { font-weight: 700; }
 
-  .panel, .kpi, .speed-meter-card {
+  .panel, .kpi, .speed-meter-card, .packaging-age-card {
     border-color: var(--border); border-radius: var(--radius-card); box-shadow: var(--shadow-card);
   }
   .panel { padding: 18px; margin-bottom: 14px; }
@@ -1477,6 +1500,20 @@
            structurally impossible to show on the other two tabs), scrolls normally with the
            page, and is intentionally non-draggable to prevent accidental layout changes. -->
       <div class="kpi-side-row">
+        <section class="packaging-age-card" id="packagingAgeCard" aria-labelledby="packagingAgeTitle">
+          <div class="packaging-age-title" id="packagingAgeTitle">ปริมาณสถานะคลัง Packaging</div>
+          <table class="packaging-age-table">
+            <thead>
+              <tr>
+                <th>สถานะ</th>
+                <th>อายุ (เดือน)</th>
+                <th>จำนวน (PALLET)</th>
+                <th>% AREA</th>
+              </tr>
+            </thead>
+            <tbody id="packagingAgeTableBody"></tbody>
+          </table>
+        </section>
         <div class="speed-meter-card" id="pkSpeedMeterCard" title="PK Capacity Storage = ปริมาณที่ใช้งานไปรวม / Pallet No. รวม ทั้งสองอาคาร (คำนวณสดจากสถานะการวางพาเลทจริง)">
           <div class="sm-title">PK Capacity Storage</div>
           <div class="sm-gauge-wrap" id="pkSpeedMeterGauge">
@@ -3147,6 +3184,46 @@ function slotAgeStatus(zoneCode, slotCode) {
   return 'red';
 }
 
+// Counts occupied Pallet positions by the same age buckets used on the floor plan. % AREA is
+// based on the fixed total warehouse capacity (992), keeping it directly comparable with the
+// capacity table and gauge. Occupied slots without a receive date remain gray and are not
+// forced into an incorrect age bucket.
+function computePackagingAgeStatus() {
+  const counts = { green: 0, yellow: 0, red: 0 };
+  AREA_BUILDINGS.forEach(building => {
+    building.zones.forEach(zoneCode => {
+      (ZONE_SLOTS[zoneCode] || []).forEach(slot => {
+        if (!isOccupied(zoneCode, slot.code)) return;
+        const status = slotAgeStatus(zoneCode, slot.code);
+        if (Object.prototype.hasOwnProperty.call(counts, status)) counts[status]++;
+      });
+    });
+  });
+  const totalPallet = computeTotalCapacity().totalPallet;
+  return { counts, totalPallet };
+}
+
+function renderPackagingAgeStatus() {
+  const tbody = document.getElementById('packagingAgeTableBody');
+  if (!tbody) return;
+  const summary = computePackagingAgeStatus();
+  const rows = [
+    { key: 'green', label: '0-2 เดือน' },
+    { key: 'yellow', label: '2-5 เดือน' },
+    { key: 'red', label: '5 เดือนขึ้นไป' },
+  ];
+  tbody.innerHTML = rows.map(row => {
+    const count = summary.counts[row.key];
+    const pct = summary.totalPallet > 0 ? (count / summary.totalPallet) * 100 : 0;
+    return `<tr>
+      <td><span class="packaging-age-swatch ${row.key}" aria-label="${row.label}"></span></td>
+      <td>${row.label}</td>
+      <td class="num">${fmt0(count)}</td>
+      <td class="num">${pct.toFixed(2)}%</td>
+    </tr>`;
+  }).join('');
+}
+
 // Renders the same age-based status marks the zoom viewer shows (see slotAgeStatus() above),
 // directly on the small overview floor-plan image -- so every slot's status is visible at a
 // glance across all zones without opening each one individually. Pure CSS %, no pan/zoom math
@@ -3175,6 +3252,7 @@ function renderOverviewSlotStatus() {
   // live-synced with every occupancy change, same as this function.
   renderAreaZoneTable();
   renderSpeedMeter();
+  renderPackagingAgeStatus();
 }
 renderOverviewSlotStatus();
 
