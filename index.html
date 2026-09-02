@@ -611,6 +611,10 @@
     cursor: grab; touch-action: none; position: relative; overflow: hidden;
   }
   .floorplan-zoom-viewport.dragging { cursor: grabbing; }
+  .floorplan-zoom-stage {
+    position: absolute; left: 0; top: 0; transform-origin: 0 0;
+    background-repeat: no-repeat;
+  }
   .floorplan-zoom-slots { position: absolute; left: 0; top: 0; width: 0; height: 0; }
   /* Outline drawn around the currently-open zone's own rack, added 20 Aug 2026 per Pornchai's
      request -- the zoom viewport is a crop of the full drawing and often shows parts of
@@ -2712,7 +2716,14 @@ const zoomZoneLabel = document.getElementById('floorplanZoomZoneLabel');
 const zoomTitle = document.getElementById('floorplanZoomTitle');
 const zoomCountEl = document.getElementById('floorplanZoomCount');
 const zoomSourceUrl = document.getElementById('floorplanZoomSource').src;
-zoomViewport.style.backgroundImage = `url(${zoomSourceUrl})`;
+// Rotate the drawing and hit targets together, leaving the dialog controls upright.
+const zoomStage = document.createElement('div');
+zoomStage.id = 'floorplanZoomStage';
+zoomStage.className = 'floorplan-zoom-stage';
+zoomStage.style.backgroundImage = `url(${zoomSourceUrl})`;
+zoomViewport.style.backgroundImage = 'none';
+zoomStage.append(zoomZoneBox, zoomZoneLabel, zoomSlotsLayer);
+zoomViewport.append(zoomStage);
 
 let zoomScale = 3.2;
 const ZOOM_MIN_DEFAULT = 1.2, ZOOM_MAX = 9;
@@ -3320,14 +3331,23 @@ renderOverviewSlotStatus();
 let zoomZoneBoxBounds = null;
 const ZONE_BOX_PAD_L = 0.65 / 2 + 0.25, ZONE_BOX_PAD_T = 0.95 / 2 + 0.35;
 
+function zoomPortraitLayout(width, height, panX = 0, panY = 0) {
+  return { width: height, height: width, panX: panY, panY: -panX,
+    transform: `translate(${width}px, 0px) rotate(90deg)` };
+}
+
 function updateZoomView() {
-  const rect = zoomViewport.getBoundingClientRect();
+  const viewportRect = zoomViewport.getBoundingClientRect();
+  const rect = zoomPortraitLayout(viewportRect.width, viewportRect.height, zoomPanX, zoomPanY);
+  zoomStage.style.width = rect.width + 'px';
+  zoomStage.style.height = rect.height + 'px';
+  zoomStage.style.transform = rect.transform;
   const bgW = FLOORPLAN_ZOOM_W * zoomScale;
   const bgH = FLOORPLAN_ZOOM_H * zoomScale;
-  const posX = rect.width / 2 - (zoomCenterPct.leftPct / 100 * bgW) + zoomPanX;
-  const posY = rect.height / 2 - (zoomCenterPct.topPct / 100 * bgH) + zoomPanY;
-  zoomViewport.style.backgroundSize = `${bgW}px ${bgH}px`;
-  zoomViewport.style.backgroundPosition = `${posX}px ${posY}px`;
+  const posX = rect.width / 2 - (zoomCenterPct.leftPct / 100 * bgW) + rect.panX;
+  const posY = rect.height / 2 - (zoomCenterPct.topPct / 100 * bgH) + rect.panY;
+  zoomStage.style.backgroundSize = `${bgW}px ${bgH}px`;
+  zoomStage.style.backgroundPosition = `${posX}px ${posY}px`;
 
   const cellW = (0.65 / 100) * bgW;
   const cellH = (0.95 / 100) * bgH;
@@ -3437,14 +3457,15 @@ function computeZoomFit(zoneCode) {
   const PAD = 0.78; // leave ~22% breathing room so edge slots aren't flush against the viewport border
   const spanLpct = Math.max(maxL - minL, 1);
   const spanTpct = Math.max(maxT - minT, 1);
-  const scaleX = (rect.width * PAD * 100) / (spanLpct * FLOORPLAN_ZOOM_W);
-  const scaleY = (rect.height * PAD * 100) / (spanTpct * FLOORPLAN_ZOOM_H);
+  // After the clockwise turn, source X runs vertically and source Y horizontally.
+  const scaleX = (rect.height * PAD * 100) / (spanLpct * FLOORPLAN_ZOOM_W);
+  const scaleY = (rect.width * PAD * 100) / (spanTpct * FLOORPLAN_ZOOM_H);
   // never zoom in further than the old fixed default (keeps small/single-row zones from
   // suddenly looking oddly magnified compared to before) but zoom out as needed to fit --
   // down to an absolute floor well below the normal interactive ZOOM_MIN_DEFAULT, since a
   // zone that spans two detached blocks (e.g. T) may genuinely need to zoom out further than
   // any single-block zone ever would.
-  const FIT_ABSOLUTE_MIN = 0.3;
+  const FIT_ABSOLUTE_MIN = 0.01; // Tall rotated zones must also fit short/mobile viewports.
   let scale = Math.min(scaleX, scaleY, 3.2);
   scale = Math.max(FIT_ABSOLUTE_MIN, Math.min(ZOOM_MAX, scale));
   return { center, scale };
@@ -4528,6 +4549,7 @@ document.addEventListener('keydown', (e) => {
   if (!zoomModal.hidden) closeZoomModal();
 });
 window.addEventListener('resize', () => { if (!zoomModal.hidden) updateZoomView(); });
+new ResizeObserver(() => { if (!zoomModal.hidden) updateZoomView(); }).observe(zoomViewport);
 
 zoomViewport.addEventListener('wheel', (e) => {
   e.preventDefault();
