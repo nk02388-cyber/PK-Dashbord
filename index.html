@@ -560,6 +560,17 @@
   .floor-pin:hover { filter: brightness(0.92); z-index: 5; }
   .floor-pin.selected { border-color: var(--text-primary); border-width: 2.5px; z-index: 6; }
   #floorplanFallbackList:empty { display: none; }
+  .floor-zone-selector { margin: 14px 0 18px; }
+  .floor-zone-selector-title { font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--text-primary); }
+  .floor-zone-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+  .floor-zone-fallback {
+    min-width: 48px; min-height: 40px; padding: 7px 12px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary);
+    font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
+  }
+  .floor-zone-fallback:hover { border-color: var(--series-1); background: var(--series-1-wash); }
+  .floor-zone-fallback.selected { background: var(--series-1); color: #fff; border-color: var(--series-1); }
+  .floor-zone-fallback:focus-visible { outline: 3px solid var(--series-1); outline-offset: 2px; }
   #floorZoneDetail { min-height: 40px; }
   #floorZoneDetail .fz-detail-empty { color: var(--text-muted); font-size: 13px; padding: 10px 2px; }
   #floorZoneDetail .fz-detail-head {
@@ -2138,7 +2149,7 @@
           <button type="button" class="fz-zoom-ctrl-btn" id="floorplanOverviewZoomReset" title="รีเซ็ต">รีเซ็ต</button>
         </div>
       </div>
-      <div id="floorplanFallbackList"><div class="floorplan-legend" style="margin:-4px 0 16px;"><span class="floor-zone-fallback" data-zone="T-1" data-wh="201" style="cursor:pointer; border:1px solid #7a7a7a; background:rgba(140,140,140,0.28); border-radius:6px; padding:3px 8px; font-weight:700;">T-1</span><span class="floor-zone-fallback" data-zone="V-1" data-wh="201" style="cursor:pointer; border:1px solid #7a7a7a; background:rgba(140,140,140,0.28); border-radius:6px; padding:3px 8px; font-weight:700;">V-1</span><span class="floor-zone-fallback" data-zone="W-1" data-wh="201" style="cursor:pointer; border:1px solid #7a7a7a; background:rgba(140,140,140,0.28); border-radius:6px; padding:3px 8px; font-weight:700;">W-1</span><span class="floor-zone-fallback" data-zone="X-1" data-wh="201" style="cursor:pointer; border:1px solid #7a7a7a; background:rgba(140,140,140,0.28); border-radius:6px; padding:3px 8px; font-weight:700;">X-1</span><span class="floor-zone-fallback" data-zone="Y-1" data-wh="201" style="cursor:pointer; border:1px solid #7a7a7a; background:rgba(140,140,140,0.28); border-radius:6px; padding:3px 8px; font-weight:700;">Y-1</span><span class="floor-zone-fallback" data-zone="Z-1" data-wh="401" style="cursor:pointer; border:1px solid #7a7a7a; background:rgba(140,140,140,0.28); border-radius:6px; padding:3px 8px; font-weight:700;">Z-1</span></div></div>
+      <div id="floorplanFallbackList"></div>
 
       <div id="floorZoneDetail"><div class="fz-detail-empty">เลือกโซนบนผังเพื่อดูและจัดการตำแหน่งพาเลต</div></div>
     </div>
@@ -2466,13 +2477,16 @@ floorplanPins.innerHTML = pinnedZones.map(([zoneCode, whCode]) => {
 // the markup but is left empty since there's nothing left for it to draw.
 floorplanLeaderLines.innerHTML = '';
 
-if (unpinnedZones.length) {
-  floorplanFallbackList.innerHTML = `<div class="floorplan-legend" style="margin:-4px 0 16px;">${unpinnedZones.map(([zoneCode, whCode]) => {
-    return `<span class="floor-zone-fallback" data-zone="${zoneCode}" data-wh="${whCode}" style="cursor:pointer; border:1px solid ${ZONE_FRAME_COLOR.border}; background:${ZONE_FRAME_COLOR.bg}; border-radius:6px; padding:3px 8px; font-weight:700;">${zoneCode}</span>`;
-  }).join('')}</div>`;
-} else {
-  floorplanFallbackList.innerHTML = '';
+function renderZoneSelector(entries) {
+  const sorted = [...entries].sort(([a], [b]) => a.localeCompare(b, 'en', { numeric: true }));
+  return `<section class="floor-zone-selector" aria-label="เลือกโซน">
+    <div class="floor-zone-selector-title">เลือกโซน · ${sorted.length} โซน</div>
+    <div class="floor-zone-buttons">${sorted.map(([zoneCode, whCode]) =>
+      `<button type="button" class="floor-zone-fallback" data-zone="${escapeHtml(zoneCode)}" data-wh="${escapeHtml(whCode || '')}" aria-label="เลือกโซน ${escapeHtml(zoneCode)}" aria-pressed="false">${escapeHtml(zoneCode)}</button>`
+    ).join('')}</div>
+  </section>`;
 }
+floorplanFallbackList.innerHTML = renderZoneSelector(zoneEntries);
 
 // 20 Aug 2026: Pornchai asked to remove the old Excel-imported item list from the floor-plan
 // zone-detail panel specifically (this table), while leaving the KPI tiles/charts/tables on the
@@ -2494,12 +2508,13 @@ function renderFloorZoneDetail(zoneCode, whCode) {
     ? `คลัง ${whCode} · ${wh ? wh.short || wh.name : ''}`
     : 'ยังไม่ได้กำหนดคลังสำหรับโซนนี้';
   if (FLOORPLAN_ITEM_LIST_HIDDEN) {
+    const hasPlan = !!ZONE_PINS[zoneCode] || !!(ZONE_SLOTS[zoneCode] || []).length;
     floorZoneDetail.innerHTML = `
       <div class="fz-detail-head">
         <div><b style="font-size:14px;">โซน ${zoneCode}</b><span style="display:block;margin-top:2px;color:#fff;opacity:0.85;font-size:12px;">${whLine}</span></div>
       </div>
-      <div class="fz-detail-empty">จัดการสินค้าในโซนนี้ผ่านตำแหน่งพาเลตบนผัง</div>
-      <button type="button" class="fz-zoom-btn" data-zone="${zoneCode}" data-wh="${whCode}">เปิดผังพาเลต</button>
+      <div class="fz-detail-empty">${hasPlan ? 'จัดการสินค้าในโซนนี้ผ่านตำแหน่งพาเลตบนผัง' : 'โซนนี้ยังไม่ได้ระบุตำแหน่งบนผัง'}</div>
+      ${hasPlan ? `<button type="button" class="fz-zoom-btn" data-zone="${zoneCode}" data-wh="${whCode}">เปิดผังพาเลต</button>` : ''}
     `;
     return;
   }
@@ -2570,10 +2585,15 @@ floorZoneDetail.addEventListener('change', (e) => {
 // by the time a user can click here the whole script (including it) has already finished
 // executing top-to-bottom, so this is safe regardless of source order.
 function selectFloorPin(el) {
-  document.querySelectorAll('.floor-pin.selected, .floor-zone-fallback.selected').forEach(x => x.classList.remove('selected'));
-  el.classList.add('selected');
+  document.querySelectorAll('.floor-pin, .floor-zone-fallback').forEach(x => {
+    const selected = x.dataset.zone === el.dataset.zone;
+    x.classList.toggle('selected', selected);
+    if (x.matches('button')) x.setAttribute('aria-pressed', String(selected));
+  });
   renderFloorZoneDetail(el.dataset.zone, el.dataset.wh);
-  openZoomModal(el.dataset.zone);
+  if (ZONE_PINS[el.dataset.zone] || (ZONE_SLOTS[el.dataset.zone] || []).length) {
+    openZoomModal(el.dataset.zone);
+  }
 }
 // .floor-zone-fallback items live in #floorplanFallbackList, outside the pannable/zoomable
 // #floorplanImageWrap (see "Overview map pan/zoom" below), so a plain click listener is fine --
