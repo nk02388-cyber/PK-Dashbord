@@ -29,5 +29,5 @@ for (const width of [320, 768, 960]) {
   }
 }
 assert.match(html, /new ResizeObserver\(ovApply\)\.observe\(floorplanWrap\)/);
-assert.match(html, /rotate\(90deg\)/);
+assert.match(html, /rotate\(\$\{mapRotation\}deg\)/);
 console.log(`PASS: ${scripts.length} inline scripts parse; portrait crop, orientation, resize and pan/zoom geometry`);

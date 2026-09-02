@@ -495,6 +495,7 @@
     box-shadow: 0 1px 6px rgba(0,0,0,0.25);
   }
   .floorplan-ov-controls .fz-zoom-ctrl-btn#floorplanOverviewZoomReset { width: auto; font-size: 11px; padding: 0 10px; }
+  .fz-zoom-ctrl-btn.map-rotate-btn { width: auto; padding: 0 10px; font-size: 12px; white-space: nowrap; }
   /* Leader-line arrows were removed 20 Aug 2026 per Pornchai's follow-up request ("ตัดลบลูกศรออก
      และให้แสดงชื่อ Zone ขยายเต็มกรอบพื้นที่ของตนเอง") -- zone labels now render directly on top
      of their own rack footprint (sized to fill it, see .floor-pin), so there's nothing left to
@@ -2152,6 +2153,7 @@
         <div class="floorplan-ov-controls">
           <button type="button" class="fz-zoom-ctrl-btn" id="floorplanOverviewZoomOut" title="ซูมออก">−</button>
           <button type="button" class="fz-zoom-ctrl-btn" id="floorplanOverviewZoomIn" title="ซูมเข้า">+</button>
+          <button type="button" class="fz-zoom-ctrl-btn map-rotate-btn" id="floorplanOverviewRotate" title="หมุนผังตามเข็มนาฬิกา 90°" aria-label="หมุนผังหลัก 90 องศา">↻ หมุนผัง</button>
           <button type="button" class="fz-zoom-ctrl-btn" id="floorplanOverviewZoomReset" title="รีเซ็ต">รีเซ็ต</button>
         </div>
       </div>
@@ -2170,6 +2172,7 @@
         <div class="floorplan-zoom-controls">
           <button type="button" class="fz-zoom-ctrl-btn" id="floorplanZoomOut" title="ซูมออก">−</button>
           <button type="button" class="fz-zoom-ctrl-btn" id="floorplanZoomIn" title="ซูมเข้า">+</button>
+          <button type="button" class="fz-zoom-ctrl-btn map-rotate-btn" id="floorplanZoomRotate" title="หมุนผังตามเข็มนาฬิกา 90°" aria-label="หมุนผังพาเลต 90 องศา">↻ หมุนผัง</button>
           <button type="button" class="fz-zoom-ctrl-btn" id="floorplanZoomReset" title="รีเซ็ต" style="font-size:11px;">รีเซ็ต</button>
           <button type="button" class="fz-zoom-close" id="floorplanZoomClose" title="ปิด" aria-label="ปิดหน้าต่างผังโซน">✕</button>
         </div>
@@ -2636,22 +2639,28 @@ document.getElementById('tabBadgeFloorplan').textContent = zoneEntries.length + 
 const floorplanWrap = document.getElementById('floorplanImageWrap');
 const floorplanStage = document.getElementById('floorplanStage');
 let ovScale = 1, ovPanX = 0, ovPanY = 0;
+// Shared view-only orientation: both maps always rotate together; source data stays intact.
+let mapRotation = 90;
 const OV_MIN = 1, OV_MAX = 6;
 
 // Display the overview clockwise in portrait, matching the supplied plan. Crop only the
 // blank page margins (including a small inset outside the drawing border). All original
 // image, zone and pallet coordinates stay unchanged, including the separate zone viewer.
-function overviewPortraitLayout(viewWidth, imageAspect = 1700 / 2200) {
+function overviewPortraitLayout(viewWidth, imageAspect = 1700 / 2200, rotation = 90) {
   const crop = { left: 0.055, top: 0.215, right: 0.945, bottom: 0.785 };
   const cropWidth = crop.right - crop.left;
   const cropHeight = crop.bottom - crop.top;
-  const stageWidth = viewWidth / (imageAspect * cropHeight);
+  const turn = ((rotation / 90) % 4 + 4) % 4;
+  const cos = [1, 0, -1, 0][turn], sin = [0, 1, 0, -1][turn];
+  const stageWidth = viewWidth / (turn % 2 ? imageAspect * cropHeight : cropWidth);
   const stageHeight = stageWidth * imageAspect;
+  const corners = [[crop.left, crop.top], [crop.right, crop.top], [crop.left, crop.bottom], [crop.right, crop.bottom]]
+    .map(([x, y]) => ({ x: cos * x * stageWidth - sin * y * stageHeight, y: sin * x * stageWidth + cos * y * stageHeight }));
   return {
     stageWidth,
-    aspectRatio: imageAspect * cropHeight / cropWidth,
-    offsetX: crop.bottom * stageHeight,
-    offsetY: -crop.left * stageWidth,
+    aspectRatio: turn % 2 ? imageAspect * cropHeight / cropWidth : cropWidth / (imageAspect * cropHeight),
+    offsetX: -Math.min(...corners.map(p => p.x)),
+    offsetY: -Math.min(...corners.map(p => p.y)),
   };
 }
 
@@ -2671,11 +2680,11 @@ function ovApply() {
   if (!width) return; // The tab may still be hidden during initial loading.
   const img = floorplanStage.querySelector('.floorplan-image');
   const imageAspect = img.naturalWidth ? img.naturalHeight / img.naturalWidth : 1700 / 2200;
-  const layout = overviewPortraitLayout(width, imageAspect);
+  const layout = overviewPortraitLayout(width, imageAspect, mapRotation);
   floorplanWrap.style.aspectRatio = String(layout.aspectRatio);
   floorplanStage.style.width = layout.stageWidth + 'px';
   ovClamp();
-  floorplanStage.style.transform = `translate(${ovPanX}px, ${ovPanY}px) scale(${ovScale}) translate(${layout.offsetX}px, ${layout.offsetY}px) rotate(90deg)`;
+  floorplanStage.style.transform = `translate(${ovPanX}px, ${ovPanY}px) scale(${ovScale}) translate(${layout.offsetX}px, ${layout.offsetY}px) rotate(${mapRotation}deg)`;
 }
 // Zooms in/out around a fixed screen point (the cursor for wheel-zoom, the wrap's own center
 // for the +/- buttons) -- keeps whatever was under that point on-screen before the zoom still
@@ -2749,6 +2758,7 @@ document.getElementById('floorplanOverviewZoomOut').addEventListener('click', ()
   ovZoomAt(rect.left + rect.width / 2, rect.top + rect.height / 2, 1 / 1.4);
 });
 document.getElementById('floorplanOverviewZoomReset').addEventListener('click', ovReset);
+document.getElementById('floorplanOverviewRotate').addEventListener('click', rotateFloorplan);
 // A window resize can change floorplanWrap's pixel size (e.g. rotating a tablet, or a
 // sidebar collapsing), which would otherwise leave ovPanX/Y clamped against a stale rect --
 // re-apply so an already-panned/zoomed view stays clamped correctly against the new size.
@@ -3390,14 +3400,18 @@ renderOverviewSlotStatus();
 let zoomZoneBoxBounds = null;
 const ZONE_BOX_PAD_L = 0.65 / 2 + 0.25, ZONE_BOX_PAD_T = 0.95 / 2 + 0.35;
 
-function zoomPortraitLayout(width, height, panX = 0, panY = 0) {
-  return { width: height, height: width, panX: panY, panY: -panX,
-    transform: `translate(${width}px, 0px) rotate(90deg)` };
+function zoomPortraitLayout(width, height, panX = 0, panY = 0, rotation = 90) {
+  const turn = ((rotation / 90) % 4 + 4) % 4;
+  const cos = [1, 0, -1, 0][turn], sin = [0, 1, 0, -1][turn];
+  const offsets = [[0, 0], [width, 0], [width, height], [0, height]][turn];
+  return { width: turn % 2 ? height : width, height: turn % 2 ? width : height,
+    panX: cos * panX + sin * panY, panY: -sin * panX + cos * panY,
+    transform: `translate(${offsets[0]}px, ${offsets[1]}px) rotate(${turn * 90}deg)` };
 }
 
 function updateZoomView() {
   const viewportRect = zoomViewport.getBoundingClientRect();
-  const rect = zoomPortraitLayout(viewportRect.width, viewportRect.height, zoomPanX, zoomPanY);
+  const rect = zoomPortraitLayout(viewportRect.width, viewportRect.height, zoomPanX, zoomPanY, mapRotation);
   zoomStage.style.width = rect.width + 'px';
   zoomStage.style.height = rect.height + 'px';
   zoomStage.style.transform = rect.transform;
@@ -3500,7 +3514,7 @@ function renderZoomSlots(zoneCode) {
 // slot the zone has -- including any second/detached block -- is visible without panning on
 // open. Falls back to the ZONE_PINS label position at the old fixed 3.2x for zones with no
 // slot data.
-function computeZoomFit(zoneCode) {
+function computeZoomFit(zoneCode, rotation = 90) {
   const slots = ZONE_SLOTS[zoneCode] || [];
   const pin = ZONE_PINS[zoneCode];
   if (!slots.length) {
@@ -3516,9 +3530,9 @@ function computeZoomFit(zoneCode) {
   const PAD = 0.78; // leave ~22% breathing room so edge slots aren't flush against the viewport border
   const spanLpct = Math.max(maxL - minL, 1);
   const spanTpct = Math.max(maxT - minT, 1);
-  // After the clockwise turn, source X runs vertically and source Y horizontally.
-  const scaleX = (rect.height * PAD * 100) / (spanLpct * FLOORPLAN_ZOOM_W);
-  const scaleY = (rect.width * PAD * 100) / (spanTpct * FLOORPLAN_ZOOM_H);
+  const sideways = Math.abs(rotation % 180) === 90;
+  const scaleX = ((sideways ? rect.height : rect.width) * PAD * 100) / (spanLpct * FLOORPLAN_ZOOM_W);
+  const scaleY = ((sideways ? rect.width : rect.height) * PAD * 100) / (spanTpct * FLOORPLAN_ZOOM_H);
   // never zoom in further than the old fixed default (keeps small/single-row zones from
   // suddenly looking oddly magnified compared to before) but zoom out as needed to fit --
   // down to an absolute floor well below the normal interactive ZOOM_MIN_DEFAULT, since a
@@ -3539,7 +3553,7 @@ function openZoomModal(zoneCode) {
   editingSlot = null;
   if (slotEditPanel) slotEditPanel.hidden = true;
   renderZoomSlots(zoneCode);
-  const fit = computeZoomFit(zoneCode);
+  const fit = computeZoomFit(zoneCode, mapRotation);
   zoomCenterPct = fit.center;
   zoomScale = fit.scale;
   // let the manual zoom-out button/wheel reach the fit scale for this zone even if that's
@@ -3569,7 +3583,7 @@ function jumpToSlot(zoneCode, slotCode) {
   renderZoomSlots(zoneCode);
   const slot = (ZONE_SLOTS[zoneCode] || []).find(s => s.code === slotCode);
   const focusScale = Math.min(ZOOM_MAX, 4.2);
-  const focus = slot ? { center: { leftPct: slot.leftPct, topPct: slot.topPct }, scale: focusScale } : computeZoomFit(zoneCode);
+  const focus = slot ? { center: { leftPct: slot.leftPct, topPct: slot.topPct }, scale: focusScale } : computeZoomFit(zoneCode, mapRotation);
   zoomCenterPct = focus.center;
   zoomScale = focus.scale;
   ZOOM_MIN = Math.min(ZOOM_MIN_DEFAULT, focus.scale);
@@ -4624,13 +4638,20 @@ document.getElementById('floorplanZoomOut').addEventListener('click', () => {
   zoomScale = Math.max(ZOOM_MIN, zoomScale / 1.35);
   updateZoomView();
 });
-document.getElementById('floorplanZoomReset').addEventListener('click', () => {
-  const fit = computeZoomFit(currentZoomZone);
+function resetZoomFit() {
+  const fit = computeZoomFit(currentZoomZone, mapRotation);
   zoomCenterPct = fit.center; zoomScale = fit.scale;
   ZOOM_MIN = Math.min(ZOOM_MIN_DEFAULT, fit.scale);
   zoomPanX = 0; zoomPanY = 0;
   updateZoomView();
-});
+}
+function rotateFloorplan() {
+  mapRotation = (mapRotation + 90) % 360;
+  ovReset();
+  if (!zoomModal.hidden && currentZoomZone) resetZoomFit();
+}
+document.getElementById('floorplanZoomReset').addEventListener('click', resetZoomFit);
+document.getElementById('floorplanZoomRotate').addEventListener('click', rotateFloorplan);
 document.getElementById('floorplanZoomClose').addEventListener('click', closeZoomModal);
 zoomModal.addEventListener('click', (e) => { if (e.target === zoomModal) closeZoomModal(); });
 document.addEventListener('keydown', (e) => {
