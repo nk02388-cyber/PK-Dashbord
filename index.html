@@ -2140,7 +2140,7 @@
       </div>
 
       <div id="floorplanFallbackList"></div>
-      <div id="floorZoneDetail"><div class="fz-detail-empty">เลือกโซนเพื่อดูรายละเอียด</div></div>
+      <div id="floorZoneDetail" hidden></div>
 
       <div class="floorplan-image-wrap" id="floorplanImageWrap">
         <div class="floorplan-stage" id="floorplanStage">
@@ -2508,6 +2508,8 @@ function renderZoneSelector(entries, buildings) {
 const FLOORPLAN_ITEM_LIST_HIDDEN = true;
 
 function renderFloorZoneDetail(zoneCode, whCode) {
+  // Zone buttons open the map directly; the redundant summary panel is no longer shown.
+  if (floorZoneDetail.hidden) return;
   const wh = WH_BY_CODE[whCode];
   // 21 Aug 2026: zone "C" (unlike "C-1") has real Pallet-slot geometry (ZONE_PINS/ZONE_SLOTS)
   // but was never assigned a warehouse code in the source "ZONE Area" sheet -- confirmed by
