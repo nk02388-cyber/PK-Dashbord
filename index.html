@@ -558,7 +558,6 @@
   .floor-zone-group h3 span { margin-left: 8px; font-size: 11px; font-weight: 400; color: var(--text-secondary); }
   .floor-zone-group[data-building="new"] { border-top: 3px solid var(--status-good); }
   .floor-zone-group[data-building="old"] { border-top: 3px solid var(--series-1); }
-  .floor-zone-group[data-building="unassigned"] { grid-column: 1 / -1; }
   @media (max-width: 700px) { .floor-zone-groups { grid-template-columns: 1fr; } }
   .floor-zone-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
   .floor-zone-fallback {
@@ -2483,15 +2482,13 @@ floorplanLeaderLines.innerHTML = '';
 
 function renderZoneSelector(entries, buildings) {
   const sorted = [...entries].sort(([a], [b]) => a.localeCompare(b, 'en', { numeric: true }));
-  const assigned = new Set(buildings.flatMap(building => building.zones));
   const groups = buildings.map(building => ({
     key: building.key, label: building.key === 'new' ? 'คลังใหม่' : 'คลังเก่า',
     entries: sorted.filter(([zone]) => building.zones.includes(zone)),
   }));
-  const unassigned = sorted.filter(([zone]) => !assigned.has(zone));
-  if (unassigned.length) groups.push({ key: 'unassigned', label: 'ยังไม่ระบุคลัง', entries: unassigned });
+  const visibleCount = groups.reduce((total, group) => total + group.entries.length, 0);
   return `<section class="floor-zone-selector" aria-label="เลือกโซน">
-    <div class="floor-zone-selector-title">เลือกโซน · ${sorted.length} โซน</div>
+    <div class="floor-zone-selector-title">เลือกโซน · ${visibleCount} โซน</div>
     <div class="floor-zone-groups">${groups.filter(group => group.entries.length).map(group => `
       <section class="floor-zone-group" data-building="${group.key}" aria-label="${group.label}">
       <h3>${group.label}<span>${group.entries.length} โซน</span></h3>
