@@ -61,17 +61,21 @@ async function testPersist(){
     async maybeSingle(){
       if(mode==='error')return {error:new Error('Network failure')};
       if(update){writes++;return {data:mode==='race'?null:{zone:'K',slot_code:'K-04',items:payload.items}}}
-      return {data:{items:mode==='stale'?[{...item,qty:1}]:stored,updated_at:'VERSION-1'}};
+      const remoteItems = mode==='stale' ? [{...item,qty:1}] : mode==='reordered'
+        ? [Object.fromEntries(Object.entries(item).reverse()),stored[1]] : stored;
+      return {data:{items:remoteItems,updated_at:'VERSION-1'}};
     }
   }}};
   const env=vm.createContext({supabaseClient:client,slotItemsFor:()=>stored,applyRemoteSlotRow:row=>applied=row});
-  vm.runInContext(extract('persistMovementEdit'),env);
+  vm.runInContext(extract('movementMatchesSnapshot')+'\n'+extract('persistMovementEdit'),env);
   await env.persistMovementEdit(editState,candidate);
   assert.equal(writes,1);
   assert.equal(applied.items[0].remainingQty,4270);
   assert.equal(applied.items[1].code,'OTHER');
   assert.ok(filters.some(([key,value])=>key==='updated_at'&&value==='VERSION-1'));
   assert.equal(item.remainingQty,4170,'Local data is not mutated before confirmed save');
+  mode='reordered'; await env.persistMovementEdit(editState,candidate);
+  assert.equal(writes,2,'JSONB object key order must not prevent a valid save');
   mode='error'; await assert.rejects(env.persistMovementEdit(editState,candidate),/Network failure/);
   mode='stale'; await assert.rejects(env.persistMovementEdit(editState,candidate),/เปลี่ยนแล้ว/);
   mode='race'; await assert.rejects(env.persistMovementEdit(editState,candidate),/พร้อมกัน/);

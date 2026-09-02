@@ -23,6 +23,33 @@ http.createServer((req, res) => {
   html = html.replace(/const (SUPABASE_URL|STOCK_SUPABASE_URL) = '[^']*';/g, "const $1 = ''; ");
   html = html.replace('const SLOT_ITEMS = (STOCK && STOCK.slot_items) || {};',
     `const SLOT_ITEMS = ${JSON.stringify(fixture)};`);
+  html = html.replace('function captureMovementDraft(e) {', `
+    for (const conflict of [false, true]) {
+      const button = document.createElement('button');
+      button.id = conflict ? 'fixture-conflict' : 'fixture-refresh';
+      button.textContent = conflict ? 'Test remote conflict' : 'Test remote refresh';
+      button.style.cssText = 'position:fixed;z-index:999999;bottom:0;left:' + (conflict ? 180 : 0) + 'px';
+      button.onclick = () => {
+        if (conflict) SLOT_ITEMS.F['F-18'][0].qty = 25;
+        refreshAfterRemoteChange('F', 'F-18');
+      };
+      document.body.appendChild(button);
+    }
+    const failureButton = document.createElement('button');
+    failureButton.id = 'fixture-failure';
+    failureButton.textContent = 'Test save failure';
+    failureButton.style.cssText = 'position:fixed;z-index:999999;bottom:0;left:360px';
+    failureButton.onclick = () => {
+      supabaseClient = {from(){return {
+        select(){return this},eq(){return this},
+        async maybeSingle(){
+          refreshAfterRemoteChange('F', 'F-18');
+          return {error:new Error('Test network failure — retry allowed')};
+        }
+      }}};
+    };
+    document.body.appendChild(failureButton);
+    function captureMovementDraft(e) {`);
   res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
   res.end(html);
 }).listen(8767, '127.0.0.1', () => console.log('Isolated history preview: http://localhost:8767/'));

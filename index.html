@@ -2599,7 +2599,7 @@ function renderFloorZoneDetail(zoneCode, whCode) {
         }).join('')}</tbody>
       </table>
     </div>
-    ${more > 0 ? `<div class="row-count">แสดง ${SHOW} จาก ${fmt0(rows.length)} รายการ · เรียงตามมูลค่า</div>` : ''}
+    ${more > 0 ? `<div class="row-count">แสดง ${SHOW} จาก ${fmt0(items.length)} รายการ · เรียงตามมูลค่า</div>` : ''}
   `;
 }
 // Clicking/changing a "วันรับ Receive date" cell updates RECEIVE_DATES (see seedReceiveDates()/
@@ -3649,7 +3649,7 @@ let activeSearchSuggestion = -1;
 // box's suggestions always match what's actually recorded.
 refreshSearchDatalist();
 
-function escapeHtml(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
+function escapeHtml(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
 
 // Display only: keep stored ISO dates unchanged for inputs, syncing and age calculations.
 function formatMovementDate(value) {
@@ -3880,7 +3880,7 @@ function rebuildItemToSlots() {
 function refreshSearchDatalist() {
   floorplanSearchDatalist.innerHTML = Object.keys(ITEM_TO_SLOTS).sort().map(code => {
     const name = (ITEM_TO_SLOTS[code][0] && ITEM_TO_SLOTS[code][0].name) || '';
-    return `<option value="${code}">${name.replace(/"/g, '&quot;')}</option>`;
+    return `<option value="${escapeHtml(code)}">${escapeHtml(name)}</option>`;
   }).join('');
   if (floorplanSearchInput && floorplanSearchInput.value.trim() && !floorplanSearchSuggestions.hidden) {
     renderSearchSuggestions(floorplanSearchInput.value);
@@ -4070,7 +4070,15 @@ function renderSlotBalance(items) {
 }
 
 function movementNumber(value) {
-  return value == null || value === '' || !Number.isFinite(Number(value)) ? null : Number(value);
+  if (typeof value !== 'number' && typeof value !== 'string') return null;
+  return String(value).trim() === '' || !Number.isFinite(Number(value)) ? null : Number(value);
+}
+
+function movementMatchesSnapshot(item, snapshot) {
+  // JSONB may reorder object keys; array order and field values remain significant.
+  const canonical = value => Array.isArray(value) ? value.map(canonical)
+    : value && typeof value === 'object' ? Object.fromEntries(Object.keys(value).sort().map(key => [key, canonical(value[key])])) : value;
+  return item != null && JSON.stringify(canonical(item)) === JSON.stringify(canonical(JSON.parse(snapshot)));
 }
 
 function movementDateKey(value) {
@@ -4162,27 +4170,31 @@ function renderStockMovement(item, itemIndex) {
 
 function renderMovementEditForm(item, index) {
   if (!movementEdit || movementEdit.itemIndex !== index || !editingSlot || movementEdit.zone !== editingSlot.zone || movementEdit.slot !== editingSlot.slot) return '';
-  const row = getStockMovement(item).rows.find(r => r.type === movementEdit.type && r.index === movementEdit.index);
+  const original = JSON.parse(movementEdit.snapshot);
+  const row = getStockMovement(original).rows.find(r => r.type === movementEdit.type && r.index === movementEdit.index);
   if (!row) return '';
   const date = formatMovementDate(row.date);
   const iso = date === '—' ? '' : date.slice(6) + '-' + date.slice(3,5) + '-' + date.slice(0,2);
+  const draft = movementEdit.draft ||= { date: iso, qty: row.qty ?? '', lotNo: row.lotNo, by: row.by, reconcile: false };
+  const conflict = !movementMatchesSnapshot(item, movementEdit.snapshot);
+  const error = conflict ? 'รายการถูกแก้ไขแล้ว กรุณายกเลิกและเปิดรายการใหม่' : movementEdit.error || '';
   return `<div class="sm-form"><div class="stock-movement-title">แก้ไข${row.label}</div>
     <div class="sm-fields">
-      <label>วันที่ *<input type="date" class="sm-input-date" value="${iso}" required></label>
-      <label>Lot / PK No.<input class="sm-input-lot" value="${escapeHtml(row.lotNo)}"></label>
-      <label>จำนวน (${escapeHtml(item.unit || 'ไม่ระบุหน่วย')}) *<input type="number" class="sm-input-qty" min="0" step="any" value="${row.qty ?? ''}" required></label>
-      <label>ผู้ทำรายการ<input class="sm-input-by" value="${escapeHtml(row.by)}"></label>
+      <label>วันที่ *<input type="date" class="sm-input-date" value="${escapeHtml(draft.date)}" required></label>
+      <label>Lot / PK No.<input class="sm-input-lot" value="${escapeHtml(draft.lotNo)}"></label>
+      <label>จำนวน (${escapeHtml(original.unit || 'ไม่ระบุหน่วย')}) *<input type="number" class="sm-input-qty" min="0" step="any" value="${escapeHtml(draft.qty)}" required></label>
+      <label>ผู้ทำรายการ<input class="sm-input-by" value="${escapeHtml(draft.by)}"></label>
     </div>
     <div class="sm-note">บันทึกแล้วจะคำนวณยอดคงเหลือใหม่จากยอดรับ − ยอดเบิก + ยอดรับคืน</div>
-    ${getStockMovement(item).mismatch ? '<label class="sm-warning"><input type="checkbox" class="sm-reconcile"> ยืนยันใช้ยอดตามประวัติแทนยอดคงเหลือเดิมที่ไม่ตรงกัน</label>' : ''}
-    <div class="sm-error" role="alert"></div>
-    <div class="sm-actions"><button type="button" class="sm-cancel">ยกเลิก</button><button type="button" class="sm-save">บันทึกการแก้ไข</button></div>
+    ${getStockMovement(original).mismatch ? `<label class="sm-warning"><input type="checkbox" class="sm-reconcile" ${draft.reconcile ? 'checked' : ''}> ยืนยันใช้ยอดตามประวัติแทนยอดคงเหลือเดิมที่ไม่ตรงกัน</label>` : ''}
+    <div class="sm-error" role="alert">${escapeHtml(movementSaving ? 'กำลังบันทึก…' : error)}</div>
+    <div class="sm-actions"><button type="button" class="sm-cancel" ${movementSaving ? 'disabled' : ''}>ยกเลิก</button><button type="button" class="sm-save" ${conflict || movementSaving ? 'disabled' : ''}>บันทึกการแก้ไข</button></div>
   </div>`;
 }
 
 async function persistMovementEdit(edit, next) {
   const local = slotItemsFor(edit.zone, edit.slot);
-  if (JSON.stringify(local[edit.itemIndex]) !== edit.snapshot) throw new Error('รายการถูกแก้ไขแล้ว กรุณาเปิดรายการใหม่');
+  if (!movementMatchesSnapshot(local[edit.itemIndex], edit.snapshot)) throw new Error('รายการถูกแก้ไขแล้ว กรุณาเปิดรายการใหม่');
   if (!supabaseClient) {
     local[edit.itemIndex] = next;
     return false;
@@ -4192,7 +4204,7 @@ async function persistMovementEdit(edit, next) {
     .eq('zone', edit.zone).eq('slot_code', edit.slot).maybeSingle();
   if (current.error) throw current.error;
   const row = current.data;
-  if (!row || JSON.stringify(row.items?.[edit.itemIndex]) !== edit.snapshot) throw new Error('ข้อมูลบนเซิร์ฟเวอร์เปลี่ยนแล้ว กรุณารีเฟรชและเปิดรายการใหม่');
+  if (!row || !movementMatchesSnapshot(row.items?.[edit.itemIndex], edit.snapshot)) throw new Error('ข้อมูลบนเซิร์ฟเวอร์เปลี่ยนแล้ว กรุณารีเฟรชและเปิดรายการใหม่');
   const items = row.items.slice();
   items[edit.itemIndex] = next;
   let query = supabaseClient.from('pallet_slots').update({ items, updated_at: new Date().toISOString() })
@@ -4587,6 +4599,19 @@ fseAddCode.addEventListener('change', autofillAddProductDetails);
 fseAddName.addEventListener('input', () => { fseAddName.dataset.autofilled = ''; fseAddName.classList.remove('is-autofilled'); });
 fseAddUnit.addEventListener('input', () => { fseAddUnit.dataset.autofilled = ''; fseAddUnit.classList.remove('is-autofilled'); });
 
+function captureMovementDraft(e) {
+  if (!movementEdit || movementSaving || !e.target.closest('.sm-form')) return;
+  const form = e.target.closest('.sm-form');
+  movementEdit.draft = {
+    date: form.querySelector('.sm-input-date').value,
+    qty: form.querySelector('.sm-input-qty').value,
+    lotNo: form.querySelector('.sm-input-lot').value,
+    by: form.querySelector('.sm-input-by').value,
+    reconcile: !!form.querySelector('.sm-reconcile')?.checked,
+  };
+}
+fseItemsList.addEventListener('input', captureMovementDraft);
+fseItemsList.addEventListener('change', captureMovementDraft);
 fseItemsList.addEventListener('click', async (e) => {
   if (!editingSlot) return;
   if (movementSaving) return;
@@ -4615,7 +4640,7 @@ fseItemsList.addEventListener('click', async (e) => {
     const errorEl = form.querySelector('.sm-error');
     try {
       const item = slotItemsFor(edit.zone, edit.slot)[edit.itemIndex];
-      if (!item || JSON.stringify(item) !== edit.snapshot) throw new Error('รายการถูกแก้ไขแล้ว กรุณายกเลิกและเปิดรายการใหม่');
+      if (!movementMatchesSnapshot(item, edit.snapshot)) throw new Error('รายการถูกแก้ไขแล้ว กรุณายกเลิกและเปิดรายการใหม่');
       if (form.querySelector('.sm-reconcile') && !form.querySelector('.sm-reconcile').checked) throw new Error('กรุณายืนยันการคำนวณยอดคงเหลือใหม่');
       const next = prepareMovementEdit(item, edit.type, edit.index, {
         date: form.querySelector('.sm-input-date').value,
@@ -4632,9 +4657,12 @@ fseItemsList.addEventListener('click', async (e) => {
       syncAfterSlotEdit();
       showFseFeedback(remote ? 'บันทึกการแก้ไขและคำนวณยอดใหม่แล้ว' : 'แก้ไขในหน้านี้แล้ว · ยังไม่เชื่อมต่อเซิร์ฟเวอร์ โปรดส่งออกข้อมูลเก็บไว้', remote ? 'success' : 'error');
     } catch (error) {
-      errorEl.textContent = error.message || 'บันทึกไม่สำเร็จ กรุณาลองใหม่';
-      form.querySelectorAll('button, input').forEach(el => el.disabled = false);
-    } finally { movementSaving = false; slotEditPanel.inert = false; }
+      edit.error = error.message || 'บันทึกไม่สำเร็จ กรุณาลองใหม่';
+    } finally {
+      movementSaving = false;
+      slotEditPanel.inert = false;
+      if (movementEdit === edit) renderSlotEdit();
+    }
     return;
   }
 
