@@ -475,6 +475,9 @@
   .floorplan-image-wrap {
     position: relative;
     width: 100%;
+    max-width: 960px;
+    aspect-ratio: 969 / 1958;
+    margin-inline: auto;
     margin-bottom: 20px;
     border-radius: 10px;
     overflow: hidden;
@@ -488,14 +491,10 @@
     touch-action: none;
   }
   .floorplan-image-wrap.ov-dragging { cursor: grabbing; }
-  /* The pannable/zoomable content: image + all overlay layers (pins, leader lines, slot-status)
-     live inside this single inner element so one CSS transform moves/scales them all together,
-     keeping every layer's existing percentage-based positioning correct at any zoom level.
-     transform-origin 0 0 matches the math in ovZoomAt()/ovClamp() below (scale-then-translate
-     around the wrap's own top-left corner). transform never affects layout size, so the outer
-     .floorplan-image-wrap keeps reporting a constant, unscaled box for overflow:hidden to clip
-     against -- exactly the fixed "viewport" the pan/zoom math assumes. */
-  .floorplan-stage { position: relative; width: 100%; transform-origin: 0 0; will-change: transform; }
+  /* Image and all overlays share one clockwise portrait transform. The outer aspect-ratio
+     reserves the cropped portrait viewport; ovApply sets the original landscape stage size.
+     Keeping source coordinates intact also preserves the separate per-zone detail viewer. */
+  .floorplan-stage { position: absolute; top: 0; left: 0; width: 100%; transform-origin: 0 0; will-change: transform; }
   .floorplan-image { display: block; width: 100%; height: auto; }
   .floorplan-pins { position: absolute; inset: 0; }
   .floorplan-ov-controls {
@@ -2579,20 +2578,44 @@ const floorplanStage = document.getElementById('floorplanStage');
 let ovScale = 1, ovPanX = 0, ovPanY = 0;
 const OV_MIN = 1, OV_MAX = 6;
 
+// Display the overview clockwise in portrait, matching the supplied plan. Crop only the
+// blank page margins (including a small inset outside the drawing border). All original
+// image, zone and pallet coordinates stay unchanged, including the separate zone viewer.
+function overviewPortraitLayout(viewWidth, imageAspect = 1700 / 2200) {
+  const crop = { left: 0.055, top: 0.215, right: 0.945, bottom: 0.785 };
+  const cropWidth = crop.right - crop.left;
+  const cropHeight = crop.bottom - crop.top;
+  const stageWidth = viewWidth / (imageAspect * cropHeight);
+  const stageHeight = stageWidth * imageAspect;
+  return {
+    stageWidth,
+    aspectRatio: imageAspect * cropHeight / cropWidth,
+    offsetX: crop.bottom * stageHeight,
+    offsetY: -crop.left * stageWidth,
+  };
+}
+
 // transform never changes an element's own layout size, so floorplanWrap (overflow:hidden)
 // always reports the same unscaled box regardless of ovScale -- i.e. a fixed-size "viewport"
 // that the stage's scaled/panned content is clipped against. That's what makes the clamp below
 // simple: content size at the current scale is just viewport size * ovScale.
 function ovClamp() {
-  const rect = floorplanWrap.getBoundingClientRect();
-  const contentW = rect.width * ovScale, contentH = rect.height * ovScale;
-  const minX = Math.min(0, rect.width - contentW), minY = Math.min(0, rect.height - contentH);
+  const width = floorplanWrap.clientWidth, height = floorplanWrap.clientHeight;
+  const contentW = width * ovScale, contentH = height * ovScale;
+  const minX = Math.min(0, width - contentW), minY = Math.min(0, height - contentH);
   ovPanX = Math.max(minX, Math.min(0, ovPanX));
   ovPanY = Math.max(minY, Math.min(0, ovPanY));
 }
 function ovApply() {
+  const width = floorplanWrap.clientWidth;
+  if (!width) return; // The tab may still be hidden during initial loading.
+  const img = floorplanStage.querySelector('.floorplan-image');
+  const imageAspect = img.naturalWidth ? img.naturalHeight / img.naturalWidth : 1700 / 2200;
+  const layout = overviewPortraitLayout(width, imageAspect);
+  floorplanWrap.style.aspectRatio = String(layout.aspectRatio);
+  floorplanStage.style.width = layout.stageWidth + 'px';
   ovClamp();
-  floorplanStage.style.transform = `translate(${ovPanX}px, ${ovPanY}px) scale(${ovScale})`;
+  floorplanStage.style.transform = `translate(${ovPanX}px, ${ovPanY}px) scale(${ovScale}) translate(${layout.offsetX}px, ${layout.offsetY}px) rotate(90deg)`;
 }
 // Zooms in/out around a fixed screen point (the cursor for wheel-zoom, the wrap's own center
 // for the +/- buttons) -- keeps whatever was under that point on-screen before the zoom still
@@ -2669,7 +2692,11 @@ document.getElementById('floorplanOverviewZoomReset').addEventListener('click', 
 // A window resize can change floorplanWrap's pixel size (e.g. rotating a tablet, or a
 // sidebar collapsing), which would otherwise leave ovPanX/Y clamped against a stale rect --
 // re-apply so an already-panned/zoomed view stays clamped correctly against the new size.
-window.addEventListener('resize', () => { if (ovScale > OV_MIN || ovPanX || ovPanY) ovApply(); });
+// Reflow even at default zoom, and when opening a previously hidden tab or resizing a panel.
+window.addEventListener('resize', ovApply);
+new ResizeObserver(ovApply).observe(floorplanWrap);
+floorplanStage.querySelector('.floorplan-image').addEventListener('load', ovApply);
+ovApply();
 
 // ---------- Floor plan zoom modal (high-res crop viewer, drag-to-pan + zoom) ----------
 // Uses a separate, higher-DPI render of the same "Layout PK Zone 2nd Floor" drawing
