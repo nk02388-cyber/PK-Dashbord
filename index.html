@@ -271,6 +271,7 @@
   .callout ul { margin: 6px 0 0 0; padding-left: 18px; font-size: 12px; color: var(--text-secondary); }
 
   footer { text-align:center; font-size:11px; color: var(--text-muted); padding: 20px 0 4px; }
+  .footer-actions { display: flex; justify-content: flex-end; margin-top: 12px; }
 
   .filter-bar {
     display:flex; align-items:center; gap: 10px; flex-wrap: wrap;
@@ -1452,7 +1453,6 @@
     </div>
     <div class="meta">
       <span id="reportDate">ข้อมูล ณ วันที่ 17 ส.ค. 69</span>
-      <button class="theme-toggle" id="saveIconsBtn" type="button" title="ดาวน์โหลดไฟล์ฉบับใหม่พร้อมไอคอนที่อัปโหลดไว้"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 3h12l2 2v16H5V3Z" stroke-width="1.8"/><path d="M8 3v6h8V3M8 21v-7h8v7" stroke-width="1.8"/></svg><span>บันทึกไฟล์</span></button>
       <button class="theme-toggle" id="themeToggle" type="button" aria-pressed="false">โหมดมืด</button>
     </div>
   </header>
@@ -2200,7 +2200,12 @@
     </div>
   </div>
 
-  <footer>Dashboard สำหรับติดตามสต็อกบรรจุภัณฑ์ ความพร้อมผลิต และพื้นที่จัดเก็บ · ใช้เพื่อการบริหารจัดการภายใน</footer>
+  <footer>
+    <span>Dashboard สำหรับติดตามสต็อกบรรจุภัณฑ์ ความพร้อมผลิต และพื้นที่จัดเก็บ · ใช้เพื่อการบริหารจัดการภายใน</span>
+    <div class="footer-actions">
+      <button class="theme-toggle" id="saveIconsBtn" type="button" title="ดาวน์โหลดไฟล์ฉบับใหม่พร้อมไอคอนที่อัปโหลดไว้"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 3h12l2 2v16H5V3Z" stroke-width="1.8"/><path d="M8 3v6h8V3M8 21v-7h8v7" stroke-width="1.8"/></svg><span>บันทึกไฟล์</span></button>
+    </div>
+  </footer>
 </div>
 
 <div class="tooltip" id="tooltip" role="tooltip"></div>
