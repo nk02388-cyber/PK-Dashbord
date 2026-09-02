@@ -1,5 +1,12 @@
 # Dashboard QA — 2026-09-02
 
+## Follow-up: positive-stock-only location search
+
+- Search index/suggestions/FIFO lists now include only finite remaining quantities greater than zero, using the same remaining balance as the pallet panel. Zero, negative, unknown and invalid quantities are excluded without deleting any item or movement history.
+- Open search results refresh after sync/withdrawal/return without auto-opening a modal. Returned stock can reappear.
+- All 12 regression suites passed, including new `search-stock.test.cjs`: mixed positive/empty lots, decimals, zero overrides, unknown balances, live list updates and return reappearance.
+- Read-only local browser + server check: SKU 31-0028-06-53 had remaining 0 at D-11, E-20, E-21 and E-22; search correctly returned no in-stock position. D-11 still displayed its receipt 3,600 and withdrawal 3,600 in the pallet history. SKU 31-0120-07-61 retained two positive-stock FIFO results. No browser errors were reported; no production stock was changed.
+
 Scope: frontend regression checks, Stock Movement editing, search/FIFO, map controls, responsive smoke tests and GitHub Pages deployment. Applied code-review, debug, webapp-testing and deploy-checklist workflows.
 
 ## Fixes

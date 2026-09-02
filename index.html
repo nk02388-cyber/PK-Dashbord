@@ -3753,7 +3753,7 @@ function selectSearchSuggestion(item) {
   floorplanSearchInput.value = item.code;
   floorplanSearchBtn.disabled = false;
   hideSearchSuggestions();
-  renderSearchMatches(item.entries, item.code);
+  renderSearchMatches(ITEM_TO_SLOTS[item.code] || [], item.code);
 }
 
 function sortSearchMatchesFifo(matches) {
@@ -3764,14 +3764,15 @@ function sortSearchMatchesFifo(matches) {
   }).sort((a, b) => a.key.localeCompare(b.key) || a.index - b.index).map(entry => entry.match);
 }
 
-function renderSearchMatches(matches, queryLabel) {
+function renderSearchMatches(matches, queryLabel, autoJump = true) {
+  floorplanSearchMsg.dataset.searchCode = queryLabel;
   if (!matches.length) {
     floorplanSearchMsg.className = 'floorplan-search-msg fs-error';
     floorplanSearchMsg.hidden = false;
-    floorplanSearchMsg.innerHTML = `ไม่พบตำแหน่งของ "${escapeHtml(queryLabel)}" · ตรวจสอบรหัสสินค้าแล้วลองอีกครั้ง`;
+    floorplanSearchMsg.innerHTML = `ไม่พบตำแหน่งที่มีสต็อกคงเหลือของ "${escapeHtml(queryLabel)}"`;
     return;
   }
-  if (matches.length === 1) {
+  if (matches.length === 1 && autoJump) {
     // Single match: jump straight there, no need to make the user pick.
     jumpToSlot(matches[0].zone, matches[0].slot);
     floorplanSearchMsg.hidden = true;
@@ -3870,6 +3871,9 @@ function rebuildItemToSlots() {
     const zoneSlots = SLOT_ITEMS[zoneCode];
     Object.keys(zoneSlots).forEach(slotCode => {
       zoneSlots[slotCode].forEach(item => {
+        // Search only: retain every source item and its movement history on the pallet.
+        const remaining = movementNumber(getRemainingQty(item));
+        if (remaining == null || remaining <= 0) return;
         if (!ITEM_TO_SLOTS[item.code]) ITEM_TO_SLOTS[item.code] = [];
         ITEM_TO_SLOTS[item.code].push({ zone: zoneCode, slot: slotCode, name: item.name, receiveDate: item.receiveDate || '', lotNo: item.lotNo || '' });
       });
@@ -3884,6 +3888,11 @@ function refreshSearchDatalist() {
   }).join('');
   if (floorplanSearchInput && floorplanSearchInput.value.trim() && !floorplanSearchSuggestions.hidden) {
     renderSearchSuggestions(floorplanSearchInput.value);
+  }
+  const searchedCode = floorplanSearchMsg.dataset.searchCode;
+  if (searchedCode && !floorplanSearchMsg.hidden && floorplanSearchInput.value.trim() === searchedCode) {
+    // Update an open result list after withdrawal/return or realtime sync without opening a modal.
+    renderSearchMatches(ITEM_TO_SLOTS[searchedCode] || [], searchedCode, false);
   }
 }
 

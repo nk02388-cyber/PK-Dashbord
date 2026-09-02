@@ -3,15 +3,15 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
-const names = ['formatMovementDate', 'sortSearchMatchesFifo', 'renderSearchMatches', 'rebuildItemToSlots'];
+const names = ['formatMovementDate', 'sortSearchMatchesFifo', 'renderSearchMatches', 'rebuildItemToSlots', 'getRemainingQty', 'movementNumber'];
 const source = names.map(name => html.match(new RegExp(`function ${name}\\([^]*?\\n\\}`))[0]).join('\n');
 const items = [{zone:'D',slot:'D-16',name:'สินค้า',receiveDate:'2026-09-01'},
   {zone:'D',slot:'D-21',name:'สินค้า',receiveDate:'2026-08-04'},
   {zone:'C',slot:'C-05',name:'สินค้า',receiveDate:'2026-08-01',lotNo:'<LOT>'},
   {zone:'C',slot:'C-06',name:'สินค้า',receiveDate:'2026-08-04'}];
 const before = JSON.stringify(items);
-const ctx = vm.createContext({floorplanSearchMsg:{}, jumpToSlot:(zone,slot)=>ctx.jump=[zone,slot],
-  SLOT_ITEMS:{F:{'F-01':[{code:'X',name:'Test',receiveDate:'2026-08-01',lotNo:'LOT'}]}},ITEM_TO_SLOTS:{},
+const ctx = vm.createContext({floorplanSearchMsg:{dataset:{}}, jumpToSlot:(zone,slot)=>ctx.jump=[zone,slot],
+  SLOT_ITEMS:{F:{'F-01':[{code:'X',name:'Test',qty:5,receiveDate:'2026-08-01',lotNo:'LOT'}]}},ITEM_TO_SLOTS:{},
   escapeHtml:s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')});
 vm.runInContext(source,ctx);
 const slots = list => Array.from(ctx.sortSearchMatchesFifo(list), x=>x.slot);

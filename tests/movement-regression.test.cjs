@@ -33,6 +33,7 @@ assert.equal(ctx.escapeHtml(0),'0');
 ctx.ITEM_TO_SLOTS = {'"><img src=x onerror=alert(1)>':[{name:'</option><img src=x>'}]};
 ctx.floorplanSearchDatalist = {};
 ctx.floorplanSearchInput = {value:''};
+ctx.floorplanSearchMsg = {dataset:{},hidden:true};
 vm.runInContext(extract('refreshSearchDatalist'),ctx);
 ctx.refreshSearchDatalist();
 assert.doesNotMatch(ctx.floorplanSearchDatalist.innerHTML,/<img/);
