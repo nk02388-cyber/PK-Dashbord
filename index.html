@@ -3086,7 +3086,7 @@ function refreshAfterRemoteChange(zoneCode, slotCode) {
     renderZoomSlots(currentZoomZone);
     updateZoomView();
   }
-  if (editingSlot && zoneCode && editingSlot.zone === zoneCode && editingSlot.slot === slotCode) {
+  if (editingSlot && (!zoneCode || (editingSlot.zone === zoneCode && editingSlot.slot === slotCode))) {
     renderSlotEdit();
   }
   const selectedPin = document.querySelector('.floor-pin.selected, .floor-zone-fallback.selected');

@@ -38,3 +38,14 @@ ctx.refreshSearchDatalist();
 assert.doesNotMatch(ctx.floorplanSearchDatalist.innerHTML,/<img/);
 assert.match(ctx.floorplanSearchDatalist.innerHTML,/&quot;&gt;|&quot;>/);
 console.log('PASS: JSONB key ordering, genuine conflicts, draft retention, visible errors, numeric validation and HTML escaping');
+let renders = 0;
+Object.assign(ctx,{rebuildItemToSlots(){},refreshSearchDatalist(){},renderOverviewSlotStatus(){},
+  currentZoomZone:null,renderSlotEdit(){renders++},document:{querySelector(){return null}}});
+vm.runInContext(extract('refreshAfterRemoteChange'),ctx);
+ctx.refreshAfterRemoteChange();
+assert.equal(renders,1,'Initial full sync must refresh an already-open slot panel');
+ctx.refreshAfterRemoteChange('K','K-04');
+assert.equal(renders,1,'Unrelated slot event must not redraw the active editor');
+ctx.refreshAfterRemoteChange('F','F-18');
+assert.equal(renders,2,'Matching slot event refreshes the panel');
+console.log('PASS: initial full-sync and matching-slot panel refresh');

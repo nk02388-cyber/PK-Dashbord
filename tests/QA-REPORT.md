@@ -10,6 +10,7 @@ Scope: frontend regression checks, Stock Movement editing, search/FIFO, map cont
 - Reject whitespace, booleans and objects as movement quantities instead of coercing them to zero.
 - Escape product codes/names in the location-search datalist; preserve numeric zero when escaping text.
 - Correct an undefined row-count variable in the inactive legacy zone-detail renderer.
+- Live smoke testing revealed that opening a slot before initial Supabase loading finished left its panel empty until reopened. Full-sync completion now refreshes the active slot panel; matching-slot and unrelated-slot cases have regression assertions.
 
 ## Automated verification
 
@@ -33,6 +34,7 @@ Used isolated `tests/preview-history.cjs` on localhost:8767 with both Supabase U
 - Main-map and pallet-map rotation buttons operated successfully.
 - 390×844: edit fields and save/cancel controls accessible; movement table scrolls horizontally within its container.
 - 1024×768: stock tab/summary rendered; no browser error logs in tested flows.
+- Read-only production check: K-04 contained two items; first movement balances were 8,645 → 8,345 → 4,170, second receipt was 235. Confirmed initial-load stale-panel issue by reopening without any write.
 
 ## Deployment and limits
 
