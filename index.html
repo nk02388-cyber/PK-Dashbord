@@ -434,9 +434,16 @@
   .floorplan-search-msg.fs-error { background: rgba(220,50,50,0.10); color: #b02a2a; }
   .floorplan-search-msg.fs-multi { background: rgba(42,120,214,0.08); color: var(--text-primary); }
   .floorplan-search-msg .fs-jump {
-    display: inline-block; margin: 3px 6px 0 0; padding: 3px 9px; border-radius: 6px;
-    border: 1px solid var(--border); background: var(--page-plane); cursor: pointer; font-size: 12px;
+    display: grid; grid-template-columns: 24px 140px 90px minmax(0, 1fr); align-items: start; gap: 8px;
+    width: 100%; margin: 0; padding: 9px 10px; border-radius: 7px; text-align: left; white-space: normal;
+    border: 1px solid var(--border); background: var(--page-plane); color: var(--text-primary);
+    cursor: pointer; font: inherit; font-size: 12px; font-weight: 400; overflow-wrap: anywhere;
   }
+  .fs-fifo-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; margin-top: 8px; }
+  .fs-fifo-number, .fs-fifo-slot { font-weight: 700; }
+  .fs-fifo-date { font-variant-numeric: tabular-nums; }
+  .fs-fifo-name { min-width: 0; }
+  .fs-fifo-lot { display: block; color: var(--text-secondary); font-size: 11px; margin-top: 2px; }
   .floorplan-search-msg .fs-jump:hover { filter: brightness(0.94); }
   @media (max-width: 700px) {
     .floorplan-search-control { flex-basis: 100%; order: 2; }
@@ -444,6 +451,8 @@
     .floorplan-search-msg { order: 4; }
     .floorplan-search .floorplan-search-suggestion { grid-template-columns: minmax(0, 1fr) auto; white-space: normal; }
     .floorplan-search-suggestion .fs-name { grid-column: 1 / -1; grid-row: 2; }
+    .floorplan-search-msg .fs-jump { grid-template-columns: 24px minmax(0, 1fr) auto; }
+    .fs-fifo-name { grid-column: 2 / -1; }
   }
 
   /* 21 Aug 2026: multi-device live sync status chip (Supabase) -- see initSupabaseSync() near
@@ -3723,6 +3732,14 @@ function selectSearchSuggestion(item) {
   renderSearchMatches(item.entries, item.code);
 }
 
+function sortSearchMatchesFifo(matches) {
+  return matches.map((match, index) => {
+    const date = formatMovementDate(match.receiveDate);
+    const key = date === '—' ? '99999999' : date.slice(6) + date.slice(3, 5) + date.slice(0, 2);
+    return { match, index, key };
+  }).sort((a, b) => a.key.localeCompare(b.key) || a.index - b.index).map(entry => entry.match);
+}
+
 function renderSearchMatches(matches, queryLabel) {
   if (!matches.length) {
     floorplanSearchMsg.className = 'floorplan-search-msg fs-error';
@@ -3742,10 +3759,15 @@ function renderSearchMatches(matches, queryLabel) {
   // closed the modal first -- showing the list up front avoids that trap entirely.
   floorplanSearchMsg.className = 'floorplan-search-msg fs-multi';
   floorplanSearchMsg.hidden = false;
-  const links = matches.map(m =>
-    `<span class="fs-jump" data-zone="${m.zone}" data-slot="${m.slot}">${m.zone} · ${m.slot}${m.name ? ' — ' + escapeHtml(m.name) : ''}</span>`
+  const links = sortSearchMatchesFifo(matches).map((m, index) =>
+    `<button type="button" class="fs-jump" data-zone="${escapeHtml(m.zone)}" data-slot="${escapeHtml(m.slot)}">
+      <span class="fs-fifo-number">${index + 1}</span>
+      <span class="fs-fifo-date">${formatMovementDate(m.receiveDate) === '—' ? 'ไม่ระบุวันที่รับเข้า' : 'รับ ' + formatMovementDate(m.receiveDate)}</span>
+      <span class="fs-fifo-slot">${escapeHtml(m.slot)}</span>
+      <span class="fs-fifo-name">${escapeHtml(m.name || 'ไม่ระบุชื่อสินค้า')}${m.lotNo ? `<span class="fs-fifo-lot">Lot: ${escapeHtml(m.lotNo)}</span>` : ''}</span>
+    </button>`
   ).join('');
-  floorplanSearchMsg.innerHTML = `พบสินค้านี้ใน ${matches.length} ตำแหน่ง เลือกตำแหน่งที่ต้องการดู: ${links}`;
+  floorplanSearchMsg.innerHTML = `พบ ${matches.length} รายการ · FIFO: รับก่อนแสดงก่อน · เลือกตำแหน่งเพื่อดูรายละเอียด<div class="fs-fifo-list">${links}</div>`;
 }
 
 function performFloorplanSearch() {
@@ -3825,7 +3847,7 @@ function rebuildItemToSlots() {
     Object.keys(zoneSlots).forEach(slotCode => {
       zoneSlots[slotCode].forEach(item => {
         if (!ITEM_TO_SLOTS[item.code]) ITEM_TO_SLOTS[item.code] = [];
-        ITEM_TO_SLOTS[item.code].push({ zone: zoneCode, slot: slotCode, name: item.name });
+        ITEM_TO_SLOTS[item.code].push({ zone: zoneCode, slot: slotCode, name: item.name, receiveDate: item.receiveDate || '', lotNo: item.lotNo || '' });
       });
     });
   });

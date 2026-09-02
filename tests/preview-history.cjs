@@ -10,6 +10,14 @@ const fixture = { F: { 'F-18': [{ code: 'DEMO-001', name: 'รายการท
   note: 'ข้อมูลจำลอง ไม่เชื่อมต่อ Supabase' },
   { code: 'DEMO-002', name: 'ทดสอบแยกหน่วย', qty: 5, unit: 'ขวด' },
   { code: 'DEMO-003', name: 'ทดสอบไม่ทราบยอด', unit: 'ม้วน' }] } };
+for (const [zone, slot, receiveDate] of [
+  ['D', 'D-16', '2026-09-01'], ['D', 'D-21', '2026-08-04'],
+  ['C', 'C-05', '2026-08-01'], ['C', 'C-06', '2026-08-04'],
+]) {
+  fixture[zone] ||= {};
+  fixture[zone][slot] = [{ code: 'FIFO-DEMO', name: 'สินค้าทดสอบ FIFO', receiveDate,
+    lotNo: 'LOT-' + slot, qty: 10, unit: 'ขวด' }];
+}
 http.createServer((req, res) => {
   let html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
   html = html.replace(/const (SUPABASE_URL|STOCK_SUPABASE_URL) = '[^']*';/g, "const $1 = ''; ");
