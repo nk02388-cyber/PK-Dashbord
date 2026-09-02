@@ -3608,6 +3608,21 @@ refreshSearchDatalist();
 
 function escapeHtml(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
 
+// Display only: keep stored ISO dates unchanged for inputs, syncing and age calculations.
+function formatMovementDate(value) {
+  const text = String(value || '').trim();
+  const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
+  const display = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(text);
+  if (!iso && !display) return '—';
+  const year = Number(iso ? iso[1] : display[3]);
+  const month = Number(iso ? iso[2] : display[2]);
+  const day = Number(iso ? iso[3] : display[1]);
+  const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  if (year < 1 || month < 1 || month > 12 || day < 1 || day > days[month - 1]) return '—';
+  return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${String(year).padStart(4, '0')}`;
+}
+
 function normalizeSearchText(value) {
   return String(value || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase('th-TH')
     .replace(/[\u0E48-\u0E4B]/g, '');
@@ -4003,14 +4018,11 @@ function renderSlotEdit() {
   if (fseItemCount) fseItemCount.textContent = `${items.length} รายการ`;
   fseItemsList.innerHTML = items.length
     ? FSE_ITEMS_HEADER + items.map((it, i) => {
-        // receiveDate/qty are only present on items added through the "บันทึก" form below
-        // (added 20 Aug 2026, per Pornchai's request) -- older entries (manually typed in
-        // before that, or imported from an older status file) simply omit this meta line.
-        // (unit now has its own column -- see fse-item-unit-cell below -- so it's dropped from
-        // this line to avoid repeating it.)
+        // Older imported entries may have neither receipt date nor quantity.
         const metaParts = [];
+        if (it.receiveDate) metaParts.push(formatMovementDate(it.receiveDate));
         if (it.qty != null && it.qty !== '') metaParts.push(`รับเข้า ${escapeHtml(String(it.qty))}${it.unit ? ' ' + escapeHtml(it.unit) : ''}`);
-        if (it.receiveDate) metaParts.push(`วันที่รับ ${escapeHtml(it.receiveDate)}`);
+        else if (it.receiveDate) metaParts.push('รับเข้า');
         const metaLine = (metaParts.length ? `<span class="fse-item-meta receive-history">${metaParts.join(' · ')}</span>` : '') +
           (it.note ? `<span class="fse-item-meta">หมายเหตุ: ${escapeHtml(it.note)}</span>` : '');
 
@@ -4034,10 +4046,10 @@ function renderSlotEdit() {
           ? `<span class="fse-item-unit-cell">${escapeHtml(it.unit)}</span>`
           : `<span class="fse-item-unit-cell unknown"></span>`;
         const withdrawHistory = (it.withdrawals || []).map(w =>
-          `<span class="fse-item-history-line withdraw-history">เบิก ${escapeHtml(String(w.qty))}${w.unit ? ' ' + escapeHtml(w.unit) : ''} เมื่อ ${escapeHtml(w.date)}${w.by ? ' โดย ' + escapeHtml(w.by) : ''}</span>`
+          `<span class="fse-item-history-line withdraw-history">${formatMovementDate(w.date)} · เบิก ${escapeHtml(String(w.qty))}${w.unit ? ' ' + escapeHtml(w.unit) : ''}${w.by ? ' โดย ' + escapeHtml(w.by) : ''}</span>`
         ).join('');
         const returnHistory = (it.returns || []).map(r =>
-          `<span class="fse-item-history-line return-history">รับคืน ${escapeHtml(String(r.qty))}${r.unit ? ' ' + escapeHtml(r.unit) : ''} เมื่อ ${escapeHtml(r.date)}${r.by ? ' โดย ' + escapeHtml(r.by) : ''}</span>`
+          `<span class="fse-item-history-line return-history">${formatMovementDate(r.date)} · รับคืน ${escapeHtml(String(r.qty))}${r.unit ? ' ' + escapeHtml(r.unit) : ''}${r.by ? ' โดย ' + escapeHtml(r.by) : ''}</span>`
         ).join('');
         const history = withdrawHistory + returnHistory;
         const returnable = getReturnableQty(it);
@@ -4137,7 +4149,7 @@ function renderWithdrawForm(i, item, remaining) {
   // in-progress entry -- rather than a bare input row with no record of past withdrawals.
   const historyRows = (item.withdrawals || []).map(w => `
       <tr class="fw-history-row">
-        <td>${escapeHtml(w.date || '-')}</td>
+        <td>${formatMovementDate(w.date)}</td>
         <td>${escapeHtml(String(w.qty != null ? w.qty : '-'))}</td>
         <td>${escapeHtml(w.unit || '-')}</td>
         <td>${escapeHtml(w.by || '-')}</td>
@@ -4169,7 +4181,7 @@ function renderWithdrawForm(i, item, remaining) {
 
 function renderReturnForm(i, item, returnable) {
   const historyRows = (item.returns || []).map(r => `
-      <tr class="fw-history-row"><td>${escapeHtml(r.date || '-')}</td><td>${escapeHtml(String(r.qty != null ? r.qty : '-'))}</td><td>${escapeHtml(r.unit || '-')}</td><td>${escapeHtml(r.by || '-')}</td><td></td></tr>`).join('');
+      <tr class="fw-history-row"><td>${formatMovementDate(r.date)}</td><td>${escapeHtml(String(r.qty != null ? r.qty : '-'))}</td><td>${escapeHtml(r.unit || '-')}</td><td>${escapeHtml(r.by || '-')}</td><td></td></tr>`).join('');
   return `
     <div class="fse-return-form" data-idx="${i}">
       <table class="fw-table">
