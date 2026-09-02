@@ -2964,22 +2964,15 @@ function setOccupied(zoneCode, slotCode, occupied) {
 // and it's also what makes pushFullGeometryToRemote() (further below, used after a file import)
 // able to correctly clear stale remote state just by upserting every real slot in ZONE_SLOTS.
 //
-// IMPORTANT LIMITATION discovered while building this: the sandbox this file was built in has
-// no network path to supabase.co at all (its outbound traffic is allow-listed to package
-// registries only -- confirmed by testing), so none of this could be exercised end-to-end
-// against a live Supabase project from there; only the "Supabase unreachable/not configured"
-// fallback path was actually testable in that environment. The code below follows the
-// documented supabase-js v2 API precisely. Pornchai: please do the real cross-device check
-// yourself once this file is open on two different computers with normal internet (mark a slot
-// on one, confirm it appears on the other within a couple of seconds) -- the sync status chip at
-// the top of this tab will also tell you plainly if it's not connected.
-const SUPABASE_URL = 'https://ddumrwpkpgfrkocwcruz.supabase.co';
+// 2 Sep 2026: pallet tables migrated to the user's managed Stock project after a verified
+// backup. Tables remain independent; the former project is retained as a rollback source.
+const SUPABASE_URL = 'https://zgsxbuckjrplkpvtlbmn.supabase.co';
 // 21 Aug 2026: Pornchai's project shows Supabase's newer "Publishable key" format
 // (sb_publishable_...) rather than the older JWT-format anon key -- both authenticate as the
 // public/browser-safe role and work identically with supabase-js v2, so this just uses whichever
 // one he actually has live on his dashboard.
-const SUPABASE_ANON_KEY = 'sb_publishable_vLJuUDMtLdncyL7pklhgNA_ITcEBiIu';
-// Stock Inventory uses its own project so stock replacement never changes the pallet/Zone data.
+const SUPABASE_ANON_KEY = 'sb_publishable_kWbTxBFjBm4TrXxH_ReTFw_lZ2NUZQl';
+// Stock Inventory uses separate tables/RPCs; replacing stock does not change pallet/Zone data.
 const STOCK_SUPABASE_URL = 'https://zgsxbuckjrplkpvtlbmn.supabase.co';
 const STOCK_SUPABASE_ANON_KEY = 'sb_publishable_kWbTxBFjBm4TrXxH_ReTFw_lZ2NUZQl';
 let supabaseClient = null;
@@ -2989,7 +2982,8 @@ try {
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   }
   if (STOCK_SUPABASE_URL && STOCK_SUPABASE_ANON_KEY && window.supabase && window.supabase.createClient) {
-    stockSupabaseClient = window.supabase.createClient(STOCK_SUPABASE_URL, STOCK_SUPABASE_ANON_KEY);
+    stockSupabaseClient = supabaseClient && STOCK_SUPABASE_URL === SUPABASE_URL && STOCK_SUPABASE_ANON_KEY === SUPABASE_ANON_KEY
+      ? supabaseClient : window.supabase.createClient(STOCK_SUPABASE_URL, STOCK_SUPABASE_ANON_KEY);
   }
 } catch (err) {
   console.error('Supabase client init failed:', err);
@@ -3099,18 +3093,42 @@ function refreshAfterRemoteChange(zoneCode, slotCode) {
 // seeded at load. After the initial fetch, opens a realtime channel so every later change from
 // ANY device arrives here as a postgres_changes event and is applied live via
 // applyRemoteSlotRow()/applyRemoteReceiveDateRow() above.
+async function fetchAllPalletRows(client, table) {
+  const keys = table === 'pallet_slots' ? ['zone', 'slot_code'] : table === 'receive_dates' ? ['item_code'] : null;
+  if (!keys) throw new Error('Unsupported pallet table');
+  const rows = [];
+  const seen = new Set();
+  const pageSize = 500;
+  let total = null;
+  for (let offset = 0; ; offset += pageSize) {
+    let query = client.from(table).select('*', { count: 'exact' });
+    for (const key of keys) query = query.order(key, { ascending: true });
+    const result = await query.range(offset, offset + pageSize - 1);
+    if (result.error) throw result.error;
+    if (!Number.isInteger(result.count) || (total != null && total !== result.count)) throw new Error('จำนวนข้อมูลเปลี่ยนระหว่างโหลด กรุณารีเฟรช');
+    total = result.count;
+    const page = result.data || [];
+    for (const row of page) {
+      const key = JSON.stringify(keys.map(field => row[field]));
+      if (seen.has(key)) throw new Error('ข้อมูลซ้ำระหว่างโหลด กรุณารีเฟรช');
+      seen.add(key);
+      rows.push(row);
+    }
+    if (rows.length === total) return rows;
+    if (!page.length || rows.length > total) throw new Error('โหลดข้อมูลไม่ครบ กรุณารีเฟรช');
+  }
+}
+
 async function initSupabaseSync() {
   if (!supabaseClient) return;
   setSyncStatus('connecting', 'กำลังเชื่อมต่อข้อมูล…');
   try {
-    const [slotsRes, datesRes] = await Promise.all([
-      supabaseClient.from('pallet_slots').select('*'),
-      supabaseClient.from('receive_dates').select('*'),
+    const [slots, dates] = await Promise.all([
+      fetchAllPalletRows(supabaseClient, 'pallet_slots'),
+      fetchAllPalletRows(supabaseClient, 'receive_dates'),
     ]);
-    if (slotsRes.error) throw slotsRes.error;
-    if (datesRes.error) throw datesRes.error;
-    (slotsRes.data || []).forEach(row => applyRemoteSlotRow(row, { silent: true }));
-    (datesRes.data || []).forEach(row => applyRemoteReceiveDateRow(row, { silent: true }));
+    slots.forEach(row => applyRemoteSlotRow(row, { silent: true }));
+    dates.forEach(row => applyRemoteReceiveDateRow(row, { silent: true }));
     refreshAfterRemoteChange(null, null);
   } catch (err) {
     console.error('Supabase initial fetch failed:', err);
