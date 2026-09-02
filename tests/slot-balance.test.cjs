@@ -22,9 +22,9 @@ assert.deepEqual(result, { totals: [{ unit: 'ม้วน', qty: 16.5 }, { unit:
 assert.equal(JSON.stringify(input), before, 'Aggregation must not mutate items');
 assert.equal(ctx.summarizeSlotBalance([]).totals.length, 0);
 assert.equal(ctx.summarizeSlotBalance([{ qty: 0 }]).totals[0].qty, 0);
-assert.match(html, /fse-item-meta receive-history/);
-assert.match(html, /fse-item-history-line withdraw-history/);
-assert.match(html, /fse-item-history-line return-history/);
+assert.match(html, /sm-receive/);
+assert.match(html, /sm-withdraw/);
+assert.match(html, /sm-return/);
 assert.match(html, /renderSlotBalance\(items\);/);
 const summaryStyle = html.match(/\.fse-balance-summary \{([^]*?)\}/)[1];
 assert.match(summaryStyle, /margin: 10px 0 10px auto/);

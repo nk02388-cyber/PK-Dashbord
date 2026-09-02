@@ -1473,6 +1473,30 @@
   }
   .fse-balance-value { padding: 2px 8px; border-radius: 6px; background: var(--surface-1); font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; }
   .fse-balance-note { width: 100%; color: var(--text-secondary); font-weight: 400; }
+  .stock-movement { grid-column: 1 / -1; min-width: 0; margin-top: 10px; }
+  .stock-movement-title { font-size: 12px; font-weight: 600; margin-bottom: 6px; }
+  .stock-movement-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
+  .stock-movement table { width: 100%; min-width: 700px; margin: 0; font-size: 12px; }
+  .stock-movement th, .stock-movement td { padding: 7px 9px; vertical-align: top; }
+  .stock-movement th { background: var(--page-plane); color: var(--text-primary); white-space: nowrap; }
+  .stock-movement .sm-in { background: rgba(250,178,25,.15); }
+  .stock-movement .sm-out { background: var(--series-1-wash); }
+  .stock-movement .sm-balance { background: rgba(220,38,38,.08); font-weight: 700; }
+  .stock-movement .sm-receive, .stock-movement .sm-return { color: var(--status-good); font-weight: 600; }
+  .stock-movement .sm-withdraw { color: var(--status-critical); font-weight: 600; }
+  .stock-movement .sm-date { white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .stock-movement .sm-edit { border: 1px solid var(--border); border-radius: 6px; padding: 4px 9px; background: var(--surface-1); color: var(--text-primary); font: inherit; cursor: pointer; }
+  .stock-movement .sm-edit:disabled { opacity: .5; cursor: not-allowed; }
+  .sm-note { margin-top: 6px; font-size: 11px; color: var(--text-secondary); }
+  .sm-warning, .sm-error { color: var(--status-critical); font-size: 12px; margin-top: 6px; }
+  .sm-form { grid-column: 1 / -1; border: 1px solid var(--series-1); background: var(--series-1-wash); border-radius: 8px; padding: 12px; margin-top: 8px; }
+  .sm-fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+  .sm-fields label { display: grid; gap: 4px; font-size: 12px; font-weight: 600; }
+  .sm-fields input { min-width: 0; width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 7px; background: var(--surface-1); color: var(--text-primary); font: inherit; }
+  .sm-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+  .sm-actions button { border: 1px solid var(--border); border-radius: 6px; padding: 7px 12px; background: var(--surface-1); color: var(--text-primary); cursor: pointer; font: inherit; }
+  .sm-actions .sm-save { background: var(--series-1); color: #fff; }
+  @media (max-width: 700px) { .sm-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 </style>
 </head>
 <body class="viz-root">
@@ -3885,6 +3909,9 @@ function updateSlotItem(zoneCode, slotCode, index, updates) {
   const list = SLOT_ITEMS[zoneCode] && SLOT_ITEMS[zoneCode][slotCode];
   const item = list && list[index];
   if (!item) return false;
+  const withdrawn = (item.withdrawals || []).reduce((sum, row) => sum + (Number(row.qty) || 0), 0);
+  const returned = (item.returns || []).reduce((sum, row) => sum + (Number(row.qty) || 0), 0);
+  if (updates.qty != null && (!Number.isFinite(updates.qty) || updates.qty - withdrawn + returned < -1e-8)) return false;
   item.code = updates.code;
   item.name = updates.name;
   item.lotNo = updates.lotNo || '';
@@ -3893,8 +3920,7 @@ function updateSlotItem(zoneCode, slotCode, index, updates) {
   else delete item.receiveDate;
   if (updates.qty != null) {
     item.qty = updates.qty;
-    const withdrawn = (item.withdrawals || []).reduce((sum, row) => sum + (Number(row.qty) || 0), 0);
-    item.remainingQty = Math.max(0, updates.qty - withdrawn);
+    item.remainingQty = Math.max(0, Number((updates.qty - withdrawn + returned).toFixed(8)));
   } else {
     delete item.qty;
     delete item.remainingQty;
@@ -3950,6 +3976,8 @@ let editingSlot = null; // { zone, slot } while the panel is open, else null
 let withdrawOpenIndex = null; // index (within the current slot's item list) whose "เบิก" mini-form is expanded, else null
 let returnOpenIndex = null; // index whose "รับคืน" form is expanded, else null
 let editItemIndex = null; // index of the item whose inline edit form is open, else null
+let movementEdit = null;
+let movementSaving = false;
 // removeConfirmIndex: 21 Aug 2026, per Pornchai's request -- clicking "✕" no longer deletes the
 // item immediately. The first click arms this (shows a "ยืนยันการลบ"/cancel pair in place of the
 // plain ✕ for that one row); only clicking "ยืนยันการลบ" actually calls removeSlotItem(). Only
@@ -4041,6 +4069,142 @@ function renderSlotBalance(items) {
     (summary.unknown ? `<span class="fse-balance-note">ไม่รวม ${summary.unknown} รายการที่ยังไม่ทราบยอดคงเหลือ</span>` : '');
 }
 
+function movementNumber(value) {
+  return value == null || value === '' || !Number.isFinite(Number(value)) ? null : Number(value);
+}
+
+function movementDateKey(value) {
+  const date = formatMovementDate(value);
+  return date === '—' ? null : date.slice(6) + date.slice(3, 5) + date.slice(0, 2);
+}
+
+function getStockMovement(item) {
+  const rows = [{ type: 'receive', index: 0, label: 'รับเข้า', date: item.receiveDate || '',
+    qty: movementNumber(item.qty), lotNo: item.lotNo || '', by: item.receivedBy || '', unit: item.unit || '' }];
+  for (const [key, type, label] of [['withdrawals', 'withdraw', 'เบิก'], ['returns', 'return', 'รับคืน']]) {
+    (item[key] || []).forEach((row, index) => rows.push({ type, index, label, date: row.date || '',
+      qty: movementNumber(row.qty), lotNo: row.lotNo ?? item.lotNo ?? '', by: row.by || '', unit: row.unit || item.unit || '' }));
+  }
+  rows.sort((a, b) => (movementDateKey(a.date) || (a.type === 'receive' ? '00000000' : '99999999'))
+    .localeCompare(movementDateKey(b.date) || (b.type === 'receive' ? '00000000' : '99999999')));
+  let balance = movementNumber(item.qty) == null ? null : 0;
+  for (const row of rows) {
+    if (row.qty == null || (item.unit && row.unit && item.unit !== row.unit)) balance = null;
+    if (balance != null) balance = Number((balance + (row.type === 'withdraw' ? -row.qty : row.qty)).toFixed(8));
+    row.balance = balance;
+  }
+  const stored = movementNumber(getRemainingQty(item));
+  return { rows, computed: balance, stored,
+    mismatch: balance != null && stored != null && Math.abs(balance - stored) > 1e-8,
+    undated: rows.some(row => !movementDateKey(row.date)) };
+}
+
+function prepareMovementEdit(item, type, index, values) {
+  if (!['receive', 'withdraw', 'return'].includes(type)) throw new Error('ไม่พบประเภทรายการ');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(values.date) || !movementDateKey(values.date)) throw new Error('กรุณาระบุวันที่ให้ถูกต้อง');
+  const qty = movementNumber(values.qty);
+  if (qty == null || qty < 0 || (type !== 'receive' && qty === 0)) throw new Error('กรุณาระบุจำนวนที่ถูกต้อง');
+  const next = JSON.parse(JSON.stringify(item));
+  const key = type === 'withdraw' ? 'withdrawals' : 'returns';
+  const original = type === 'receive' ? { date: item.receiveDate, qty: item.qty, lotNo: item.lotNo, by: item.receivedBy } : item[key]?.[index];
+  if (!original) throw new Error('ไม่พบรายการที่ต้องการแก้ไข');
+  if (type !== 'receive' && movementNumber(item.qty) == null && qty !== movementNumber(original.qty)) {
+    throw new Error('กรุณาระบุยอดรับเข้าก่อนแก้จำนวนเบิกหรือรับคืน');
+  }
+  const updated = { date: values.date, qty, lotNo: String(values.lotNo || '').trim(), by: String(values.by || '').trim() };
+  if (type === 'receive') {
+    Object.assign(next, { receiveDate: updated.date, qty, lotNo: updated.lotNo, receivedBy: updated.by });
+  } else Object.assign(next[key][index], updated);
+  const ledger = getStockMovement(next);
+  const withdrawn = (next.withdrawals || []).reduce((sum, row) => sum + (movementNumber(row.qty) || 0), 0);
+  const returned = (next.returns || []).reduce((sum, row) => sum + (movementNumber(row.qty) || 0), 0);
+  if (returned > withdrawn + 1e-8) throw new Error('ยอดรับคืนรวมต้องไม่เกินยอดเบิกรวม');
+  if (ledger.rows.some(row => row.qty == null || (next.unit && row.unit && next.unit !== row.unit))) {
+    if (type === 'receive' || qty !== movementNumber(original.qty)) throw new Error('ประวัติมีจำนวนหรือหน่วยไม่ครบ กรุณาตรวจสอบก่อนแก้จำนวน');
+  }
+  if (ledger.computed != null && ledger.computed < -1e-8) throw new Error('ยอดคงเหลือหลังแก้ไขต้องไม่ติดลบ');
+  if (!ledger.undated) {
+    let outstanding = 0;
+    for (const row of ledger.rows) {
+      if (row.balance != null && row.balance < -1e-8) throw new Error('วันที่หรือจำนวนทำให้ยอดคงเหลือระหว่างรายการติดลบ');
+      if (row.type === 'withdraw') outstanding += row.qty;
+      if (row.type === 'return') outstanding -= row.qty;
+      if (outstanding < -1e-8) throw new Error('วันที่รับคืนต้องไม่ทำให้รับคืนเกินยอดเบิกก่อนหน้า');
+    }
+  }
+  if (ledger.computed != null) next.remainingQty = Math.max(0, ledger.computed);
+  next.movementEdits = [...(next.movementEdits || []), { at: new Date().toISOString(), type, index, before: original, after: updated }];
+  return next;
+}
+
+function renderStockMovement(item, itemIndex) {
+  const ledger = getStockMovement(item);
+  const number = value => value == null ? '—' : fmt3(value);
+  const busy = editItemIndex != null || withdrawOpenIndex != null || returnOpenIndex != null || removeConfirmIndex != null || movementEdit != null;
+  return `<section class="stock-movement" aria-label="Stock Movement ${escapeHtml(item.code)}">
+    <div class="stock-movement-title">Stock Movement · ${escapeHtml(item.unit || 'ไม่ระบุหน่วย')}</div>
+    <div class="stock-movement-scroll" tabindex="0" role="region" aria-label="ตารางความเคลื่อนไหวสินค้า">
+      <table><thead><tr><th>วันที่</th><th>Lot / PK No.</th><th>รายการ</th><th class="num sm-in">รับเข้า</th><th class="num sm-out">จ่ายออก</th><th class="num sm-balance">คงเหลือ</th><th>ผู้ทำรายการ</th><th>จัดการ</th></tr></thead>
+      <tbody>${ledger.rows.map(row => `<tr>
+        <td class="sm-date">${formatMovementDate(row.date)}</td><td>${escapeHtml(row.lotNo || '—')}</td>
+        <td class="sm-${row.type}">${row.label}</td>
+        <td class="num sm-in">${row.type === 'withdraw' ? '—' : number(row.qty)}</td>
+        <td class="num sm-out">${row.type === 'withdraw' ? number(row.qty) : '—'}</td>
+        <td class="num sm-balance">${number(row.balance)}</td><td>${escapeHtml(row.by || '—')}</td>
+        <td><button type="button" class="sm-edit" data-item="${itemIndex}" data-type="${row.type}" data-index="${row.index}" aria-label="แก้ไข${row.label} ${formatMovementDate(row.date)}" ${busy ? 'disabled' : ''}>แก้ไข</button></td>
+      </tr>`).join('')}</tbody></table>
+    </div>
+    ${ledger.undated ? '<div class="sm-note">บางรายการไม่ระบุวันที่ จึงยืนยันลำดับเวลาไม่ได้</div>' : ''}
+    ${ledger.computed == null ? '<div class="sm-note">ข้อมูลยอดรับหรือหน่วยไม่ครบ จึงไม่คำนวณยอดคงเหลือจากประวัติ</div>' : ''}
+    ${ledger.mismatch ? `<div class="sm-warning">ยอดตามประวัติ ${number(ledger.computed)} · ยอดที่บันทึก ${number(ledger.stored)} — กรุณาตรวจสอบก่อนแก้ไข</div>` : ''}
+  </section>`;
+}
+
+function renderMovementEditForm(item, index) {
+  if (!movementEdit || movementEdit.itemIndex !== index || !editingSlot || movementEdit.zone !== editingSlot.zone || movementEdit.slot !== editingSlot.slot) return '';
+  const row = getStockMovement(item).rows.find(r => r.type === movementEdit.type && r.index === movementEdit.index);
+  if (!row) return '';
+  const date = formatMovementDate(row.date);
+  const iso = date === '—' ? '' : date.slice(6) + '-' + date.slice(3,5) + '-' + date.slice(0,2);
+  return `<div class="sm-form"><div class="stock-movement-title">แก้ไข${row.label}</div>
+    <div class="sm-fields">
+      <label>วันที่ *<input type="date" class="sm-input-date" value="${iso}" required></label>
+      <label>Lot / PK No.<input class="sm-input-lot" value="${escapeHtml(row.lotNo)}"></label>
+      <label>จำนวน (${escapeHtml(item.unit || 'ไม่ระบุหน่วย')}) *<input type="number" class="sm-input-qty" min="0" step="any" value="${row.qty ?? ''}" required></label>
+      <label>ผู้ทำรายการ<input class="sm-input-by" value="${escapeHtml(row.by)}"></label>
+    </div>
+    <div class="sm-note">บันทึกแล้วจะคำนวณยอดคงเหลือใหม่จากยอดรับ − ยอดเบิก + ยอดรับคืน</div>
+    ${getStockMovement(item).mismatch ? '<label class="sm-warning"><input type="checkbox" class="sm-reconcile"> ยืนยันใช้ยอดตามประวัติแทนยอดคงเหลือเดิมที่ไม่ตรงกัน</label>' : ''}
+    <div class="sm-error" role="alert"></div>
+    <div class="sm-actions"><button type="button" class="sm-cancel">ยกเลิก</button><button type="button" class="sm-save">บันทึกการแก้ไข</button></div>
+  </div>`;
+}
+
+async function persistMovementEdit(edit, next) {
+  const local = slotItemsFor(edit.zone, edit.slot);
+  if (JSON.stringify(local[edit.itemIndex]) !== edit.snapshot) throw new Error('รายการถูกแก้ไขแล้ว กรุณาเปิดรายการใหม่');
+  if (!supabaseClient) {
+    local[edit.itemIndex] = next;
+    return false;
+  }
+  // Read the current row, merge only this item, and compare updated_at to reject concurrent writes.
+  const current = await supabaseClient.from('pallet_slots').select('zone,slot_code,items,occupied,updated_at')
+    .eq('zone', edit.zone).eq('slot_code', edit.slot).maybeSingle();
+  if (current.error) throw current.error;
+  const row = current.data;
+  if (!row || JSON.stringify(row.items?.[edit.itemIndex]) !== edit.snapshot) throw new Error('ข้อมูลบนเซิร์ฟเวอร์เปลี่ยนแล้ว กรุณารีเฟรชและเปิดรายการใหม่');
+  const items = row.items.slice();
+  items[edit.itemIndex] = next;
+  let query = supabaseClient.from('pallet_slots').update({ items, updated_at: new Date().toISOString() })
+    .eq('zone', edit.zone).eq('slot_code', edit.slot);
+  query = row.updated_at == null ? query.is('updated_at', null) : query.eq('updated_at', row.updated_at);
+  const result = await query.select('zone,slot_code,items,occupied,updated_at').maybeSingle();
+  if (result.error) throw result.error;
+  if (!result.data) throw new Error('มีการแก้ไขพร้อมกัน กรุณารีเฟรชและลองใหม่');
+  applyRemoteSlotRow(result.data, { silent: true });
+  return true;
+}
+
 function renderSlotEdit() {
   if (!editingSlot) return;
   const { zone, slot } = editingSlot;
@@ -4050,13 +4214,7 @@ function renderSlotEdit() {
   if (fseItemCount) fseItemCount.textContent = `${items.length} รายการ`;
   fseItemsList.innerHTML = items.length
     ? FSE_ITEMS_HEADER + items.map((it, i) => {
-        // Older imported entries may have neither receipt date nor quantity.
-        const metaParts = [];
-        if (it.receiveDate) metaParts.push(formatMovementDate(it.receiveDate));
-        if (it.qty != null && it.qty !== '') metaParts.push(`รับเข้า ${escapeHtml(String(it.qty))}${it.unit ? ' ' + escapeHtml(it.unit) : ''}`);
-        else if (it.receiveDate) metaParts.push('รับเข้า');
-        const metaLine = (metaParts.length ? `<span class="fse-item-meta receive-history">${metaParts.join(' · ')}</span>` : '') +
-          (it.note ? `<span class="fse-item-meta">หมายเหตุ: ${escapeHtml(it.note)}</span>` : '');
+        const metaLine = it.note ? `<span class="fse-item-meta">หมายเหตุ: ${escapeHtml(it.note)}</span>` : '';
 
         // "เบิก" (withdraw) feature, added 20 Aug 2026 per Pornchai's request: a per-item audit
         // trail of withdrawal transactions (date/qty/unit/by), logged via withdrawSlotItem()
@@ -4077,13 +4235,7 @@ function renderSlotEdit() {
         const unitCell = it.unit
           ? `<span class="fse-item-unit-cell">${escapeHtml(it.unit)}</span>`
           : `<span class="fse-item-unit-cell unknown"></span>`;
-        const withdrawHistory = (it.withdrawals || []).map(w =>
-          `<span class="fse-item-history-line withdraw-history">${formatMovementDate(w.date)} · เบิก ${escapeHtml(String(w.qty))}${w.unit ? ' ' + escapeHtml(w.unit) : ''}${w.by ? ' โดย ' + escapeHtml(w.by) : ''}</span>`
-        ).join('');
-        const returnHistory = (it.returns || []).map(r =>
-          `<span class="fse-item-history-line return-history">${formatMovementDate(r.date)} · รับคืน ${escapeHtml(String(r.qty))}${r.unit ? ' ' + escapeHtml(r.unit) : ''}${r.by ? ' โดย ' + escapeHtml(r.by) : ''}</span>`
-        ).join('');
-        const history = withdrawHistory + returnHistory;
+        const history = renderStockMovement(it, i);
         const returnable = getReturnableQty(it);
         const withdrawBtn = `<button type="button" class="fse-item-withdraw-btn${withdrawOpenIndex === i ? ' active' : ''}" data-idx="${i}" aria-expanded="${withdrawOpenIndex === i}">เบิก</button>`;
         const returnBtn = `<button type="button" class="fse-item-return-btn${returnOpenIndex === i ? ' active' : ''}" data-idx="${i}" aria-expanded="${returnOpenIndex === i}" ${returnable <= 0 ? 'disabled title="ยังไม่มียอดเบิกที่รับคืนได้"' : ''}>รับคืน</button>`;
@@ -4105,7 +4257,7 @@ function renderSlotEdit() {
              <button type="button" class="fse-remove-cancel-btn" data-idx="${i}" title="ยกเลิก" aria-label="ยกเลิกการลบ ${escapeHtml(it.code)}">↩</button>`
           : `<button type="button" class="fse-item-remove" data-idx="${i}" title="ลบรายการนี้" aria-label="ลบรายการ ${escapeHtml(it.code)}">✕</button>`;
 
-        const activeAction = editItemIndex === i ? editBtn
+        const activeAction = movementEdit ? '' : editItemIndex === i ? editBtn
           : withdrawOpenIndex === i ? withdrawBtn
           : returnOpenIndex === i ? returnBtn
           : removeConfirmIndex === i ? removeAction
@@ -4121,6 +4273,7 @@ function renderSlotEdit() {
           <div class="fse-item-actions" role="group" aria-label="จัดการรายการ ${escapeHtml(it.code)}">${activeAction}</div>
           ${metaLine}
           ${history}
+          ${renderMovementEditForm(it, i)}
         </div>
         ${editForm}
         ${withdrawForm}
@@ -4371,6 +4524,7 @@ function syncAfterSlotEdit() {
 }
 
 function openSlotEdit(zoneCode, slotCode) {
+  movementEdit = null;
   resetClearSlotConfirm();
   editingSlot = { zone: zoneCode, slot: slotCode };
   withdrawOpenIndex = null;
@@ -4385,6 +4539,7 @@ function openSlotEdit(zoneCode, slotCode) {
   requestAnimationFrame(updateZoomView);
 }
 function closeSlotEdit() {
+  movementEdit = null;
   if (!editingSlot) return;
   resetClearSlotConfirm();
   editingSlot = null;
@@ -4432,9 +4587,56 @@ fseAddCode.addEventListener('change', autofillAddProductDetails);
 fseAddName.addEventListener('input', () => { fseAddName.dataset.autofilled = ''; fseAddName.classList.remove('is-autofilled'); });
 fseAddUnit.addEventListener('input', () => { fseAddUnit.dataset.autofilled = ''; fseAddUnit.classList.remove('is-autofilled'); });
 
-fseItemsList.addEventListener('click', (e) => {
+fseItemsList.addEventListener('click', async (e) => {
   if (!editingSlot) return;
+  if (movementSaving) return;
   resetClearSlotConfirm();
+
+  const movementBtn = e.target.closest('.sm-edit');
+  if (movementBtn && !movementBtn.disabled) {
+    const itemIndex = Number(movementBtn.dataset.item);
+    const item = slotItemsFor(editingSlot.zone, editingSlot.slot)[itemIndex];
+    if (!item) return;
+    movementEdit = { ...editingSlot, itemIndex, type: movementBtn.dataset.type, index: Number(movementBtn.dataset.index), snapshot: JSON.stringify(item) };
+    editItemIndex = null; withdrawOpenIndex = null; returnOpenIndex = null; removeConfirmIndex = null;
+    renderSlotEdit();
+    fseItemsList.querySelector('.sm-input-date')?.focus();
+    return;
+  }
+  if (e.target.closest('.sm-cancel')) {
+    movementEdit = null;
+    renderSlotEdit();
+    return;
+  }
+  if (e.target.closest('.sm-save')) {
+    const edit = movementEdit;
+    const form = e.target.closest('.sm-form');
+    if (!edit || !form) return;
+    const errorEl = form.querySelector('.sm-error');
+    try {
+      const item = slotItemsFor(edit.zone, edit.slot)[edit.itemIndex];
+      if (!item || JSON.stringify(item) !== edit.snapshot) throw new Error('รายการถูกแก้ไขแล้ว กรุณายกเลิกและเปิดรายการใหม่');
+      if (form.querySelector('.sm-reconcile') && !form.querySelector('.sm-reconcile').checked) throw new Error('กรุณายืนยันการคำนวณยอดคงเหลือใหม่');
+      const next = prepareMovementEdit(item, edit.type, edit.index, {
+        date: form.querySelector('.sm-input-date').value,
+        qty: form.querySelector('.sm-input-qty').value,
+        lotNo: form.querySelector('.sm-input-lot').value,
+        by: form.querySelector('.sm-input-by').value,
+      });
+      movementSaving = true;
+      slotEditPanel.inert = true;
+      form.querySelectorAll('button, input').forEach(el => el.disabled = true);
+      errorEl.textContent = 'กำลังบันทึก…';
+      const remote = await persistMovementEdit(edit, next);
+      movementEdit = null;
+      syncAfterSlotEdit();
+      showFseFeedback(remote ? 'บันทึกการแก้ไขและคำนวณยอดใหม่แล้ว' : 'แก้ไขในหน้านี้แล้ว · ยังไม่เชื่อมต่อเซิร์ฟเวอร์ โปรดส่งออกข้อมูลเก็บไว้', remote ? 'success' : 'error');
+    } catch (error) {
+      errorEl.textContent = error.message || 'บันทึกไม่สำเร็จ กรุณาลองใหม่';
+      form.querySelectorAll('button, input').forEach(el => el.disabled = false);
+    } finally { movementSaving = false; slotEditPanel.inert = false; }
+    return;
+  }
 
   const editBtn = e.target.closest('.fse-item-edit-btn');
   if (editBtn) {
@@ -4472,7 +4674,7 @@ fseItemsList.addEventListener('click', (e) => {
       qty: qtyRaw === '' ? null : parseFloat(qtyRaw),
       unit: formEl.querySelector('.fe-unit').value.trim(),
     });
-    if (!updated) { showFseFeedback('ไม่พบรายการที่ต้องการแก้ไข', 'error'); return; }
+    if (!updated) { showFseFeedback('บันทึกไม่ได้ · ตรวจสอบรายการและยอดรับให้คงเหลือไม่ติดลบ', 'error'); return; }
     editItemIndex = null;
     syncAfterSlotEdit();
     showFseFeedback('บันทึกการแก้ไขแล้ว');
@@ -4679,6 +4881,10 @@ document.getElementById('floorplanZoomClose').addEventListener('click', closeZoo
 zoomModal.addEventListener('click', (e) => { if (e.target === zoomModal) closeZoomModal(); });
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
+  if (movementSaving) { e.preventDefault(); return; }
+  if (movementEdit && editingSlot) {
+    e.preventDefault(); movementEdit = null; renderSlotEdit(); return;
+  }
   // Close the innermost workflow first so Escape never discards an in-progress edit/withdrawal
   // by hiding the entire slot panel in one step.
   if (editItemIndex != null) { editItemIndex = null; renderSlotEdit(); return; }
