@@ -1437,6 +1437,23 @@
     html { scroll-behavior: auto; }
     *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
   }
+  /* Movement history is secondary text; action labels also convey meaning without color. */
+  .fse-item-row { --movement-in: var(--status-good); --movement-out: var(--status-critical); }
+  .fse-item-row .fse-item-meta, .fse-item-row .fse-item-history-line {
+    font-size: 12px; font-weight: 600; line-height: 1.6;
+  }
+  .fse-item-row .fse-item-meta.receive-history,
+  .fse-item-row .fse-item-history-line.return-history { color: var(--movement-in); }
+  .fse-item-row .fse-item-history-line.withdraw-history { color: var(--movement-out); }
+  .fse-item-row .fse-item-remaining-cell { font-weight: 700; font-size: 13px; }
+  .fse-balance-summary {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px;
+    margin: 10px 0; padding: 10px 12px; border: 1px solid var(--border);
+    border-radius: 10px; background: var(--surface-1); color: var(--text-primary);
+    font-size: 12px; line-height: 1.6;
+  }
+  .fse-balance-value { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .fse-balance-note { width: 100%; color: var(--text-secondary); }
 </style>
 </head>
 <body class="viz-root">
@@ -2157,6 +2174,7 @@
           <button type="button" class="fse-close" id="fseCloseBtn" title="ปิดแผงจัดการ" aria-label="ปิดแผงจัดการ">✕</button>
         </div>
         <div class="fse-items" id="fseItemsList"></div>
+        <div class="fse-balance-summary" id="fseBalanceSummary" role="status" aria-live="polite"></div>
         <div class="fse-form-section">
           <div class="fse-section-title">
             <strong>เพิ่มรายการใหม่</strong>
@@ -3910,11 +3928,37 @@ const FSE_ITEMS_HEADER = `
     <span>รหัส</span><span>ชื่อสินค้า</span><span>Lot No.</span><span class="fse-col-remaining">คงเหลือ</span><span class="fse-col-unit">หน่วย</span><span style="text-align:right">จัดการ</span>
   </div>`;
 
+function summarizeSlotBalance(items) {
+  const totals = new Map();
+  let unknown = 0;
+  for (const item of items) {
+    const raw = getRemainingQty(item);
+    if (raw == null || String(raw).trim() === '' || !Number.isFinite(Number(raw))) {
+      unknown++;
+      continue;
+    }
+    const unit = String(item.unit || '').trim();
+    totals.set(unit, (totals.get(unit) || 0) + Number(raw));
+  }
+  return { totals: [...totals].map(([unit, qty]) => ({ unit, qty })), unknown };
+}
+
+function renderSlotBalance(items) {
+  const summary = summarizeSlotBalance(items);
+  const values = summary.totals.map(({ unit, qty }) =>
+    `<span class="fse-balance-value">${fmt3(qty)} ${escapeHtml(unit || '(ไม่ระบุหน่วย)')}</span>`
+  ).join('');
+  document.getElementById('fseBalanceSummary').innerHTML =
+    `<span>ยอดคงเหลือรวม · ตำแหน่งนี้</span>${values || '<span>ยังไม่มียอดคงเหลือที่ระบุ</span>'}` +
+    (summary.unknown ? `<span class="fse-balance-note">ไม่รวม ${summary.unknown} รายการที่ยังไม่ทราบยอดคงเหลือ</span>` : '');
+}
+
 function renderSlotEdit() {
   if (!editingSlot) return;
   const { zone, slot } = editingSlot;
   fseSlotTitle.textContent = `ตำแหน่ง ${slot}`;
   const items = slotItemsFor(zone, slot);
+  renderSlotBalance(items);
   if (fseItemCount) fseItemCount.textContent = `${items.length} รายการ`;
   fseItemsList.innerHTML = items.length
     ? FSE_ITEMS_HEADER + items.map((it, i) => {
@@ -3924,10 +3968,10 @@ function renderSlotEdit() {
         // (unit now has its own column -- see fse-item-unit-cell below -- so it's dropped from
         // this line to avoid repeating it.)
         const metaParts = [];
+        if (it.qty != null && it.qty !== '') metaParts.push(`รับเข้า ${escapeHtml(String(it.qty))}${it.unit ? ' ' + escapeHtml(it.unit) : ''}`);
         if (it.receiveDate) metaParts.push(`วันที่รับ ${escapeHtml(it.receiveDate)}`);
-        if (it.qty != null && it.qty !== '') metaParts.push(`จำนวนรับ ${escapeHtml(String(it.qty))}`);
-        if (it.note) metaParts.push(`หมายเหตุ: ${escapeHtml(it.note)}`);
-        const metaLine = metaParts.length ? `<span class="fse-item-meta">${metaParts.join(' · ')}</span>` : '';
+        const metaLine = (metaParts.length ? `<span class="fse-item-meta receive-history">${metaParts.join(' · ')}</span>` : '') +
+          (it.note ? `<span class="fse-item-meta">หมายเหตุ: ${escapeHtml(it.note)}</span>` : '');
 
         // "เบิก" (withdraw) feature, added 20 Aug 2026 per Pornchai's request: a per-item audit
         // trail of withdrawal transactions (date/qty/unit/by), logged via withdrawSlotItem()
@@ -3949,7 +3993,7 @@ function renderSlotEdit() {
           ? `<span class="fse-item-unit-cell">${escapeHtml(it.unit)}</span>`
           : `<span class="fse-item-unit-cell unknown"></span>`;
         const withdrawHistory = (it.withdrawals || []).map(w =>
-          `<span class="fse-item-history-line">เบิก ${escapeHtml(String(w.qty))}${w.unit ? ' ' + escapeHtml(w.unit) : ''} เมื่อ ${escapeHtml(w.date)}${w.by ? ' โดย ' + escapeHtml(w.by) : ''}</span>`
+          `<span class="fse-item-history-line withdraw-history">เบิก ${escapeHtml(String(w.qty))}${w.unit ? ' ' + escapeHtml(w.unit) : ''} เมื่อ ${escapeHtml(w.date)}${w.by ? ' โดย ' + escapeHtml(w.by) : ''}</span>`
         ).join('');
         const returnHistory = (it.returns || []).map(r =>
           `<span class="fse-item-history-line return-history">รับคืน ${escapeHtml(String(r.qty))}${r.unit ? ' ' + escapeHtml(r.unit) : ''} เมื่อ ${escapeHtml(r.date)}${r.by ? ' โดย ' + escapeHtml(r.by) : ''}</span>`
