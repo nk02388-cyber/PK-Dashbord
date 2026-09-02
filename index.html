@@ -1456,13 +1456,14 @@
   .fse-item-row .fse-item-history-line.withdraw-history { color: var(--movement-out); }
   .fse-item-row .fse-item-remaining-cell { font-weight: 700; font-size: 13px; }
   .fse-balance-summary {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px;
-    margin: 10px 0; padding: 10px 12px; border: 1px solid var(--border);
-    border-radius: 10px; background: var(--surface-1); color: var(--text-primary);
-    font-size: 12px; line-height: 1.6;
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px 14px;
+    width: fit-content; max-width: 100%; margin: 10px 0 10px auto; padding: 10px 12px;
+    border: 1px solid var(--series-1); border-right-width: 4px;
+    border-radius: 10px; background: var(--series-1-wash); color: var(--text-primary);
+    font-size: 12px; font-weight: 600; line-height: 1.6; text-align: right; overflow-wrap: anywhere;
   }
-  .fse-balance-value { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .fse-balance-note { width: 100%; color: var(--text-secondary); }
+  .fse-balance-value { padding: 2px 8px; border-radius: 6px; background: var(--surface-1); font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .fse-balance-note { width: 100%; color: var(--text-secondary); font-weight: 400; }
 </style>
 </head>
 <body class="viz-root">
