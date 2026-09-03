@@ -4156,8 +4156,8 @@ function renderStockMovement(item, itemIndex) {
   const ledger = getStockMovement(item);
   const number = value => value == null ? '—' : fmt3(value);
   const busy = editItemIndex != null || withdrawOpenIndex != null || returnOpenIndex != null || removeConfirmIndex != null || movementEdit != null;
-  return `<section class="stock-movement" aria-label="Stock Movement ${escapeHtml(item.code)}">
-    <div class="stock-movement-title">Stock Movement · ${escapeHtml(item.unit || 'ไม่ระบุหน่วย')}</div>
+  return `<section class="stock-movement" aria-label="STOCK CARD ${escapeHtml(item.code)}">
+    <div class="stock-movement-title">STOCK CARD</div>
     <div class="stock-movement-scroll" tabindex="0" role="region" aria-label="ตารางความเคลื่อนไหวสินค้า">
       <table><thead><tr><th>วันที่</th><th>Lot / PK No.</th><th>รายการ</th><th class="num sm-in">รับเข้า</th><th class="num sm-out">จ่ายออก</th><th class="num sm-balance">คงเหลือ</th><th>ผู้ทำรายการ</th><th>จัดการ</th></tr></thead>
       <tbody>${ledger.rows.map(row => `<tr>
