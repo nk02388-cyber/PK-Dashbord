@@ -8,7 +8,7 @@ const source = names.map(name => html.match(new RegExp(`function ${name}\\([^]*?
 const master = JSON.parse(html.match(/const BOM_COMPONENT_TYPES = Object.freeze\(([^]*?)\);/)[1]);
 const makeContext = (bom, stock) => vm.createContext({
   BOM_COMPONENT_TYPES: master, BOM_UNIT_CONVERSIONS: [], BOMPK: bom, STOCK: stock, fgBomSearch: { value: '' },
-  renderBomSummary() {}, renderFgBom() {},
+  renderBomSummary() {}, renderFgBom() {}, renderBomPlan() {},
 });
 const line = (pk_code, qty_per_unit = 1) => ({ pk_code, qty_per_unit, unit:'ชิ้น', component_type: String(pk_code).trim().startsWith('5') ? 'non_packaging' : 'packaging' });
 const bom = { assumptions: { excluded_warehouses: ['800', '900'] }, kpis: {}, bom_detail: {

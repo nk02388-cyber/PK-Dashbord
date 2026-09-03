@@ -5,7 +5,7 @@ const source=names.map(n=>html.match(new RegExp(`function ${n}\\([^]*?\\n\\}`))[
 function scenario(lines,items,conversions=[]) {
   const ctx=vm.createContext({BOM_COMPONENT_TYPES:{},BOM_UNIT_CONVERSIONS:conversions,
     BOMPK:{assumptions:{excluded_warehouses:['800','900']},kpis:{},bom_detail:{FG:{lines}}},STOCK:{items},
-    fgBomSearch:{value:''},renderBomSummary(){},renderFgBom(){}});
+    fgBomSearch:{value:''},renderBomSummary(){},renderFgBom(){},renderBomPlan(){}});
   vm.runInContext(source,ctx);ctx.recalculateBomFromStock();return ctx;
 }
 const line=(code,unit='ใบ',qty=2)=>({pk_code:code,unit,qty_per_unit:qty,component_type:'packaging'});

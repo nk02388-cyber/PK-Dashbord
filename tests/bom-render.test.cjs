@@ -6,7 +6,7 @@ const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const source = html.match(/function renderFgBom\([^]*?\n\}/)[0];
 const excluded = new Set(['31-CARTON']);
 const ctx = vm.createContext({
-  BOMPK: { bom_detail: { FG: { fg_name: 'Test FG', line_count: 2, lines: [
+  BOMPK: { bom_detail: { FG: { fg_name: 'Test FG', producible:3, line_count: 2, lines: [
     { pk_code: '31-CARTON', unit:'ใบ', pk_name: 'Carton', qty_per_unit: 2, stock_avail: 6,
       stock_unit_value: 5, producible: 3, in_stock: true },
     { pk_code: '31-LABEL', unit:'ใบ', pk_name: 'Label', qty_per_unit: 2, stock_avail: 20,
@@ -21,6 +21,10 @@ vm.runInContext(source, ctx);
 const render = () => { ctx.renderFgBom('FG'); return ctx.fgBomResult.innerHTML; };
 let result = render();
 assert.match(result, /บรรจุภัณฑ์รองรับ 10 หน่วย FG ตามสูตร/);
+assert.match(result, /ผลทดลองไม่รวมบางรายการ/);
+assert.match(result, /สูตรมาตรฐาน:<\/b> รองรับ 3 หน่วย FG ตามสูตร/);
+assert.match(result, /รายการที่ทดลองไม่รวม \(1\)/);
+assert.match(result, /data-reset-simulation/);
 const excludedRow = result.match(/<tr class="bom-excluded-row">[\s\S]*?<\/tr>/)[0];
 assert.match(excludedRow, /\+6 ใบ/, 'Excluded component stock must not be consumed');
 assert.match(excludedRow, /\+฿30/, 'Excluded component value must remain intact');
@@ -32,6 +36,8 @@ excluded.clear();
 result = render();
 assert.match(result, /บรรจุภัณฑ์รองรับ 3 หน่วย FG ตามสูตร/);
 assert.doesNotMatch(result, /bom-excluded-row/);
+assert.doesNotMatch(result, /data-reset-simulation/);
+assert.match(result, /ผลตามสูตรมาตรฐาน/);
 assert.match(result, /0 ใบ/, 'Restored bottleneck is consumed normally');
 excluded.add('31-CARTON'); excluded.add('31-LABEL');
 result = render();
