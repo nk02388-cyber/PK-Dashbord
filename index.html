@@ -5471,7 +5471,7 @@ function renderBomSummary() {
   document.getElementById('tabBadgeBompk').textContent = fmt0(bk.fg_blocked) + ' ติดขัด';
   const bomStockDate = String(STOCK.report_date || 'ปัจจุบัน').replace(/^ณ วันที่:\s*/, 'วันที่ ');
   document.getElementById('assumptionText').textContent =
-    'อ้างอิงสต็อก ' + bomStockDate + ' · ไม่รวมคลัง 800 / 900 ในการคำนวณ (แสดงเพื่ออ้างอิง)';
+    'อ้างอิงสต็อก ' + bomStockDate + ' · ไม่รวมคลัง 800 / 900 ในการคำนวณ (แสดงเพื่ออ้างอิง) · ไม่รวมส่วนประกอบรหัสขึ้นต้นด้วย 5 ใน BOM';
 }
 renderBomSummary();
 
@@ -5601,7 +5601,15 @@ function recalculateBomFromStock() {
   });
 
   const available = [], blocked = [];
+  let totalBomLines = 0, totalFgWithBom = 0;
+  const componentCodes = new Set();
   Object.entries(BOMPK.bom_detail).forEach(([fgCode, detail]) => {
+    // Apply the BOM component rule before calculating balances or rendering any rows.
+    detail.lines = detail.lines.filter(line => !String(line.pk_code || '').trim().startsWith('5'));
+    detail.line_count = detail.lines.length;
+    totalBomLines += detail.line_count;
+    if (detail.line_count > 0) totalFgWithBom++;
+    detail.lines.forEach(line => componentCodes.add(String(line.pk_code || '').trim()));
     let fgProducible = null;
     let bottleneckLine = null;
     detail.lines.forEach(line => {
@@ -5649,6 +5657,9 @@ function recalculateBomFromStock() {
   blocked.sort((a, b) => a.fg.localeCompare(b.fg));
   BOMPK.available_fg = available;
   BOMPK.blocked_fg = blocked;
+  BOMPK.kpis.total_fg_with_bom = totalFgWithBom;
+  BOMPK.kpis.total_bom_lines = totalBomLines;
+  BOMPK.kpis.unique_components = componentCodes.size;
   BOMPK.kpis.total_fg_computed = available.length + blocked.length;
   BOMPK.kpis.fg_available = available.length;
   BOMPK.kpis.fg_blocked = blocked.length;
@@ -5686,7 +5697,7 @@ function renderFgBom(rawCode) {
 
   const effBottleneckLine = detail.lines.find(l => l.pk_code === effBottleneckCode);
   const statusBadge = effProducible === null
-    ? '<span class="fg-status-chip neutral">ไม่มีข้อมูลปริมาณที่ใช้ในสูตรนี้</span>'
+    ? `<span class="fg-status-chip neutral">${detail.lines.length ? 'ไม่มีข้อมูลปริมาณที่ใช้ในสูตรนี้' : 'ไม่มีส่วนประกอบที่ใช้คำนวณใน BOM'}</span>`
     : (effProducible > 0
         ? `<span class="fg-status-chip good">ผลิตได้ ${fmt0(effProducible)} pcs</span>`
         : (effBottleneckLine && effBottleneckLine.stock_excluded > 0
