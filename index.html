@@ -1464,15 +1464,6 @@
   .fse-item-row .fse-item-history-line.return-history { color: var(--movement-in); }
   .fse-item-row .fse-item-history-line.withdraw-history { color: var(--movement-out); }
   .fse-item-row .fse-item-remaining-cell { font-weight: 700; font-size: 13px; }
-  .fse-balance-summary {
-    display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px 14px;
-    width: fit-content; max-width: 100%; margin: 10px 0 10px auto; padding: 10px 12px;
-    border: 1px solid var(--series-1); border-right-width: 4px;
-    border-radius: 10px; background: var(--series-1-wash); color: var(--text-primary);
-    font-size: 12px; font-weight: 600; line-height: 1.6; text-align: right; overflow-wrap: anywhere;
-  }
-  .fse-balance-value { padding: 2px 8px; border-radius: 6px; background: var(--surface-1); font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; }
-  .fse-balance-note { width: 100%; color: var(--text-secondary); font-weight: 400; }
   .stock-movement { grid-column: 1 / -1; min-width: 0; margin-top: 10px; }
   .stock-movement-title { font-size: 12px; font-weight: 600; margin-bottom: 6px; }
   .stock-movement-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
@@ -2225,7 +2216,6 @@
           <button type="button" class="fse-close" id="fseCloseBtn" title="ปิดแผงจัดการ" aria-label="ปิดแผงจัดการ">✕</button>
         </div>
         <div class="fse-items" id="fseItemsList"></div>
-        <div class="fse-balance-summary" id="fseBalanceSummary" role="status" aria-live="polite"></div>
         <div class="fse-form-section">
           <div class="fse-section-title">
             <strong>เพิ่มรายการใหม่</strong>
@@ -4086,16 +4076,6 @@ function summarizeSlotBalance(items) {
   return { totals: [...totals].map(([unit, qty]) => ({ unit, qty })), unknown };
 }
 
-function renderSlotBalance(items) {
-  const summary = summarizeSlotBalance(items);
-  const values = summary.totals.map(({ unit, qty }) =>
-    `<span class="fse-balance-value">${fmt3(qty)} ${escapeHtml(unit || '(ไม่ระบุหน่วย)')}</span>`
-  ).join('');
-  document.getElementById('fseBalanceSummary').innerHTML =
-    `<span>ยอดคงเหลือรวม · ตำแหน่งนี้</span>${values || '<span>ยังไม่มียอดคงเหลือที่ระบุ</span>'}` +
-    (summary.unknown ? `<span class="fse-balance-note">ไม่รวม ${summary.unknown} รายการที่ยังไม่ทราบยอดคงเหลือ</span>` : '');
-}
-
 function movementNumber(value) {
   if (typeof value !== 'number' && typeof value !== 'string') return null;
   return String(value).trim() === '' || !Number.isFinite(Number(value)) ? null : Number(value);
@@ -4249,7 +4229,6 @@ function renderSlotEdit() {
   const { zone, slot } = editingSlot;
   fseSlotTitle.textContent = `ตำแหน่ง ${slot}`;
   const items = slotItemsFor(zone, slot);
-  renderSlotBalance(items);
   if (fseItemCount) fseItemCount.textContent = `${items.length} รายการ`;
   fseItemsList.innerHTML = items.length
     ? FSE_ITEMS_HEADER + items.map((it, i) => {
