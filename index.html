@@ -5705,6 +5705,7 @@ function renderFgBom(rawCode) {
             : '<span class="fg-status-chip critical">ยังผลิตไม่ได้ · ขาดสต็อกส่วนประกอบ</span>'));
 
   function fgRemainingStock(l) {
+    if (excludedSet.has(l.pk_code)) return l.stock_avail;
     if (l.qty_per_unit == null || effProducible == null) return null;
     return l.stock_avail - (l.qty_per_unit * effProducible);
   }
@@ -5781,7 +5782,7 @@ function renderFgBom(rawCode) {
         ${statusBadge}
       </div>
     </div>
-    <div class="table-scroll fg-bom-table-wrap" style="max-height:none; overflow:visible;">
+    <div class="table-scroll fg-bom-table-wrap" style="max-height:none;" tabindex="0" role="region" aria-label="ตารางส่วนประกอบ BOM">
       <table class="fg-bom-table">
         <thead>
           <tr>
