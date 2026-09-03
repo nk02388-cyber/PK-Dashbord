@@ -101,8 +101,11 @@
   .tabs {
     display:flex; gap: 6px; margin-bottom: 20px; border-bottom: 1px solid var(--border);
     position: sticky; top: var(--sticky-header-h, 0px); z-index: 99; background: var(--page-plane);
+    max-width: 100%; overflow-x: auto; overflow-y: hidden;
+    overscroll-behavior-inline: contain; scrollbar-width: thin;
   }
   .tab-btn {
+    flex: 0 0 auto;
     font: inherit; font-size: 13.5px; font-weight: 600; color: var(--text-secondary);
     background: none; border: none; border-bottom: 2px solid transparent;
     padding: 10px 4px; margin-bottom: -1px; cursor: pointer; display:flex; align-items:center; gap:8px;
@@ -1162,11 +1165,6 @@
 
   @media (max-width: 640px) {
     body.viz-root { padding: 12px; }
-    .tabs {
-      max-width: 100%; overflow-x: auto; overflow-y: hidden;
-      overscroll-behavior-inline: contain; scrollbar-width: thin;
-    }
-    .tab-btn { flex: 0 0 auto; }
     .two-col, .two-col > *, .panel { min-width: 0; max-width: 100%; }
     .top-summary-row .kpi-side-row {
       flex: 1 1 100%; width: 100%; min-width: 0; gap: 12px;
