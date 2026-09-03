@@ -9,7 +9,7 @@ const protectedContent = html.split(/\r?\n/).filter(line => line.length > 10000)
 assert.equal(crypto.createHash('sha256').update(protectedContent).digest('hex'),
   '118e5f725d18c332f7323cece13674e6167164062ef10e59782054dd89b6ea88');
 for (const copy of ['Packaging Stock &amp; BOM Dashboard', '↥ อัปเดตสต็อก',
-  'สต็อกพร้อมใช้ (pcs)', 'สต็อกหลังผลิต (pcs)', 'มูลค่าหลังผลิต (บาท)',
+  'สต็อกพร้อมใช้ (หน่วยตามสูตร)', 'สต็อกหลังใช้บรรจุภัณฑ์', 'มูลค่าหลังใช้บรรจุภัณฑ์ (บาท)',
   'นำเข้าข้อมูลพาเลต', 'กรอก PIN เพื่อยืนยันการอัปเดตสต็อก']) {
   assert.ok(html.includes(copy), `Missing copy: ${copy}`);
 }

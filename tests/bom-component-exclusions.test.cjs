@@ -3,12 +3,14 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
-const source = html.match(/function recalculateBomFromStock\([^]*?\n\}/)[0];
+const names = ['bomNumber','normalizeBomUnit','bomComponentType','bomConversion','recalculateBomFromStock'];
+const source = names.map(name => html.match(new RegExp(`function ${name}\\([^]*?\\n\\}`))[0]).join('\n');
+const master = JSON.parse(html.match(/const BOM_COMPONENT_TYPES = Object.freeze\(([^]*?)\);/)[1]);
 const makeContext = (bom, stock) => vm.createContext({
-  BOMPK: bom, STOCK: stock, fgBomSearch: { value: '' },
+  BOM_COMPONENT_TYPES: master, BOM_UNIT_CONVERSIONS: [], BOMPK: bom, STOCK: stock, fgBomSearch: { value: '' },
   renderBomSummary() {}, renderFgBom() {},
 });
-const line = (pk_code, qty_per_unit = 1) => ({ pk_code, qty_per_unit });
+const line = (pk_code, qty_per_unit = 1) => ({ pk_code, qty_per_unit, unit:'ชิ้น', component_type: String(pk_code).trim().startsWith('5') ? 'non_packaging' : 'packaging' });
 const bom = { assumptions: { excluded_warehouses: ['800', '900'] }, kpis: {}, bom_detail: {
   FG: { lines: [line('51-0021-002/1'), line(' 5999 '), line(5001), line('315-01', 2)] },
   EMPTY: { lines: [line('51-only')] },
@@ -16,10 +18,10 @@ const bom = { assumptions: { excluded_warehouses: ['800', '900'] }, kpis: {}, bo
   UNKNOWN: { lines: [line('31-unknown', null)] },
 } };
 const stock = { items: [
-  { code: '315-01', wh: '200', qty: 20, value: 100 },
-  { code: '315-01', wh: '800', qty: 100, value: 500 },
-  { code: '31-hold', wh: '900', qty: 50, value: 50 },
-  { code: '51-0021-002/1', wh: '200', qty: 0, value: 0 },
+  { code: '315-01', unit:'ชิ้น', wh: '200', qty: 20, value: 100 },
+  { code: '315-01', unit:'ชิ้น', wh: '800', qty: 100, value: 500 },
+  { code: '31-hold', unit:'ชิ้น', wh: '900', qty: 50, value: 50 },
+  { code: '51-0021-002/1', unit:'ชิ้น', wh: '200', qty: 0, value: 0 },
 ] };
 const stockBefore = JSON.stringify(stock);
 const ctx = makeContext(bom, stock);
@@ -43,7 +45,7 @@ assert.equal(JSON.stringify(stock), stockBefore, 'Stock inventory must remain un
 const once = JSON.stringify(bom);
 ctx.recalculateBomFromStock();
 assert.equal(JSON.stringify(bom), once, 'Repeated refresh must preserve counts');
-ctx.STOCK = { items: [{ code: '315-01', wh: '200', qty: 6, value: 30 }] };
+ctx.STOCK = { items: [{ code: '315-01', unit:'ชิ้น', wh: '200', qty: 6, value: 30 }] };
 ctx.recalculateBomFromStock();
 assert.equal(bom.bom_detail.FG.producible, 3, 'A new stock snapshot must recalculate retained components');
 
@@ -64,4 +66,4 @@ assert.ok(data.bomPk.bom_detail['21-0021-06'].producible > 0);
 assert.equal(data.bomPk.kpis.total_bom_lines, 3375);
 assert.equal(data.bomPk.kpis.unique_components, 1524);
 assert.equal(data.bomPk.kpis.total_fg_with_bom, 756);
-console.log('PASS: prefix-5 BOM removal, readiness, counts, empty formulas, stock refresh and all embedded formulas');
+console.log('PASS: migrated component classifications, readiness, counts, empty formulas and stock refresh');
