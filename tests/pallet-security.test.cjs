@@ -22,10 +22,10 @@ async function main(){
     mode=fail;assert.equal(await ctx.runSlotMutation('F','F-18',()=>ctx.removeSlotItem('F','F-18',0)),false);
     assert.equal(JSON.stringify(ctx.SLOT_ITEMS),saved);assert.equal(ctx.palletWriteBusy,false);assert.ok(feedback);
   }
-  mode='ok';ctx.palletCanEdit=false;const before=calls;
+  mode='ok';const client=ctx.supabaseClient;ctx.supabaseClient=null;const before=calls;
   assert.equal(await ctx.runSlotMutation('F','F-18',()=>ctx.setOccupied('F','F-18',false)),false);assert.equal(calls,before);
-  await assert.rejects(ctx.savePalletBatch([]),/สิทธิ์/);
-  ctx.palletCanEdit=true;
+  await assert.rejects(ctx.savePalletBatch([]),/เชื่อมต่อ/);
+  ctx.supabaseClient=client;
   ctx.applyRemoteSlotRow({zone:'F',slot_code:'F-18',version:9,occupied:true,items:[{code:'REMOTE'}]});
   assert.equal(ctx.editingSlot.version,4,'Open editor keeps its baseline');assert.equal(JSON.stringify(ctx.SLOT_ITEMS),saved,'Remote event must not silently re-target an index');
   ctx.applyRemoteSlotRow({zone:'F',slot_code:'F-18',version:8,occupied:true,items:[]});
@@ -34,6 +34,6 @@ async function main(){
   mode='conflict';await assert.rejects(ctx.setReceiveDate('TEST','2026-09-06',1),/คนแก้/);assert.equal(ctx.RECEIVE_DATES.TEST,'2026-09-05');
   assert.doesNotMatch(html,/\.from\('(?:pallet_slots|receive_dates)'\)\.(?:upsert|update|insert|delete)/);
   assert.match(extract('pushFullGeometryToRemote'),/savePalletBatch\(slots,dates\)/);
-  console.log('PASS: authenticated writes, server versions, all-or-nothing local changes, receive dates, stale events and editor baseline');
+  console.log('PASS: public versioned writes, server versions, all-or-nothing local changes, receive dates, stale events and editor baseline');
 }
 main().catch(e=>{console.error(e);process.exitCode=1});

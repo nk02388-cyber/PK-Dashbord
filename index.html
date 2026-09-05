@@ -1171,7 +1171,6 @@
   #bomPlanResult table { min-width:900px; }
   .bom-simulation { border:1px solid var(--status-warning); border-radius:10px; padding:12px; margin-bottom:14px; overflow-wrap:anywhere; }
   .bom-simulation p { margin:6px 0; }
-  #palletLoginForm[hidden], #palletSignOut[hidden] { display:none; }
   #bomBrands summary { cursor:pointer; padding:12px; font-weight:600; }
   #bomBrands { margin:12px 0; border:1px solid var(--border); border-radius:10px; }
   .bom-plan-form select { padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--surface-1); color:var(--text-primary); }
@@ -2201,20 +2200,7 @@
         <span id="floorplanExcelStatus" role="status"></span>
       </div>
       <p style="color:var(--text-muted);font-size:12px">Excel สำหรับกรองสินค้า ตรวจนับ และตรวจ STOCK CARD · ส่งออกทุกโซน ไม่จำกัดตามช่องค้นหา · ใช้ไฟล์ JSON สำหรับสำรองและนำเข้าระบบ</p>
-      <details id="palletAuth" class="card" style="padding:12px;margin:12px 0">
-        <summary style="cursor:pointer;min-height:44px">สิทธิ์แก้ไขพาเลต · เข้าสู่ระบบ</summary>
-        <p id="palletAuthStatus" role="status">โหมดดูข้อมูล · กำลังตรวจสอบสิทธิ์</p>
-        <form id="palletLoginForm" class="bom-plan-form">
-          <label for="palletEmail">อีเมลผู้มีสิทธิ์</label>
-          <input id="palletEmail" type="email" required autocomplete="email" placeholder="name@example.com">
-          <button type="submit" class="excl-toggle-btn" style="min-height:44px">ส่งลิงก์เข้าสู่ระบบ</button>
-        </form>
-        <button id="palletSignOut" type="button" class="excl-toggle-btn" hidden>ออกจากระบบ</button>
-        <p>ดูข้อมูลได้โดยไม่ล็อกอิน การแก้ไขและนำเข้าข้อมูลพาเลตจำกัดเฉพาะอีเมลที่ผู้ดูแลอนุญาต</p>
-      </details>
-
-
-      <div class="floorplan-search" id="floorplanSearch">
+<div class="floorplan-search" id="floorplanSearch">
       <label for="floorplanSearchInput">ค้นหาชื่อหรือรหัสสินค้า:</label>
         <div class="floorplan-search-control">
           <input type="text" id="floorplanSearchInput" placeholder="พิมพ์ชื่อหรือรหัสสินค้าบางส่วน" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="floorplanSearchSuggestions">
@@ -3030,7 +3016,6 @@ const SUPABASE_ANON_KEY = 'sb_publishable_kWbTxBFjBm4TrXxH_ReTFw_lZ2NUZQl';
 // Stock Inventory uses separate tables/RPCs; replacing stock does not change pallet/Zone data.
 const STOCK_SUPABASE_URL = 'https://zgsxbuckjrplkpvtlbmn.supabase.co';
 const STOCK_SUPABASE_ANON_KEY = 'sb_publishable_kWbTxBFjBm4TrXxH_ReTFw_lZ2NUZQl';
-let palletCanEdit = false;
 let palletDataReady = false;
 let palletWriteBusy = false;
 const palletVersions = new Map();
@@ -3077,12 +3062,12 @@ function buildSlotRow(zoneCode, slotCode) {
   };
 }
 async function savePalletBatch(slots, dates = []) {
-  if (!supabaseClient || !palletCanEdit) throw new Error('กรุณาเข้าสู่ระบบด้วยอีเมลที่มีสิทธิ์แก้พาเลต');
+  if (!supabaseClient) throw new Error('ยังไม่ได้เชื่อมต่อระบบบันทึกพาเลต');
   if (!palletDataReady) throw new Error('ยังโหลดข้อมูลพาเลตไม่ครบ กรุณารีเฟรชก่อนแก้ไข');
   const { data, error } = await supabaseClient.rpc('save_pallet_changes', { p_slots: slots, p_dates: dates });
   if (error) {
     if (error.code === '40001') throw new Error('มีคนแก้ข้อมูลนี้แล้ว · ยังไม่ได้บันทึก กรุณาคัดลอกค่าที่กรอกไว้ แล้วรีเฟรชเพื่อตรวจข้อมูลล่าสุด');
-    if (error.code === '42501') throw new Error('ไม่มีสิทธิ์แก้พาเลตหรือสิทธิ์ถูกยกเลิก กรุณาเข้าสู่ระบบใหม่');
+    if (error.code === '42501') throw new Error('ระบบยังไม่อนุญาตให้บันทึก กรุณาติดต่อผู้ดูแล');
     throw new Error('ยังยืนยันการบันทึกไม่ได้ กรุณาตรวจอินเทอร์เน็ตและรีเฟรชก่อนลองใหม่: ' + error.message);
   }
   if (!data || !Array.isArray(data.slots) || !Array.isArray(data.dates)) throw new Error('ผลการบันทึกไม่ครบ กรุณารีเฟรชเพื่อตรวจสอบ');
@@ -3097,7 +3082,7 @@ async function runSlotMutation(zone, slot, mutate) {
   const expected = editingSlot?.zone === zone && editingSlot?.slot === slot
     ? editingSlot.version : (palletVersions.get(JSON.stringify([zone,slot])) || 0);
   try {
-    if (!palletCanEdit || !palletDataReady) throw new Error('กรุณาเข้าสู่ระบบด้วยอีเมลที่มีสิทธิ์ และรอโหลดข้อมูลให้ครบ');
+    if (!supabaseClient || !palletDataReady) throw new Error('กรุณารอโหลดข้อมูลให้ครบก่อนแก้ไข');
     palletWriteBusy = true;
     slotEditPanel.inert = true;
     const valid = mutate();
@@ -3262,57 +3247,14 @@ async function initSupabaseSync() {
 }
 if (supabaseClient) initSupabaseSync();
 
-async function refreshPalletAuth() {
-  const status = document.getElementById('palletAuthStatus');
-  palletCanEdit = false;
-  try {
-    if (!supabaseClient) throw new Error('ยังไม่ได้เชื่อมต่อระบบ');
-    const {data,error} = await supabaseClient.auth.getSession();
-    if (error) throw error;
-    const user = data.session?.user;
-    if (user) {
-      const permission = await supabaseClient.rpc('can_edit_pallets');
-      if (permission.error) throw permission.error;
-      palletCanEdit = permission.data === true;
-    }
-    status.textContent = user ? (palletCanEdit ? 'มีสิทธิ์แก้ไขพาเลต · ' : 'บัญชีนี้มีสิทธิ์ดูข้อมูลเท่านั้น · ') + user.email : 'โหมดดูข้อมูล · เข้าสู่ระบบเพื่อแก้ไขพาเลต';
-    document.querySelector('#palletAuth summary').textContent = 'สิทธิ์แก้ไขพาเลต · ' + (palletCanEdit ? 'มีสิทธิ์แก้ไข' : user ? 'ดูข้อมูลเท่านั้น' : 'เข้าสู่ระบบ');
-    document.getElementById('palletLoginForm').hidden = !!user;
-    document.getElementById('palletSignOut').hidden = !user;
-  } catch (error) { status.textContent = 'ยังยืนยันสิทธิ์ไม่ได้ · ' + error.message; }
-}
-document.getElementById('palletLoginForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  const button = e.currentTarget.querySelector('button');
-  const status = document.getElementById('palletAuthStatus');
-  button.disabled = true;
-  try {
-    if (!supabaseClient) throw new Error('ยังไม่ได้เชื่อมต่อระบบ');
-    const {error} = await supabaseClient.auth.signInWithOtp({email:document.getElementById('palletEmail').value.trim(),
-      options:{emailRedirectTo:location.origin + location.pathname}});
-    if (error) throw error;
-    status.textContent = 'ส่งลิงก์เข้าสู่ระบบแล้ว กรุณาเปิดอีเมลและกดลิงก์เพื่อยืนยัน';
-  } catch (error) { status.textContent = 'ส่งลิงก์ไม่ได้ · ' + error.message; }
-  finally { button.disabled = false; }
-});
-document.getElementById('palletSignOut').addEventListener('click',async () => {
-  if (!supabaseClient) return;
-  const {error} = await supabaseClient.auth.signOut();
-  if (error) document.getElementById('palletAuthStatus').textContent = 'ออกจากระบบไม่สำเร็จ · ' + error.message;
-  else await refreshPalletAuth();
-});
-if (supabaseClient) supabaseClient.auth.onAuthStateChange(() => { setTimeout(refreshPalletAuth,0); });
-setTimeout(refreshPalletAuth,0);
 // Capture phase prevents read-only UI from changing local data, including Enter/file inputs.
 function guardPalletWrite(e) {
   const target = e.target.closest('#fseAddForm, #fseMarkEmptyBtn, #fseMarkOccupiedBtn, .fse-item-edit-btn, .fse-item-withdraw-btn, .fse-item-return-btn, .fse-item-remove, .sm-edit, .fz-receive-date, #floorplanZoomImportInput, label[for="floorplanZoomImportInput"]');
   if (!target) return;
-  if (!palletCanEdit || !palletDataReady || palletWriteBusy) {
+  if (!supabaseClient || !palletDataReady || palletWriteBusy) {
     e.preventDefault(); e.stopImmediatePropagation();
-    const msg = palletWriteBusy ? 'กำลังบันทึก กรุณารอสักครู่' : 'กรุณาเข้าสู่ระบบด้วยอีเมลที่มีสิทธิ์ และรอโหลดข้อมูลให้ครบ';
+    const msg = palletWriteBusy ? 'กำลังบันทึก กรุณารอสักครู่' : 'กรุณารอโหลดข้อมูลให้ครบก่อนแก้ไข';
     setSyncStatus('error',msg);
-    document.getElementById('palletAuthStatus').textContent = msg;
-    document.getElementById('palletAuth').open = true;
     if (typeof showFseFeedback === 'function') showFseFeedback(msg,'error');
   }
 }
@@ -5180,7 +5122,7 @@ document.getElementById('floorplanZoomImportInput').addEventListener('change', a
   const versions = new Map(palletVersions), dateVersions = new Map(receiveVersions);
   palletWriteBusy = true;
   try {
-    if (!palletCanEdit || !palletDataReady) throw new Error('กรุณาเข้าสู่ระบบและรอโหลดข้อมูลให้ครบ');
+    if (!supabaseClient || !palletDataReady) throw new Error('กรุณารอโหลดข้อมูลให้ครบก่อนนำเข้า');
     const parsed = JSON.parse(await file.text());
     const incoming = parsed.pallet_status || parsed;
     if (!incoming || typeof incoming !== 'object' || Array.isArray(incoming)) throw new Error('รูปแบบไฟล์ไม่ถูกต้อง');
