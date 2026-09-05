@@ -50,38 +50,25 @@ assert.equal(ctx.updateSlotItem('K','K-04',0,{...returned,qty:1}),false);
 assert.equal(JSON.stringify(returned),saved,'Invalid edit must not mutate anything');
 
 async function testPersist(){
-  const item={...sample};
-  const stored=[item,{code:'OTHER',qty:7}];
-  const editState={zone:'K',slot:'K-04',itemIndex:0,snapshot:JSON.stringify(item)};
-  const candidate=edit(item,'withdraw',0,200,'2026-08-25');
-  let mode='ok',writes=0,payload,filters=[],applied;
-  const client={from(){let update=false;return {
-    select(){return this},eq(k,v){filters.push([k,v]);return this},is(){return this},
-    update(values){update=true;payload=values;return this},
-    async maybeSingle(){
-      if(mode==='error')return {error:new Error('Network failure')};
-      if(update){writes++;return {data:mode==='race'?null:{zone:'K',slot_code:'K-04',items:payload.items}}}
-      const remoteItems = mode==='stale' ? [{...item,qty:1}] : mode==='reordered'
-        ? [Object.fromEntries(Object.entries(item).reverse()),stored[1]] : stored;
-      return {data:{items:remoteItems,updated_at:'VERSION-1'}};
-    }
-  }}};
-  const env=vm.createContext({supabaseClient:client,slotItemsFor:()=>stored,applyRemoteSlotRow:row=>applied=row});
+  const stored=[JSON.parse(original),{code:'OTHER',qty:7}];
+  const state={zone:'K',slot:'K-04',itemIndex:0,snapshot:JSON.stringify(stored[0]),version:4};
+  const candidate=edit(stored[0],'withdraw',0,200,'2026-08-25');
+  let payload;
+  const env=vm.createContext({palletWriteBusy:false,slotItemsFor:()=>stored,
+    buildSlotRow:()=>({zone:'K',slot_code:'K-04',occupied:true,items:stored}),
+    savePalletBatch:async rows=>{payload=rows}});
   vm.runInContext(extract('movementMatchesSnapshot')+'\n'+extract('persistMovementEdit'),env);
-  await env.persistMovementEdit(editState,candidate);
-  assert.equal(writes,1);
-  assert.equal(applied.items[0].remainingQty,4270);
-  assert.equal(applied.items[1].code,'OTHER');
-  assert.ok(filters.some(([key,value])=>key==='updated_at'&&value==='VERSION-1'));
-  assert.equal(item.remainingQty,4170,'Local data is not mutated before confirmed save');
-  mode='reordered'; await env.persistMovementEdit(editState,candidate);
-  assert.equal(writes,2,'JSONB object key order must not prevent a valid save');
-  mode='error'; await assert.rejects(env.persistMovementEdit(editState,candidate),/Network failure/);
-  mode='stale'; await assert.rejects(env.persistMovementEdit(editState,candidate),/เปลี่ยนแล้ว/);
-  mode='race'; await assert.rejects(env.persistMovementEdit(editState,candidate),/พร้อมกัน/);
-  env.supabaseClient=null;
-  assert.equal(await env.persistMovementEdit(editState,candidate),false);
-  assert.equal(stored[0].remainingQty,4270);
+  await env.persistMovementEdit(state,candidate);
+  assert.equal(payload[0].expected_version,4);
+  assert.equal(payload[0].items[0].remainingQty,4270);
+  assert.equal(payload[0].items[1].code,'OTHER');
+  assert.equal(stored[0].remainingQty,4170,'No optimistic mutation');
+  env.savePalletBatch=async()=>{throw Error('conflict')};
+  await assert.rejects(env.persistMovementEdit(state,candidate),/conflict/);
+  assert.equal(env.palletWriteBusy,false);
+  assert.equal(stored[0].remainingQty,4170);
+  stored[0].qty=1;
+  await assert.rejects(env.persistMovementEdit(state,candidate),/แก้ไขแล้ว/);
 }
-testPersist().then(()=>console.log('PASS: movement running balances, all edit types, audit, validation, mismatch, unknowns, save failure and concurrent writes'))
+testPersist().then(()=>console.log('PASS: movement calculations, validation, immutable drafts and versioned persistence'))
   .catch(error=>{console.error(error);process.exitCode=1});

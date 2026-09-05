@@ -1171,6 +1171,7 @@
   #bomPlanResult table { min-width:900px; }
   .bom-simulation { border:1px solid var(--status-warning); border-radius:10px; padding:12px; margin-bottom:14px; overflow-wrap:anywhere; }
   .bom-simulation p { margin:6px 0; }
+  #palletLoginForm[hidden], #palletSignOut[hidden] { display:none; }
   #bomBrands summary { cursor:pointer; padding:12px; font-weight:600; }
   #bomBrands { margin:12px 0; border:1px solid var(--border); border-radius:10px; }
   .bom-plan-form select { padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--surface-1); color:var(--text-primary); }
@@ -2195,6 +2196,18 @@
         <span class="sync-dot" id="syncStatusDot"></span>
         <span id="syncStatusText">เชื่อมต่อข้อมูลเรียลไทม์แล้ว</span>
       </div>
+      <details id="palletAuth" class="card" style="padding:12px;margin:12px 0">
+        <summary style="cursor:pointer;min-height:44px">สิทธิ์แก้ไขพาเลต · เข้าสู่ระบบ</summary>
+        <p id="palletAuthStatus" role="status">โหมดดูข้อมูล · กำลังตรวจสอบสิทธิ์</p>
+        <form id="palletLoginForm" class="bom-plan-form">
+          <label for="palletEmail">อีเมลผู้มีสิทธิ์</label>
+          <input id="palletEmail" type="email" required autocomplete="email" placeholder="name@example.com">
+          <button type="submit" class="excl-toggle-btn" style="min-height:44px">ส่งลิงก์เข้าสู่ระบบ</button>
+        </form>
+        <button id="palletSignOut" type="button" class="excl-toggle-btn" hidden>ออกจากระบบ</button>
+        <p>ดูข้อมูลได้โดยไม่ล็อกอิน การแก้ไขและนำเข้าข้อมูลพาเลตจำกัดเฉพาะอีเมลที่ผู้ดูแลอนุญาต</p>
+      </details>
+
 
       <div class="floorplan-search" id="floorplanSearch">
       <label for="floorplanSearchInput">ค้นหาชื่อหรือรหัสสินค้า:</label>
@@ -2628,7 +2641,7 @@ function renderFloorZoneDetail(zoneCode, whCode) {
           const receiveVal = RECEIVE_DATES[it.code] || '';
           const days = shelfLifeDays(it.code);
           const shelfCell = days == null ? '<span style="color:var(--text-muted);">-</span>' : (fmt0(days) + ' วัน');
-          return `<tr><td class="num">${i + 1}</td><td>${it.name || ''}</td><td style="font-family:monospace;font-size:12px;">${it.code || ''}</td><td class="num">${fmt0(it.qty || 0)} ${it.unit || ''}</td><td class="num">${it.value != null ? '฿' + fmt0(it.value) : '-'}</td><td style="font-family:monospace;font-size:12px;">${areaCell}</td><td><input type="date" class="fz-receive-date" data-code="${it.code || ''}" value="${receiveVal}" style="font-size:12px;padding:2px 4px;width:130px;"></td><td class="num fz-shelf-life">${shelfCell}</td></tr>`;
+          return `<tr><td class="num">${i + 1}</td><td>${it.name || ''}</td><td style="font-family:monospace;font-size:12px;">${it.code || ''}</td><td class="num">${fmt0(it.qty || 0)} ${it.unit || ''}</td><td class="num">${it.value != null ? '฿' + fmt0(it.value) : '-'}</td><td style="font-family:monospace;font-size:12px;">${areaCell}</td><td><input type="date" class="fz-receive-date" data-version="${receiveVersions.get(it.code) || 0}" data-code="${it.code || ''}" value="${receiveVal}" style="font-size:12px;padding:2px 4px;width:130px;"></td><td class="num fz-shelf-life">${shelfCell}</td></tr>`;
         }).join('')}</tbody>
       </table>
     </div>
@@ -2639,11 +2652,12 @@ function renderFloorZoneDetail(zoneCode, whCode) {
 // setReceiveDate() above) and recomputes just that row's "PK Shelf life (Day)" cell in place --
 // event-delegated on the whole panel (rather than attached per-<input> at render time) since
 // renderFloorZoneDetail() replaces the table's innerHTML wholesale on every zone switch.
-floorZoneDetail.addEventListener('change', (e) => {
+floorZoneDetail.addEventListener('change', async (e) => {
   const input = e.target.closest('.fz-receive-date');
   if (!input) return;
   const code = input.dataset.code;
-  setReceiveDate(code, input.value || null);
+  try { await setReceiveDate(code, input.value || null, Number(input.dataset.version || 0)); input.dataset.version = receiveVersions.get(code) || 0; }
+  catch (error) { input.value = RECEIVE_DATES[code] || ''; setSyncStatus('error',error.message); return; }
   const row = input.closest('tr');
   const cell = row && row.querySelector('.fz-shelf-life');
   if (cell) {
@@ -2985,10 +2999,8 @@ function daysSinceIso(iso) {
 function shelfLifeDays(code) {
   return daysSinceIso(RECEIVE_DATES[code]);
 }
-function setReceiveDate(code, iso) {
-  if (iso) RECEIVE_DATES[code] = iso;
-  else delete RECEIVE_DATES[code];
-  syncReceiveDateToRemote(code);
+async function setReceiveDate(code, iso, expected) {
+  await syncReceiveDateToRemote(code, iso, expected);
 }
 
 function isOccupied(zoneCode, slotCode) {
@@ -2999,47 +3011,11 @@ function setOccupied(zoneCode, slotCode, occupied) {
   if (occupied) PALLET_STATUS[zoneCode][slotCode] = 'occupied';
   else delete PALLET_STATUS[zoneCode][slotCode];
   renderOverviewSlotStatus();
-  syncSlotToRemote(zoneCode, slotCode);
 }
 
-// ---------- Multi-device live sync (Supabase) ----------
-// Added 21 Aug 2026 per Pornchai's request: pallet-slot edits on the floor-plan tab (occupied/
-// empty marks, the item list per slot, and receive dates) should be visible from other
-// computers, and should survive a page refresh -- previously PALLET_STATUS/SLOT_ITEMS/
-// RECEIVE_DATES lived only in this browser's memory, reset on every reload unless manually
-// exported/imported as a JSON file (that export/import path still works unchanged, below, as a
-// manual backup/restore option). Confirmed with Pornchai via three rounds of clarifying
-// questions that he specifically wants real-time sync through a Supabase Postgres project he
-// created himself (not Firebase/Sheets/an internal API) -- he ran this SQL in the Supabase SQL
-// editor to create the tables this code talks to:
-//
-//   create table if not exists pallet_slots (
-//     zone text not null, slot_code text not null, occupied boolean not null default false,
-//     items jsonb not null default '[]'::jsonb, updated_at timestamptz not null default now(),
-//     primary key (zone, slot_code)
-//   );
-//   create table if not exists receive_dates (
-//     item_code text primary key, receive_date date, updated_at timestamptz not null default now()
-//   );
-//   alter table pallet_slots enable row level security;
-//   alter table receive_dates enable row level security;
-//   create policy "allow all read pallet_slots" on pallet_slots for select using (true);
-//   create policy "allow all write pallet_slots" on pallet_slots for insert with check (true);
-//   create policy "allow all update pallet_slots" on pallet_slots for update using (true);
-//   create policy "allow all read receive_dates" on receive_dates for select using (true);
-//   create policy "allow all write receive_dates" on receive_dates for insert with check (true);
-//   create policy "allow all update receive_dates" on receive_dates for update using (true);
-//   alter publication supabase_realtime add table pallet_slots;
-//   alter publication supabase_realtime add table receive_dates;
-//
-// Design note: this app never deletes a pallet_slots/receive_dates row -- an emptied slot is
-// upserted as occupied:false, items:[] instead of being deleted. That's deliberate: it means no
-// DELETE row-level-security policy is needed at all (the schema above intentionally omits one),
-// and it's also what makes pushFullGeometryToRemote() (further below, used after a file import)
-// able to correctly clear stale remote state just by upserting every real slot in ZONE_SLOTS.
-//
-// 2 Sep 2026: pallet tables migrated to the user's managed Stock project after a verified
-// backup. Tables remain independent; the former project is retained as a rollback source.
+// ---------- Authenticated pallet sync ----------
+// Apply supabase-pallet-security.sql after the original pallet schema.
+// All browser writes use save_pallet_changes with expected versions.
 const SUPABASE_URL = 'https://zgsxbuckjrplkpvtlbmn.supabase.co';
 // 21 Aug 2026: Pornchai's project shows Supabase's newer "Publishable key" format
 // (sb_publishable_...) rather than the older JWT-format anon key -- both authenticate as the
@@ -3049,6 +3025,12 @@ const SUPABASE_ANON_KEY = 'sb_publishable_kWbTxBFjBm4TrXxH_ReTFw_lZ2NUZQl';
 // Stock Inventory uses separate tables/RPCs; replacing stock does not change pallet/Zone data.
 const STOCK_SUPABASE_URL = 'https://zgsxbuckjrplkpvtlbmn.supabase.co';
 const STOCK_SUPABASE_ANON_KEY = 'sb_publishable_kWbTxBFjBm4TrXxH_ReTFw_lZ2NUZQl';
+let palletCanEdit = false;
+let palletDataReady = false;
+let palletWriteBusy = false;
+const palletVersions = new Map();
+const receiveVersions = new Map();
+const palletRemoteRows = new Map();
 let supabaseClient = null;
 let stockSupabaseClient = null;
 try {
@@ -3075,15 +3057,10 @@ function setSyncStatus(state, text) {
 }
 
 if (!supabaseClient) {
-  setSyncStatus('unavailable', 'ไม่ได้เชื่อมต่อระบบซิงค์ · การแก้ไขอยู่ชั่วคราวในหน้านี้ ส่งออกข้อมูลก่อนปิดหรือโหลดใหม่');
+  setSyncStatus('unavailable', 'ไม่ได้เชื่อมต่อระบบซิงค์ · ดูข้อมูลได้ แต่ยังบันทึกการแก้ไขไม่ได้');
 }
 
-// buildSlotRow()/syncSlotToRemote()/syncReceiveDateToRemote(): push the CURRENT local state for
-// one slot (or one item's receive date) up to Supabase. Always sends the whole items array for
-// that slot, not a diff -- upsert already gives last-write-wins per row, which is enough here
-// since one person edits a given slot at a time in practice. These are called from setOccupied()
-// (above) and setReceiveDate() (above), plus explicitly from removeSlotItem()/withdrawSlotItem()
-// (below) for the cases where a slot's items array changes without its occupied status changing.
+// Construct a proposed slot value; versions are supplied separately.
 function buildSlotRow(zoneCode, slotCode) {
   const items = (SLOT_ITEMS[zoneCode] && SLOT_ITEMS[zoneCode][slotCode]) || [];
   return {
@@ -3094,26 +3071,57 @@ function buildSlotRow(zoneCode, slotCode) {
     updated_at: new Date().toISOString(),
   };
 }
-async function syncSlotToRemote(zoneCode, slotCode) {
-  if (!supabaseClient) return;
-  try {
-    const { error } = await supabaseClient.from('pallet_slots').upsert(buildSlotRow(zoneCode, slotCode), { onConflict: 'zone,slot_code' });
-    if (error) throw error;
-  } catch (err) {
-    console.error('syncSlotToRemote failed:', zoneCode, slotCode, err);
-    setSyncStatus('error', 'ซิงค์ข้อมูลไม่สำเร็จ · การแก้ไขยังไม่ยืนยันบนระบบ กรุณาส่งออกสำรองก่อนปิดหรือโหลดใหม่');
+async function savePalletBatch(slots, dates = []) {
+  if (!supabaseClient || !palletCanEdit) throw new Error('กรุณาเข้าสู่ระบบด้วยอีเมลที่มีสิทธิ์แก้พาเลต');
+  if (!palletDataReady) throw new Error('ยังโหลดข้อมูลพาเลตไม่ครบ กรุณารีเฟรชก่อนแก้ไข');
+  const { data, error } = await supabaseClient.rpc('save_pallet_changes', { p_slots: slots, p_dates: dates });
+  if (error) {
+    if (error.code === '40001') throw new Error('มีคนแก้ข้อมูลนี้แล้ว · ยังไม่ได้บันทึก กรุณาคัดลอกค่าที่กรอกไว้ แล้วรีเฟรชเพื่อตรวจข้อมูลล่าสุด');
+    if (error.code === '42501') throw new Error('ไม่มีสิทธิ์แก้พาเลตหรือสิทธิ์ถูกยกเลิก กรุณาเข้าสู่ระบบใหม่');
+    throw new Error('ยังยืนยันการบันทึกไม่ได้ กรุณาตรวจอินเทอร์เน็ตและรีเฟรชก่อนลองใหม่: ' + error.message);
   }
+  if (!data || !Array.isArray(data.slots) || !Array.isArray(data.dates)) throw new Error('ผลการบันทึกไม่ครบ กรุณารีเฟรชเพื่อตรวจสอบ');
+  data.slots.forEach(row => applyRemoteSlotRow(row, {silent:true, force:true}));
+  data.dates.forEach(row => applyRemoteReceiveDateRow(row, {silent:true}));
+  return data;
 }
-async function syncReceiveDateToRemote(code) {
-  if (!supabaseClient) return;
+
+async function runSlotMutation(zone, slot, mutate) {
+  if (palletWriteBusy) return false;
+  const before = JSON.parse(JSON.stringify(buildSlotRow(zone, slot)));
+  const expected = editingSlot?.zone === zone && editingSlot?.slot === slot
+    ? editingSlot.version : (palletVersions.get(JSON.stringify([zone,slot])) || 0);
   try {
-    const iso = RECEIVE_DATES[code] || null;
-    const { error } = await supabaseClient.from('receive_dates').upsert({ item_code: code, receive_date: iso, updated_at: new Date().toISOString() }, { onConflict: 'item_code' });
-    if (error) throw error;
-  } catch (err) {
-    console.error('syncReceiveDateToRemote failed:', code, err);
-    setSyncStatus('error', 'ซิงค์ข้อมูลไม่สำเร็จ · การแก้ไขยังไม่ยืนยันบนระบบ กรุณาส่งออกสำรองก่อนปิดหรือโหลดใหม่');
-  }
+    if (!palletCanEdit || !palletDataReady) throw new Error('กรุณาเข้าสู่ระบบด้วยอีเมลที่มีสิทธิ์ และรอโหลดข้อมูลให้ครบ');
+    palletWriteBusy = true;
+    slotEditPanel.inert = true;
+    const valid = mutate();
+    const proposed = JSON.parse(JSON.stringify(buildSlotRow(zone,slot)));
+    // Never display a successful local edit before the transaction is committed.
+    restoreLocalSlot(before);
+    if (valid === false) throw new Error('ข้อมูลไม่ถูกต้อง กรุณาตรวจยอดคงเหลือและรายการ');
+    await savePalletBatch([{...proposed, expected_version: expected}]);
+    return true;
+  } catch (error) {
+    restoreLocalSlot(before);
+    showFseFeedback(error.message, 'error');
+    setSyncStatus('error', error.message);
+    return false;
+  } finally { palletWriteBusy = false; slotEditPanel.inert = false; renderOverviewSlotStatus(); }
+}
+
+function restoreLocalSlot(row) {
+  if (!SLOT_ITEMS[row.zone]) SLOT_ITEMS[row.zone] = {};
+  SLOT_ITEMS[row.zone][row.slot_code] = row.items;
+  if (!PALLET_STATUS[row.zone]) PALLET_STATUS[row.zone] = {};
+  if (row.occupied) PALLET_STATUS[row.zone][row.slot_code] = 'occupied';
+  else delete PALLET_STATUS[row.zone][row.slot_code];
+}
+async function syncReceiveDateToRemote(code, iso, expected) {
+  if (palletWriteBusy) throw new Error('กำลังบันทึกข้อมูล กรุณารอสักครู่');
+  palletWriteBusy = true;
+  try { await savePalletBatch([], [{item_code:code, receive_date:iso || null, expected_version:expected}]); }
+  finally { palletWriteBusy = false; }
 }
 
 // applyRemoteSlotRow()/applyRemoteReceiveDateRow(): apply an INCOMING row (from the initial bulk
@@ -3124,6 +3132,17 @@ async function syncReceiveDateToRemote(code) {
 function applyRemoteSlotRow(row, opts) {
   const silent = opts && opts.silent;
   if (!row || !row.zone || !row.slot_code) return;
+  const key = JSON.stringify([row.zone,row.slot_code]);
+  if (row.version != null && row.version < (palletVersions.get(key) || 0)) return;
+  palletVersions.set(key, row.version || 0);
+  palletRemoteRows.set(key, JSON.parse(JSON.stringify(row)));
+  if (editingSlot && editingSlot.zone === row.zone && editingSlot.slot === row.slot_code) {
+    if (!opts?.force) {
+      if (row.version !== editingSlot.version) setSyncStatus('error','ตำแหน่งที่เปิดอยู่มีข้อมูลใหม่ · ปิดแล้วเปิดตำแหน่งอีกครั้งก่อนแก้ไข');
+      return;
+    }
+    editingSlot.version = row.version || 0;
+  }
   if (row.occupied) {
     if (!PALLET_STATUS[row.zone]) PALLET_STATUS[row.zone] = {};
     PALLET_STATUS[row.zone][row.slot_code] = 'occupied';
@@ -3137,6 +3156,8 @@ function applyRemoteSlotRow(row, opts) {
 function applyRemoteReceiveDateRow(row, opts) {
   const silent = opts && opts.silent;
   if (!row || !row.item_code) return;
+  if (row.version != null && row.version < (receiveVersions.get(row.item_code) || 0)) return;
+  receiveVersions.set(row.item_code, row.version || 0);
   if (row.receive_date) RECEIVE_DATES[row.item_code] = row.receive_date;
   else delete RECEIVE_DATES[row.item_code];
   if (!silent) refreshAfterRemoteChange(null, null);
@@ -3203,6 +3224,7 @@ async function initSupabaseSync() {
     ]);
     slots.forEach(row => applyRemoteSlotRow(row, { silent: true }));
     dates.forEach(row => applyRemoteReceiveDateRow(row, { silent: true }));
+    palletDataReady = true;
     refreshAfterRemoteChange(null, null);
   } catch (err) {
     console.error('Supabase initial fetch failed:', err);
@@ -3214,7 +3236,7 @@ async function initSupabaseSync() {
     supabaseClient
       .channel('pallet-sync')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pallet_slots' }, (payload) => {
-        if (payload.eventType === 'DELETE') return; // this app never deletes rows, only upserts occupied:false
+        if (payload.eventType === 'DELETE') return; // this app never deletes rows, only records occupied:false
         applyRemoteSlotRow(payload.new);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'receive_dates' }, (payload) => {
@@ -3225,7 +3247,7 @@ async function initSupabaseSync() {
         if (status === 'SUBSCRIBED') {
           setSyncStatus('connected', 'เชื่อมต่อข้อมูลเรียลไทม์แล้ว');
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-          setSyncStatus('error', 'การซิงค์ขาดหาย · ข้อมูลใหม่ยังบันทึกในเครื่องนี้');
+          setSyncStatus('error', 'การซิงค์ขาดหาย · รีเฟรชเพื่อตรวจข้อมูลล่าสุดก่อนแก้ไข');
         }
       });
   } catch (err) {
@@ -3235,39 +3257,66 @@ async function initSupabaseSync() {
 }
 if (supabaseClient) initSupabaseSync();
 
-// pushFullGeometryToRemote(): called only right after a manual "นำเข้าไฟล์ข้อมูลสถานะ" file
-// import (see the change-listener on floorplanZoomImportInput, further below) -- upserts a row
-// for EVERY real zone/slot in ZONE_SLOTS (not just the ones present in the sparse local
-// PALLET_STATUS/SLOT_ITEMS objects, which only carry keys for slots that are/were occupied), so
-// an imported file can also correctly clear out slots that are occupied in Supabase but empty in
-// the imported file. Chunked to keep each upsert request a reasonable size across ~1,000 slots.
-async function pushFullGeometryToRemote() {
-  if (!supabaseClient) return;
-  const rows = [];
-  Object.keys(ZONE_SLOTS).forEach(zoneCode => {
-    (ZONE_SLOTS[zoneCode] || []).forEach(slot => {
-      rows.push(buildSlotRow(zoneCode, slot.code));
-    });
-  });
-  const dateRows = Object.keys(RECEIVE_DATES).map(code => ({
-    item_code: code, receive_date: RECEIVE_DATES[code], updated_at: new Date().toISOString(),
-  }));
-  setSyncStatus('connecting', 'กำลังซิงค์ข้อมูลที่นำเข้า…');
+async function refreshPalletAuth() {
+  const status = document.getElementById('palletAuthStatus');
+  palletCanEdit = false;
   try {
-    const CHUNK = 200;
-    for (let i = 0; i < rows.length; i += CHUNK) {
-      const { error } = await supabaseClient.from('pallet_slots').upsert(rows.slice(i, i + CHUNK), { onConflict: 'zone,slot_code' });
-      if (error) throw error;
+    if (!supabaseClient) throw new Error('ยังไม่ได้เชื่อมต่อระบบ');
+    const {data,error} = await supabaseClient.auth.getSession();
+    if (error) throw error;
+    const user = data.session?.user;
+    if (user) {
+      const permission = await supabaseClient.rpc('can_edit_pallets');
+      if (permission.error) throw permission.error;
+      palletCanEdit = permission.data === true;
     }
-    if (dateRows.length) {
-      const { error } = await supabaseClient.from('receive_dates').upsert(dateRows, { onConflict: 'item_code' });
-      if (error) throw error;
-    }
-    setSyncStatus('connected', 'ซิงค์ข้อมูลที่นำเข้าแล้ว');
-  } catch (err) {
-    console.error('pushFullGeometryToRemote failed:', err);
-    setSyncStatus('error', 'ซิงค์ข้อมูลที่นำเข้าไม่ครบ · ข้อมูลยังอยู่ในเครื่องนี้ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองอีกครั้ง');
+    status.textContent = user ? (palletCanEdit ? 'มีสิทธิ์แก้ไขพาเลต · ' : 'บัญชีนี้มีสิทธิ์ดูข้อมูลเท่านั้น · ') + user.email : 'โหมดดูข้อมูล · เข้าสู่ระบบเพื่อแก้ไขพาเลต';
+    document.querySelector('#palletAuth summary').textContent = 'สิทธิ์แก้ไขพาเลต · ' + (palletCanEdit ? 'มีสิทธิ์แก้ไข' : user ? 'ดูข้อมูลเท่านั้น' : 'เข้าสู่ระบบ');
+    document.getElementById('palletLoginForm').hidden = !!user;
+    document.getElementById('palletSignOut').hidden = !user;
+  } catch (error) { status.textContent = 'ยังยืนยันสิทธิ์ไม่ได้ · ' + error.message; }
+}
+document.getElementById('palletLoginForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const button = e.currentTarget.querySelector('button');
+  const status = document.getElementById('palletAuthStatus');
+  button.disabled = true;
+  try {
+    if (!supabaseClient) throw new Error('ยังไม่ได้เชื่อมต่อระบบ');
+    const {error} = await supabaseClient.auth.signInWithOtp({email:document.getElementById('palletEmail').value.trim(),
+      options:{emailRedirectTo:location.origin + location.pathname}});
+    if (error) throw error;
+    status.textContent = 'ส่งลิงก์เข้าสู่ระบบแล้ว กรุณาเปิดอีเมลและกดลิงก์เพื่อยืนยัน';
+  } catch (error) { status.textContent = 'ส่งลิงก์ไม่ได้ · ' + error.message; }
+  finally { button.disabled = false; }
+});
+document.getElementById('palletSignOut').addEventListener('click',async () => {
+  if (!supabaseClient) return;
+  const {error} = await supabaseClient.auth.signOut();
+  if (error) document.getElementById('palletAuthStatus').textContent = 'ออกจากระบบไม่สำเร็จ · ' + error.message;
+  else await refreshPalletAuth();
+});
+if (supabaseClient) supabaseClient.auth.onAuthStateChange(() => { setTimeout(refreshPalletAuth,0); });
+setTimeout(refreshPalletAuth,0);
+// Capture phase prevents read-only UI from changing local data, including Enter/file inputs.
+function guardPalletWrite(e) {
+  const target = e.target.closest('#fseAddForm, #fseMarkEmptyBtn, #fseMarkOccupiedBtn, .fse-item-edit-btn, .fse-item-withdraw-btn, .fse-item-return-btn, .fse-item-remove, .sm-edit, .fz-receive-date, #floorplanZoomImportInput, label[for="floorplanZoomImportInput"]');
+  if (!target) return;
+  if (!palletCanEdit || !palletDataReady || palletWriteBusy) {
+    e.preventDefault(); e.stopImmediatePropagation();
+    const msg = palletWriteBusy ? 'กำลังบันทึก กรุณารอสักครู่' : 'กรุณาเข้าสู่ระบบด้วยอีเมลที่มีสิทธิ์ และรอโหลดข้อมูลให้ครบ';
+    setSyncStatus('error',msg);
+    document.getElementById('palletAuthStatus').textContent = msg;
+    document.getElementById('palletAuth').open = true;
+    if (typeof showFseFeedback === 'function') showFseFeedback(msg,'error');
   }
+}
+for (const event of ['click','submit','change']) document.addEventListener(event,guardPalletWrite,true);
+
+// All imported proposals commit in one version-checked transaction.
+async function pushFullGeometryToRemote(slots, dates) {
+  // One RPC transaction: any conflict rolls back the entire import.
+  return savePalletBatch(slots,dates);
 }
 
 // ---------- Zone -> building-area grouping ("ZONE แสดงพื้นที่การจัดเก็บ" table, stock tab) ----------
@@ -4004,7 +4053,6 @@ function removeSlotItem(zoneCode, slotCode, index) {
   if (!list || !list[index]) return;
   list.splice(index, 1);
   if (list.length === 0) setOccupied(zoneCode, slotCode, false); // setOccupied() already syncs
-  else syncSlotToRemote(zoneCode, slotCode); // items array changed but occupied status didn't -- sync explicitly
 }
 function updateSlotItem(zoneCode, slotCode, index, updates) {
   const list = SLOT_ITEMS[zoneCode] && SLOT_ITEMS[zoneCode][slotCode];
@@ -4028,7 +4076,6 @@ function updateSlotItem(zoneCode, slotCode, index, updates) {
   }
   if (updates.unit) item.unit = updates.unit;
   else delete item.unit;
-  syncSlotToRemote(zoneCode, slotCode);
   return true;
 }
 // getRemainingQty(): items added before the withdraw feature (20 Aug 2026) or imported from an
@@ -4053,7 +4100,6 @@ function withdrawSlotItem(zoneCode, slotCode, index, { date, qty, unit, by }) {
   if (before != null) item.remainingQty = Math.max(0, before - qty);
   if (!item.withdrawals) item.withdrawals = [];
   item.withdrawals.push({ date, qty, unit, by });
-  syncSlotToRemote(zoneCode, slotCode);
 }
 
 function getReturnableQty(item) {
@@ -4070,7 +4116,6 @@ function returnSlotItem(zoneCode, slotCode, index, { date, qty, unit, by }) {
   if (before != null) item.remainingQty = before + qty;
   if (!item.returns) item.returns = [];
   item.returns.push({ date, qty, unit, by });
-  syncSlotToRemote(zoneCode, slotCode);
 }
 
 let editingSlot = null; // { zone, slot } while the panel is open, else null
@@ -4284,27 +4329,15 @@ function renderMovementEditForm(item, index) {
 }
 
 async function persistMovementEdit(edit, next) {
+  if (palletWriteBusy) throw new Error('กำลังบันทึกข้อมูล กรุณารอสักครู่');
   const local = slotItemsFor(edit.zone, edit.slot);
   if (!movementMatchesSnapshot(local[edit.itemIndex], edit.snapshot)) throw new Error('รายการถูกแก้ไขแล้ว กรุณาเปิดรายการใหม่');
-  if (!supabaseClient) {
-    local[edit.itemIndex] = next;
-    return false;
-  }
-  // Read the current row, merge only this item, and compare updated_at to reject concurrent writes.
-  const current = await supabaseClient.from('pallet_slots').select('zone,slot_code,items,occupied,updated_at')
-    .eq('zone', edit.zone).eq('slot_code', edit.slot).maybeSingle();
-  if (current.error) throw current.error;
-  const row = current.data;
-  if (!row || !movementMatchesSnapshot(row.items?.[edit.itemIndex], edit.snapshot)) throw new Error('ข้อมูลบนเซิร์ฟเวอร์เปลี่ยนแล้ว กรุณารีเฟรชและเปิดรายการใหม่');
-  const items = row.items.slice();
+  const items = JSON.parse(JSON.stringify(local));
   items[edit.itemIndex] = next;
-  let query = supabaseClient.from('pallet_slots').update({ items, updated_at: new Date().toISOString() })
-    .eq('zone', edit.zone).eq('slot_code', edit.slot);
-  query = row.updated_at == null ? query.is('updated_at', null) : query.eq('updated_at', row.updated_at);
-  const result = await query.select('zone,slot_code,items,occupied,updated_at').maybeSingle();
-  if (result.error) throw result.error;
-  if (!result.data) throw new Error('มีการแก้ไขพร้อมกัน กรุณารีเฟรชและลองใหม่');
-  applyRemoteSlotRow(result.data, { silent: true });
+  const expected = edit.version ?? editingSlot?.version ?? palletVersions.get(JSON.stringify([edit.zone,edit.slot])) ?? 0;
+  palletWriteBusy = true;
+  try { await savePalletBatch([{...buildSlotRow(edit.zone,edit.slot),items,expected_version:expected}]); }
+  finally { palletWriteBusy = false; }
   return true;
 }
 
@@ -4628,7 +4661,9 @@ function syncAfterSlotEdit() {
 function openSlotEdit(zoneCode, slotCode) {
   movementEdit = null;
   resetClearSlotConfirm();
-  editingSlot = { zone: zoneCode, slot: slotCode };
+  const latest = palletRemoteRows.get(JSON.stringify([zoneCode,slotCode]));
+  if (latest) restoreLocalSlot(JSON.parse(JSON.stringify(latest)));
+  editingSlot = { zone: zoneCode, slot: slotCode, version: palletVersions.get(JSON.stringify([zoneCode,slotCode])) || 0 };
   withdrawOpenIndex = null;
   returnOpenIndex = null; // never carry an expanded "เบิก" form over from whatever slot was open before
   editItemIndex = null;
@@ -4644,7 +4679,11 @@ function closeSlotEdit() {
   movementEdit = null;
   if (!editingSlot) return;
   resetClearSlotConfirm();
+  const latest = palletRemoteRows.get(JSON.stringify([editingSlot.zone,editingSlot.slot]));
+  if (latest) restoreLocalSlot(JSON.parse(JSON.stringify(latest)));
   editingSlot = null;
+  rebuildItemToSlots();
+  refreshSearchDatalist();
   withdrawOpenIndex = null;
   returnOpenIndex = null;
   editItemIndex = null;
@@ -4656,7 +4695,7 @@ function closeSlotEdit() {
 
 fseCloseBtn.addEventListener('click', closeSlotEdit);
 
-fseAddForm.addEventListener('submit', (e) => {
+fseAddForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   resetClearSlotConfirm();
   if (!editingSlot) return;
@@ -4671,7 +4710,7 @@ fseAddForm.addEventListener('submit', (e) => {
   const qty = parseFloat(fseAddQty.value);
   const unit = fseAddUnit.value.trim();
   const note = fseAddNote.value.trim();
-  addSlotItem(editingSlot.zone, editingSlot.slot, code, name, lotNo, receiveDate, qty, unit, note);
+  if (!await runSlotMutation(editingSlot.zone, editingSlot.slot, () => addSlotItem(editingSlot.zone, editingSlot.slot, code, name, lotNo, receiveDate, qty, unit, note))) return;
   fseAddCode.value = ''; fseAddName.value = ''; fseAddLotNo.value = ''; fseAddReceiveDate.value = ''; fseAddQty.value = ''; fseAddUnit.value = ''; fseAddNote.value = '';
   fseAddName.dataset.autofilled = ''; fseAddName.classList.remove('is-autofilled');
   fseAddUnit.dataset.autofilled = ''; fseAddUnit.classList.remove('is-autofilled');
@@ -4742,10 +4781,10 @@ fseItemsList.addEventListener('click', async (e) => {
       slotEditPanel.inert = true;
       form.querySelectorAll('button, input').forEach(el => el.disabled = true);
       errorEl.textContent = 'กำลังบันทึก…';
-      const remote = await persistMovementEdit(edit, next);
+      await persistMovementEdit(edit, next);
       movementEdit = null;
       syncAfterSlotEdit();
-      showFseFeedback(remote ? 'บันทึกการแก้ไขและคำนวณยอดใหม่แล้ว' : 'แก้ไขในหน้านี้แล้ว · ยังไม่เชื่อมต่อเซิร์ฟเวอร์ โปรดส่งออกข้อมูลเก็บไว้', remote ? 'success' : 'error');
+      showFseFeedback('บันทึกการแก้ไขและคำนวณยอดใหม่แล้ว');
     } catch (error) {
       edit.error = error.message || 'บันทึกไม่สำเร็จ กรุณาลองใหม่';
     } finally {
@@ -4783,7 +4822,7 @@ fseItemsList.addEventListener('click', async (e) => {
     const formEl = editSaveBtn.closest('.fse-edit-form');
     if (!formEl || !isItemEditFormValid(formEl)) { updateItemEditBtnState(formEl); return; }
     const qtyRaw = formEl.querySelector('.fe-qty').value;
-    const updated = updateSlotItem(editingSlot.zone, editingSlot.slot, idx, {
+    const updated = await runSlotMutation(editingSlot.zone, editingSlot.slot, () => updateSlotItem(editingSlot.zone, editingSlot.slot, idx, {
       code: formEl.querySelector('.fe-code').value.trim(),
       name: formEl.querySelector('.fe-name').value.trim(),
       lotNo: formEl.querySelector('.fe-lot').value.trim(),
@@ -4791,8 +4830,8 @@ fseItemsList.addEventListener('click', async (e) => {
       receiveDate: formEl.querySelector('.fe-date').value,
       qty: qtyRaw === '' ? null : parseFloat(qtyRaw),
       unit: formEl.querySelector('.fe-unit').value.trim(),
-    });
-    if (!updated) { showFseFeedback('บันทึกไม่ได้ · ตรวจสอบรายการและยอดรับให้คงเหลือไม่ติดลบ', 'error'); return; }
+    }));
+    if (!updated) return;
     editItemIndex = null;
     syncAfterSlotEdit();
     showFseFeedback('บันทึกการแก้ไขแล้ว');
@@ -4815,7 +4854,7 @@ fseItemsList.addEventListener('click', async (e) => {
 
   const removeConfirmBtn = e.target.closest('.fse-remove-confirm-btn');
   if (removeConfirmBtn) {
-    removeSlotItem(editingSlot.zone, editingSlot.slot, parseInt(removeConfirmBtn.dataset.idx, 10));
+    if (!await runSlotMutation(editingSlot.zone, editingSlot.slot, () => removeSlotItem(editingSlot.zone, editingSlot.slot, parseInt(removeConfirmBtn.dataset.idx, 10)))) return;
     // removing an item shifts every later item's index by one -- clear both per-row states
     // rather than risk either silently re-pointing at the wrong item after the list re-renders.
     removeConfirmIndex = null;
@@ -4875,12 +4914,12 @@ fseItemsList.addEventListener('click', async (e) => {
     if (!item || !formEl) return;
     const returnable = getReturnableQty(item);
     if (!isReturnFormValid(formEl, returnable)) { updateReturnBtnState(); return; }
-    returnSlotItem(editingSlot.zone, editingSlot.slot, idx, {
+    if (!await runSlotMutation(editingSlot.zone, editingSlot.slot, () => returnSlotItem(editingSlot.zone, editingSlot.slot, idx, {
       date: formEl.querySelector('.fr-date').value,
       qty: parseFloat(formEl.querySelector('.fr-qty').value),
       unit: formEl.querySelector('.fr-unit').value.trim(),
       by: formEl.querySelector('.fr-by').value.trim(),
-    });
+    }))) return;
     returnOpenIndex = null;
     syncAfterSlotEdit();
     showFseFeedback('บันทึกการรับคืนแล้ว');
@@ -4912,7 +4951,7 @@ fseItemsList.addEventListener('click', async (e) => {
     const qty = parseFloat(formEl.querySelector('.fw-qty').value);
     const unit = formEl.querySelector('.fw-unit').value.trim();
     const by = formEl.querySelector('.fw-by').value.trim();
-    withdrawSlotItem(editingSlot.zone, editingSlot.slot, idx, { date, qty, unit, by });
+    if (!await runSlotMutation(editingSlot.zone, editingSlot.slot, () => withdrawSlotItem(editingSlot.zone, editingSlot.slot, idx, { date, qty, unit, by }))) return;
     withdrawOpenIndex = null;
   returnOpenIndex = null;
     syncAfterSlotEdit();
@@ -4937,7 +4976,7 @@ fseItemsList.addEventListener('change', (e) => {
   if (editForm) updateItemEditBtnState(editForm);
 });
 
-fseMarkEmptyBtn.addEventListener('click', () => {
+fseMarkEmptyBtn.addEventListener('click', async () => {
   if (!editingSlot) return;
   if (fseMarkEmptyBtn.dataset.confirming !== 'true') {
     fseMarkEmptyBtn.dataset.confirming = 'true';
@@ -4948,22 +4987,23 @@ fseMarkEmptyBtn.addEventListener('click', () => {
     return;
   }
   resetClearSlotConfirm();
-  if (SLOT_ITEMS[editingSlot.zone] && SLOT_ITEMS[editingSlot.zone][editingSlot.slot]) {
-    SLOT_ITEMS[editingSlot.zone][editingSlot.slot] = [];
-  }
+  if (!await runSlotMutation(editingSlot.zone,editingSlot.slot, () => {
+    if (SLOT_ITEMS[editingSlot.zone]) SLOT_ITEMS[editingSlot.zone][editingSlot.slot] = [];
+    setOccupied(editingSlot.zone,editingSlot.slot,false);
+  })) return;
   removeConfirmIndex = null; // the whole list is gone -- any armed confirmation is now stale
   withdrawOpenIndex = null;
   returnOpenIndex = null;
   editItemIndex = null;
-  setOccupied(editingSlot.zone, editingSlot.slot, false);
+
   syncAfterSlotEdit();
   showFseFeedback('ล้างรายการและระบุว่าว่างแล้ว');
 });
 
-fseMarkOccupiedBtn.addEventListener('click', () => {
+fseMarkOccupiedBtn.addEventListener('click', async () => {
   if (!editingSlot) return;
   resetClearSlotConfirm();
-  setOccupied(editingSlot.zone, editingSlot.slot, true);
+  if (!await runSlotMutation(editingSlot.zone,editingSlot.slot, () => setOccupied(editingSlot.zone, editingSlot.slot, true))) return;
   syncAfterSlotEdit();
   showFseFeedback('ระบุว่ามีสินค้าแล้ว');
 });
@@ -5063,59 +5103,33 @@ function exportPalletStatus() {
 }
 document.getElementById('floorplanZoomExportBtn').addEventListener('click', exportPalletStatus);
 
-document.getElementById('floorplanZoomImportInput').addEventListener('change', (e) => {
-  const file = e.target.files && e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    try {
-      const parsed = JSON.parse(reader.result);
-      const incoming = parsed.pallet_status || parsed; // accept either the exported wrapper or a bare status object
-      Object.keys(PALLET_STATUS).forEach(k => delete PALLET_STATUS[k]);
-      Object.keys(incoming).forEach(zoneCode => {
-        PALLET_STATUS[zoneCode] = Object.assign({}, incoming[zoneCode]);
-      });
-      // slot_items is optional -- only present in files exported after the item-level add/remove
-      // panel was added. Older exports (pallet_status only) leave SLOT_ITEMS untouched, so
-      // occupied/empty still round-trips even from a pre-existing export file.
-      if (parsed.slot_items) {
-        Object.keys(SLOT_ITEMS).forEach(k => delete SLOT_ITEMS[k]);
-        Object.keys(parsed.slot_items).forEach(zoneCode => {
-          SLOT_ITEMS[zoneCode] = {};
-          Object.keys(parsed.slot_items[zoneCode]).forEach(slotCode => {
-            SLOT_ITEMS[zoneCode][slotCode] = parsed.slot_items[zoneCode][slotCode].map(it => Object.assign({}, it));
-          });
-        });
-        rebuildItemToSlots();
-        refreshSearchDatalist();
-      }
-      // receive_dates is optional too -- only present in files exported after the "วันรับ
-      // Receive date" column was added. Older exports leave RECEIVE_DATES untouched.
-      if (parsed.receive_dates) {
-        Object.keys(RECEIVE_DATES).forEach(k => delete RECEIVE_DATES[k]);
-        Object.keys(parsed.receive_dates).forEach(code => { RECEIVE_DATES[code] = parsed.receive_dates[code]; });
-      }
-      editingSlot = null;
-      if (slotEditPanel) slotEditPanel.hidden = true;
-      if (currentZoomZone) renderZoomSlots(currentZoomZone);
-      updateZoomView();
-      // Re-render the zone-detail item table (row-number/Area Code/receive-date/shelf-life
-      // columns) if one is currently open in the sidebar, so an imported receive_dates/
-      // pallet_status file is reflected there immediately rather than only after the next
-      // zone-pin click.
-      const selectedPin = document.querySelector('.floor-pin.selected, .floor-zone-fallback.selected');
-      if (selectedPin) renderFloorZoneDetail(selectedPin.dataset.zone, selectedPin.dataset.wh);
-      // 21 Aug 2026: push the freshly-imported data up to Supabase (if connected) so this manual
-      // "restore from file" also becomes what every other connected device sees next -- see
-      // pushFullGeometryToRemote() near setOccupied()/setReceiveDate() above for why this walks
-      // the full ZONE_SLOTS geometry rather than just the sparse keys this file happened to set.
-      pushFullGeometryToRemote();
-    } catch (err) {
-      alert('นำเข้าไฟล์ไม่สำเร็จ กรุณาเลือกไฟล์ JSON ที่ส่งออกจาก Dashboard นี้');
-    }
-  };
-  reader.readAsText(file);
+document.getElementById('floorplanZoomImportInput').addEventListener('change', async (e) => {
+  const file = e.target.files?.[0];
   e.target.value = '';
+  if (!file || palletWriteBusy) return;
+  const versions = new Map(palletVersions), dateVersions = new Map(receiveVersions);
+  palletWriteBusy = true;
+  try {
+    if (!palletCanEdit || !palletDataReady) throw new Error('กรุณาเข้าสู่ระบบและรอโหลดข้อมูลให้ครบ');
+    const parsed = JSON.parse(await file.text());
+    const incoming = parsed.pallet_status || parsed;
+    if (!incoming || typeof incoming !== 'object' || Array.isArray(incoming)) throw new Error('รูปแบบไฟล์ไม่ถูกต้อง');
+    const slots = [];
+    for (const [zone,geometry] of Object.entries(ZONE_SLOTS)) for (const slot of geometry) {
+      const items = parsed.slot_items ? (parsed.slot_items[zone]?.[slot.code] || []) : slotItemsFor(zone,slot.code);
+      if (!Array.isArray(items) || items.some(it=>!it || typeof it !== 'object' || Array.isArray(it))) throw new Error('รายการสินค้าในไฟล์ไม่ถูกต้อง');
+      slots.push({zone,slot_code:slot.code,occupied:incoming[zone]?.[slot.code] === 'occupied',items,
+        expected_version:versions.get(JSON.stringify([zone,slot.code])) || 0});
+    }
+    const dates = parsed.receive_dates ? [...new Set([...dateVersions.keys(),...Object.keys(parsed.receive_dates)])].map(code=>({
+      item_code:code,receive_date:parsed.receive_dates[code] || null,expected_version:dateVersions.get(code) || 0})) : [];
+    setSyncStatus('connecting','กำลังตรวจเวอร์ชันและบันทึกไฟล์นำเข้า…');
+    await pushFullGeometryToRemote(slots,dates);
+    if (editingSlot) closeSlotEdit();
+    refreshAfterRemoteChange(null,null);
+    setSyncStatus('connected','นำเข้าข้อมูลพาเลตครบแล้ว');
+  } catch (error) { setSyncStatus('error','นำเข้าไม่สำเร็จ · ' + error.message); alert('นำเข้าไม่สำเร็จ · ' + error.message); }
+  finally { palletWriteBusy = false; }
 });
 
 const tooltip = document.getElementById('tooltip');
