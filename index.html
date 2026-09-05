@@ -2196,6 +2196,11 @@
         <span class="sync-dot" id="syncStatusDot"></span>
         <span id="syncStatusText">เชื่อมต่อข้อมูลเรียลไทม์แล้ว</span>
       </div>
+      <div class="bom-plan-form" style="margin-top:12px">
+        <button type="button" id="floorplanExcelExport" class="excl-toggle-btn" style="min-height:44px">ส่งออกข้อมูลทุกโซน Excel</button>
+        <span id="floorplanExcelStatus" role="status"></span>
+      </div>
+      <p style="color:var(--text-muted);font-size:12px">Excel สำหรับกรองสินค้า ตรวจนับ และตรวจ STOCK CARD · ส่งออกทุกโซน ไม่จำกัดตามช่องค้นหา · ใช้ไฟล์ JSON สำหรับสำรองและนำเข้าระบบ</p>
       <details id="palletAuth" class="card" style="padding:12px;margin:12px 0">
         <summary style="cursor:pointer;min-height:44px">สิทธิ์แก้ไขพาเลต · เข้าสู่ระบบ</summary>
         <p id="palletAuthStatus" role="status">โหมดดูข้อมูล · กำลังตรวจสอบสิทธิ์</p>
@@ -5072,6 +5077,71 @@ const zoneGestures = bindMapGestures(zoomViewport, {
 });
 
 // ---------- Export / import pallet status data file ----------
+function buildPalletExcelTables(rows, dates, geometry, buildings, meta) {
+  const buildingFor = zone => buildings.find(b=>b.zones.includes(zone))?.label || 'ไม่ระบุอาคาร';
+  const receiveDates = new Map(dates.map(r=>[r.item_code,r.receive_date]));
+  const slots = new Map(rows.map(row=>[JSON.stringify([row.zone,row.slot_code]),row]));
+  for (const [zone,list] of Object.entries(geometry)) for (const slot of list) {
+    const key=JSON.stringify([zone,slot.code]);
+    if (!slots.has(key)) slots.set(key,{zone,slot_code:slot.code,items:[],missing:true});
+  }
+  const dateCell = raw => {
+    const key=movementDateKey(raw);
+    return key ? {t:'n',v:Date.UTC(Number(key.slice(0,4)),Number(key.slice(4,6))-1,Number(key.slice(6,8)))/86400000+25569,z:'dd/mm/yyyy'} : null;
+  };
+  const positions=[['อาคาร','โซน','ตำแหน่งพาเลต','สถานะตำแหน่ง','จำนวนรายการสินค้า','เวอร์ชัน','แก้ไขล่าสุด (ISO)','ข้อสังเกต']];
+  const items=[['อาคาร','โซน','ตำแหน่งพาเลต','ลำดับในพาเลต','รหัสสินค้า','ชื่อสินค้า','Lot / PK No.','วันที่รับ','แหล่งวันที่รับ','จำนวนรับ','คงเหลือที่บันทึก','หน่วย','สถานะข้อมูล','หมายเหตุ','เวอร์ชันพาเลต']];
+  const movements=[['อาคาร','โซน','ตำแหน่งพาเลต','ลำดับในพาเลต','รหัสสินค้า','ชื่อสินค้า','Lot / PK No.','วันที่','รายการ','รับเข้า','เบิกออก','รับคืน','คงเหลือคำนวณ','หน่วย','ผู้ทำรายการ','ข้อสังเกต']];
+  for (const row of [...slots.values()].sort((a,b)=>a.zone.localeCompare(b.zone)||a.slot_code.localeCompare(b.slot_code,undefined,{numeric:true}))) {
+    const list=Array.isArray(row.items)?row.items:[];
+    const base=[buildingFor(row.zone),row.zone,row.slot_code];
+    positions.push([...base,row.missing?'ยังไม่มีข้อมูลในระบบ':row.occupied?'มีสินค้า':'ว่าง',row.missing?null:list.length,row.version??null,row.updated_at||'',
+      row.missing?'ไม่ถือเป็นตำแหน่งว่าง จนกว่าจะตรวจสอบ':!row.occupied&&list.length?'ระบุว่างแต่มีรายการสินค้า':'']);
+    list.forEach((item,index)=>{
+      const ledger=getStockMovement(item), quantity=movementNumber(getRemainingQty(item));
+      const issues=[quantity==null?'ไม่ทราบยอดคงเหลือ':'',!item.unit?'ไม่ระบุหน่วย':'',ledger.mismatch?'ยอดบันทึกไม่ตรงประวัติ':'',ledger.undated?'ประวัติวันที่ไม่ครบ':'',ledger.computed==null?'คำนวณประวัติไม่ได้':''].filter(Boolean).join(' · ');
+      const received=item.receiveDate||receiveDates.get(item.code)||'';
+      items.push([...base,index+1,String(item.code||''),String(item.name||''),String(item.lotNo||''),dateCell(received),item.receiveDate?'รายการสินค้า':received?'วันที่กลางตามรหัสสินค้า':'ไม่ระบุ',
+        movementNumber(item.qty),quantity,String(item.unit||''),issues||'ข้อมูลครบ',String(item.note||''),row.version??null]);
+      ledger.rows.forEach(m=>movements.push([...base,index+1,String(item.code||''),String(item.name||''),String(m.lotNo||''),dateCell(m.date),m.label,
+        m.type==='receive'?m.qty:null,m.type==='withdraw'?m.qty:null,m.type==='return'?m.qty:null,m.balance,String(m.unit||''),String(m.by||''),
+        [!movementDateKey(m.date)?'วันที่ไม่ครบ: '+String(m.date||'ไม่ระบุ'):'',m.qty==null?'ไม่ทราบจำนวน':'',issues].filter(Boolean).join(' · ')]));
+    });
+  }
+  return [
+    {name:'คำแนะนำ',rows:[['รายการ','รายละเอียด'],['เริ่มโหลดข้อมูล',meta.startedAt],['โหลดข้อมูลเสร็จ',meta.finishedAt],['แหล่งข้อมูล','ข้อมูลพาเลตที่บันทึกในระบบ Supabase'],
+      ['ขอบเขต','ทุกโซน รวมตำแหน่งว่าง ไม่จำกัดตัวกรองบนหน้าจอ'],['การใช้งาน','1 แถวต่อรายการสินค้าในตำแหน่งและล็อต ใช้ Filter / Pivot ได้ ห้ามรวมคนละหน่วย'],
+      ['รหัสและล็อต','เก็บเป็นข้อความเพื่อรักษาเลขศูนย์นำหน้า'],['วันที่','วันที่ Excel จริง รูปแบบ DD/MM/YYYY; ช่องว่างหมายถึงไม่ระบุ'],['จำนวน','ตัวเลขจริง ช่องว่างหมายถึงไม่ทราบ ไม่ใช่ศูนย์'],
+      ['STOCK CARD','ประวัติเรียงวันที่ภายในแต่ละรายการ คงเหลือคำนวณแยกจากยอดที่บันทึก'],['ตำแหน่งไม่มีข้อมูล','แสดงให้ตรวจสอบ ไม่สรุปว่าเป็นตำแหน่งว่าง'],
+      ['ความสดของข้อมูล','ข้อมูลถูกอ่านในช่วงเวลาที่ระบุ หากมีการแก้พร้อมกันอาจเป็นคนละเวอร์ชันระหว่างตำแหน่ง'],['นำเข้าระบบ','ไฟล์นี้สำหรับรายงาน/ตรวจนับ ไม่รองรับนำเข้า Excel ใช้ JSON จากปุ่มส่งออกข้อมูลพาเลตเพื่อสำรอง/นำเข้า'],
+      ['ข้อมูลที่ไม่รวม','รูปผังและประวัติการแก้ย้อนหลัง (movementEdits); เก็บข้อมูลต้นฉบับครบด้วย JSON'],['จำนวนตำแหน่ง',positions.length-1],['จำนวนรายการสินค้า',items.length-1]]},
+    {name:'ตำแหน่งพาเลต',rows:positions},{name:'รายการสินค้า',rows:items},{name:'STOCK CARD',rows:movements}
+  ];
+}
+
+async function exportFloorplanExcel() {
+  const button=document.getElementById('floorplanExcelExport'),status=document.getElementById('floorplanExcelStatus');
+  button.disabled=true;
+  status.textContent='กำลังโหลดข้อมูลทุกโซนจากระบบ…';
+  try {
+    if (!supabaseClient || !window.XLSX) throw new Error('กรุณาตรวจอินเทอร์เน็ตแล้วโหลดหน้าใหม่');
+    const startedAt=new Date().toISOString();
+    const [rows,dates]=await Promise.all([fetchAllPalletRows(supabaseClient,'pallet_slots'),fetchAllPalletRows(supabaseClient,'receive_dates')]);
+    const tables=buildPalletExcelTables(rows,dates,ZONE_SLOTS,AREA_BUILDINGS,{startedAt,finishedAt:new Date().toISOString()});
+    const book=XLSX.utils.book_new();
+    for (const table of tables) {
+      const sheet=XLSX.utils.aoa_to_sheet(table.rows);
+      sheet['!cols']=table.rows[0].map((_,i)=>({wch:table.name==='คำแนะนำ'?(i?110:28):i===5?45:23}));
+      if (table.name!=='คำแนะนำ') sheet['!autofilter']={ref:sheet['!ref']};
+      XLSX.utils.book_append_sheet(book,sheet,table.name);
+    }
+    XLSX.writeFile(book,`Pallet-Floor2-${new Date().toISOString().slice(0,10)}.xlsx`);
+    status.textContent=`ส่งออกแล้ว · ${tables[1].rows.length-1} ตำแหน่ง · ${tables[2].rows.length-1} รายการสินค้า`;
+  } catch(error) { status.textContent='ส่งออกไม่สำเร็จ · '+error.message; }
+  finally { button.disabled=false; }
+}
+document.getElementById('floorplanExcelExport').addEventListener('click',exportFloorplanExcel);
+
 function exportPalletStatus() {
   const payload = {
     exported_at: new Date().toISOString(),
