@@ -1,7 +1,7 @@
 -- Run via SQL admin in one transaction. All fixtures and writes are rolled back.
 begin;
 set local role anon;
-do $
+do $$
 declare result jsonb; rejected boolean;
 begin
   result := public.save_pallet_changes('[{"zone":"__REGRESSION__","slot_code":"A","occupied":false,"items":[],"expected_version":0}]','[]');
