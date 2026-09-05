@@ -1171,6 +1171,8 @@
   #bomPlanResult table { min-width:900px; }
   .bom-simulation { border:1px solid var(--status-warning); border-radius:10px; padding:12px; margin-bottom:14px; overflow-wrap:anywhere; }
   .bom-simulation p { margin:6px 0; }
+  .stock-snapshot-notice { padding:10px 12px; margin:10px 0; border:1px solid var(--border); border-radius:8px; font-size:12px; overflow-wrap:anywhere; }
+  .stock-snapshot-notice.snapshot-warning { border-color:var(--status-warning); background:var(--status-critical-wash); }
   .fg-status-chip { display:inline-block; max-width:100%; font-size: 16px; font-weight:800; padding: 10px 20px; border-radius: 10px; white-space: normal; letter-spacing:-0.01em; }
   .fg-status-chip.good { background: var(--status-good); color: #fff; }
   .fg-status-chip.critical { background: var(--status-critical); color: #fff; }
@@ -1349,7 +1351,7 @@
     transition: color .18s ease, background-color .18s ease, border-color .18s ease, transform .18s ease;
   }
   .tab-btn:hover { color: var(--series-1); background: var(--series-1-wash); }
-  .tab-btn.active { color: #fff; background: var(--series-1); border-color: var(--series-1); box-shadow: 0 5px 14px rgba(30,64,175,.22); }
+  .tab-btn.active { color: #fff; background: #1e40af; border-color: #1e40af; box-shadow: 0 5px 14px rgba(30,64,175,.22); }
   .tab-btn .tab-badge { min-width: 42px; padding: 3px 8px; background: var(--gridline); color: var(--text-secondary); }
   .tab-btn .tab-badge.critical { background: var(--status-critical-wash); color: var(--status-critical); }
   .tab-btn.active .tab-badge { background: rgba(255,255,255,.18); color: #fff; }
@@ -1996,6 +1998,7 @@
 
     <div class="panel">
       <h2>สัดส่วนความพร้อมบรรจุภัณฑ์</h2>
+      <div class="stock-snapshot-notice" role="status"></div>
       <div class="panel-sub">ตามสูตรมาตรฐานและสต็อกปัจจุบัน · ประเมินแต่ละ FG แยกกัน หากต้องการหลาย FG พร้อมกัน ให้ตรวจในแผนบรรจุภัณฑ์หลาย FG</div>
       <div class="split-bar" id="splitBar">
   <div class="split-seg good" style="width:19.15455746367239%">19.2%</div>
@@ -2145,6 +2148,7 @@
 
     <div class="panel" id="bomPlanPanel">
       <h2>แผนบรรจุภัณฑ์หลาย FG</h2>
+      <div class="stock-snapshot-notice" role="status"></div>
       <div class="panel-sub">รวมยอดใช้บรรจุภัณฑ์ร่วมกัน แล้วเทียบสต็อกพร้อมใช้ครั้งเดียวตามสูตรมาตรฐาน · ไม่รวมคลัง 800 / 900</div>
       <p class="panel-sub">แผนนี้ใช้ทดลองความเพียงพอของบรรจุภัณฑ์ ไม่ได้จองหรือตัดสต็อก และจะล้างเมื่อโหลดหน้าใหม่ · การทดลองไม่รวมรายการด้านบนไม่มีผลต่อแผนนี้</p>
       <form id="bomPlanForm" class="bom-plan-form">
@@ -3060,7 +3064,7 @@ function setSyncStatus(state, text) {
 }
 
 if (!supabaseClient) {
-  setSyncStatus('unavailable', 'ไม่ได้เชื่อมต่อระบบซิงค์ · ข้อมูลจะบันทึกในเครื่องนี้');
+  setSyncStatus('unavailable', 'ไม่ได้เชื่อมต่อระบบซิงค์ · การแก้ไขอยู่ชั่วคราวในหน้านี้ ส่งออกข้อมูลก่อนปิดหรือโหลดใหม่');
 }
 
 // buildSlotRow()/syncSlotToRemote()/syncReceiveDateToRemote(): push the CURRENT local state for
@@ -3086,7 +3090,7 @@ async function syncSlotToRemote(zoneCode, slotCode) {
     if (error) throw error;
   } catch (err) {
     console.error('syncSlotToRemote failed:', zoneCode, slotCode, err);
-    setSyncStatus('error', 'ซิงค์ข้อมูลไม่สำเร็จ · ข้อมูลยังบันทึกในเครื่องนี้ กรุณาตรวจสอบอินเทอร์เน็ต');
+    setSyncStatus('error', 'ซิงค์ข้อมูลไม่สำเร็จ · การแก้ไขยังไม่ยืนยันบนระบบ กรุณาส่งออกสำรองก่อนปิดหรือโหลดใหม่');
   }
 }
 async function syncReceiveDateToRemote(code) {
@@ -3097,7 +3101,7 @@ async function syncReceiveDateToRemote(code) {
     if (error) throw error;
   } catch (err) {
     console.error('syncReceiveDateToRemote failed:', code, err);
-    setSyncStatus('error', 'ซิงค์ข้อมูลไม่สำเร็จ · ข้อมูลยังบันทึกในเครื่องนี้ กรุณาตรวจสอบอินเทอร์เน็ต');
+    setSyncStatus('error', 'ซิงค์ข้อมูลไม่สำเร็จ · การแก้ไขยังไม่ยืนยันบนระบบ กรุณาส่งออกสำรองก่อนปิดหรือโหลดใหม่');
   }
 }
 
@@ -5134,7 +5138,7 @@ function warehouseLabel(code) {
 }
 
 function aggregate(items) {
-  const catValue = {}, catQty = {}, catItemSet = {};
+  const catValue = Object.create(null), catQty = Object.create(null), catItemSet = Object.create(null);
   let totalValue = 0, totalQty = 0;
   const uniqueCodes = new Set();
   const negItems = [];
@@ -5163,8 +5167,9 @@ function aggregate(items) {
 
   const byCode = new Map();
   for (const it of items) {
-    let d = byCode.get(it.code);
-    if (!d) { d = { code: it.code, name: it.name, unit: it.unit, qty: 0, value: 0, whs: new Set() }; byCode.set(it.code, d); }
+    const key = JSON.stringify([it.code, String(it.unit || '').trim()]);
+    let d = byCode.get(key);
+    if (!d) { d = { code: it.code, name: it.name, unit: it.unit, qty: 0, value: 0, whs: new Set() }; byCode.set(key, d); }
     d.qty += it.qty;
     d.value += it.value;
     d.whs.add(it.wh);
@@ -5213,10 +5218,10 @@ function buildBarChart(container, rows, opts) {
     const accessibleTip = r.tip.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
     return `
     <div class="bar-row${rowClass}">
-      <div class="name" title="${r.fullName || r.name}">${r.name}</div>
+      <div class="name" title="${escapeHtml(r.fullName || r.name)}">${escapeHtml(r.name)}</div>
       <div class="bar-track">
         <div class="bar-fill" style="${fillStyle}" tabindex="0" role="img" aria-label="${escapeHtml(accessibleTip)}"
-             data-tip="${r.tip.replace(/"/g,'&quot;')}"></div>
+             data-tip="${escapeHtml(r.tip)}"></div>
       </div>
       <div class="val">฿${fmtCompact(r.value)}</div>
     </div>`;
@@ -5239,7 +5244,7 @@ function renderWarehouseChart(whCode) {
   buildBarChart(document.getElementById('whChart'), STOCK.warehouses.map(w => ({
     name: w.short, fullName: w.name, value: w.value,
     state: whCode === 'all' ? null : (w.code === whCode ? 'selected' : 'dim'),
-    tip: `<b>${w.name} (คลัง ${w.code})</b>${fmt0(w.items)} รายการ · มูลค่า ${fmt0(w.value)} บาท (${w.pct}%)`,
+    tip: `<b>${escapeHtml(w.name)} (คลัง ${escapeHtml(w.code)})</b>${fmt0(w.items)} รายการ · มูลค่า ${fmt0(w.value)} บาท (${escapeHtml(String(w.pct))}%)`,
   })), {vertical: true});
 }
 
@@ -5251,7 +5256,7 @@ function renderWarehouseChart(whCode) {
 function renderCategories(view, whCode) {
   buildBarChart(document.getElementById('catChart'), view.categories.map(c => ({
     name: c.label, fullName: c.label, value: c.value,
-    tip: `<b>${c.label}</b>${fmt0(c.items)} รหัสไม่ซ้ำ · มูลค่า ${fmt0(c.value)} บาท (${c.pct}%)`,
+    tip: `<b>${escapeHtml(c.label)}</b>${fmt0(c.items)} รหัสไม่ซ้ำ · มูลค่า ${fmt0(c.value)} บาท (${escapeHtml(String(c.pct))}%)`,
   })));
 
   // The #catTable rows and #catMatchSub sub-line were removed 21 Aug 2026 along with the
@@ -5266,14 +5271,14 @@ function renderTopItems(view, whCode) {
   const topTbody = document.querySelector('#topTable tbody');
   topTbody.innerHTML = view.top_items.map(it => `
     <tr>
-      <td class="name-cell">${it.name}<span class="code">${it.code} · หน่วย: ${it.unit || '-'}</span></td>
+      <td class="name-cell">${escapeHtml(it.name)}<span class="code">${escapeHtml(it.code)} · หน่วย: ${escapeHtml(it.unit || '-')}</span></td>
       <td class="num">${fmt2(it.qty)}</td>
       <td class="num">฿${fmt0(it.value)}</td>
-      <td>${it.whs.map(w => `<span class="wh-tag">${w}</span>`).join('')}</td>
+      <td>${it.whs.map(w => `<span class="wh-tag">${escapeHtml(w)}</span>`).join('')}</td>
     </tr>
   `).join('');
   document.getElementById('topItemsSub').textContent = whCode === 'all'
-    ? 'รวมยอดตามรหัสสินค้าจากทุกคลัง'
+    ? 'รวมยอดรหัสเดียวกันและหน่วยเดียวกันจากทุกคลัง · แยกแถวเมื่อหน่วยต่างกัน'
     : `เฉพาะ ${warehouseLabel(whCode)}`;
 }
 
@@ -5332,7 +5337,8 @@ function stockNumber(value) {
   const clean = String(value == null ? '' : value).replace(/,/g, '').trim();
   if (!clean || clean === '-') return 0;
   const n = Number(clean.replace(/^\((.*)\)$/, '-$1'));
-  return Number.isFinite(n) ? n : 0;
+  if (!Number.isFinite(n)) throw new Error('ตัวเลขไม่ถูกต้อง: ' + clean);
+  return n;
 }
 
 const STOCK_WAREHOUSE_ALIASES = {
@@ -5396,7 +5402,9 @@ function rowsFromMatrix(matrix, fileName, sheetName) {
     const name = row[1] || '';
     const unit = row[2] || '';
     if (!first || !name) continue;
-    rows.push({ code:first, name, unit, qty:stockNumber(row[3]), value:stockNumber(row[4]), wh:warehouse, cat:classifyStockItem(name, first) });
+    try {
+      rows.push({ code:first, name, unit, qty:stockNumber(row[3]), value:stockNumber(row[4]), wh:warehouse, cat:classifyStockItem(name, first) });
+    } catch (error) { throw new Error(`${fileName} / ${sheetName} · รหัส ${first}: ${error.message}`); }
   }
   return { rows, reportDate };
 }
@@ -5410,6 +5418,8 @@ async function parseStockFiles(files) {
     wb.SheetNames.forEach(sheetName => {
       const matrix = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header:1, raw:false, defval:'' });
       const parsed = rowsFromMatrix(matrix, file.name, sheetName);
+      if (reportDate && parsed.reportDate && reportDate !== parsed.reportDate)
+        throw new Error('วันที่สต็อกในไฟล์ไม่ตรงกัน กรุณาเลือกข้อมูลวันเดียวกันทุกคลัง');
       items.push(...parsed.rows); if (!reportDate && parsed.reportDate) reportDate = parsed.reportDate;
     });
   }
@@ -5437,20 +5447,39 @@ function rebuildStockControls() {
   if (window.__bomUiReady) recalculateBomFromStock();
 }
 
+let stockSnapshotState = 'loading';
+function renderStockSnapshotNotice() {
+  const date = String(STOCK.report_date || 'ไม่ระบุวันที่').replace(/^ณ วันที่:\s*/, '');
+  const messages = {loading:'กำลังตรวจสอบสต็อกล่าสุด · ผลชั่วคราวจากข้อมูลในไฟล์',
+    latest:'โหลดสต็อกจากระบบสำเร็จ', fallback:'ใช้ข้อมูลสำรองในไฟล์ · ยังยืนยันสต็อกล่าสุดไม่ได้'};
+  document.querySelectorAll('.stock-snapshot-notice').forEach(el => {
+    el.textContent = `สต็อกอ้างอิง: ${date} · ${messages[stockSnapshotState]}`;
+    el.classList.toggle('snapshot-warning', stockSnapshotState !== 'latest');
+  });
+}
 async function loadLatestStockFromSupabase() {
-  if (!stockSupabaseClient) return;
+  if (!stockSupabaseClient) {
+    stockSnapshotState = 'fallback';
+    stockUpdateStatus.textContent = 'ใช้สต็อกสำรองในไฟล์ · ยังยืนยันสต็อกล่าสุดไม่ได้';
+    stockUpdateStatus.className = 'stock-update-status error';
+    renderStockSnapshotNotice(); return;
+  }
   try {
     const { data, error } = await stockSupabaseClient.rpc('get_latest_stock_inventory');
     if (error) throw error;
     if (data && data.items && data.items.length) {
+      stockSnapshotState = 'latest';
       STOCK = data; DATA.stock = data; rebuildStockControls();
       stockUpdateStatus.textContent = 'โหลดสต็อกล่าสุดแล้ว';
       stockUpdateStatus.className = 'stock-update-status success';
-    }
+    } else throw new Error('ไม่พบสต็อกล่าสุด');
   } catch (err) {
+    stockSnapshotState = 'fallback';
       stockUpdateStatus.textContent = 'แสดงสต็อกในไฟล์ · ยังโหลดข้อมูลล่าสุดไม่ได้';
+    stockUpdateStatus.className = 'stock-update-status error';
     console.warn('Stock RPC not ready:', err);
   }
+  renderStockSnapshotNotice();
 }
 
 stockUpdateBtn.addEventListener('click', () => stockExcelInput.click());
@@ -5468,7 +5497,8 @@ stockExcelInput.addEventListener('change', async () => {
     const { data:updated, error } = await stockSupabaseClient.rpc('replace_stock_inventory', { p_report_date:parsed.reportDate, p_source_name:files.map(f => f.name).join(', '), p_items:parsed.items, p_update_pin:updatePin });
     if (error) throw error;
     if (!updated || !updated.items) throw new Error('ไม่ได้รับผลคำนวณจากระบบ กรุณาลองใหม่');
-    STOCK = updated; DATA.stock = updated; rebuildStockControls();
+    stockSnapshotState = 'latest';
+    STOCK = updated; DATA.stock = updated; rebuildStockControls(); renderStockSnapshotNotice();
     stockUpdateStatus.textContent = `อัปเดตสำเร็จ ${fmt0(updated.kpis.total_rows)} รายการ · ${updated.report_date}`;
     stockUpdateStatus.className = 'stock-update-status success';
   } catch (err) {
@@ -7276,7 +7306,7 @@ function renderBomPlan(updateSelection = true) {
       <td><button type="button" class="excl-toggle-btn" data-plan-remove="${escapeHtml(fg)}" aria-label="ลบ ${escapeHtml(fg)} จากแผน">ลบ</button></td></tr>`).join('')}
     </tbody></table></div>`;
   const plan = calculateBomPlan([...bomPlan].map(([fg,qty]) => ({fg,qty})), BOMPK.bom_detail, STOCK.items || [], BOMPK.assumptions.excluded_warehouses || []);
-  const amount = (value,unit) => value == null ? 'ยังประเมินไม่ได้' : `${fmt3(value)} ${escapeHtml(unit)}`;
+  const amount = (value,unit) => value == null ? 'ยังประเมินไม่ได้' : `${escapeHtml(formatBomQuantity(value))} ${escapeHtml(unit)}`;
   result.innerHTML = `<div class="fg-bom-head"><b>${plan.ready ? 'บรรจุภัณฑ์เพียงพอสำหรับแผนนี้' : 'แผนนี้ยังไม่พร้อมด้านบรรจุภัณฑ์'}</b>
     <span>${bomPlan.size} FG · ${plan.rows.length} รหัสบรรจุภัณฑ์ · ขาด ${plan.shortages} รหัส · ต้องตรวจสอบ ${plan.unknown + plan.errors.length} รายการ</span></div>
     ${plan.errors.length ? `<p>${plan.errors.map(escapeHtml).join('<br>')}</p>` : ''}
@@ -7352,6 +7382,41 @@ function bomConversion(code, from, to) {
   return rules.length === 1 ? { factor:Number(rules[0].factor), source:rules[0].source } : null;
 }
 
+// Sum repeated component lines before capacity/remaining-value calculations.
+// Keep every source line intact so a data steward can review apparent duplicates.
+function groupBomLines(lines) {
+  const groups = new Map();
+  lines.filter(line => bomComponentType(line) !== 'non_packaging').forEach(line => {
+    const code = String(line.pk_code || '').trim().toUpperCase();
+    if (!groups.has(code)) groups.set(code, []);
+    groups.get(code).push(line);
+  });
+  return [...groups].map(([code, members]) => {
+    const units = [...new Set(members.map(line => normalizeBomUnit(line.unit)))].sort();
+    const unit = units.find(target => units.every(from => bomConversion(code,from,target))) || units[0];
+    let usage = 0, error = '';
+    members.forEach(line => {
+      const n = bomNumber(line.qty_per_unit), conversion = bomConversion(code,line.unit,unit);
+      if (!(n > 0)) error = 'ปริมาณใช้ในสูตรไม่ถูกต้อง';
+      if (!conversion) error = 'หน่วยของรหัสซ้ำในสูตรยังแปลงรวมกันไม่ได้';
+      if (n > 0 && conversion) usage += n * conversion.factor;
+    });
+    if (!Number.isFinite(usage)) error = 'จำนวนเกินขอบเขตที่คำนวณได้';
+    return {...members[0], pk_code:code, unit,
+      component_type:members.every(line => bomComponentType(line) === 'packaging') ? 'packaging' : 'unknown',
+      qty_per_unit:error ? null : usage, source_line_count:members.length, grouping_error:error,
+      shared_fgs:[...new Set(members.flatMap(line => line.shared_fgs || []))]};
+  });
+}
+
+function formatBomQuantity(value) {
+  if (value == null || !Number.isFinite(Number(value))) return 'ยังประเมินไม่ได้';
+  const n = Number(value);
+  if (n > 0 && n < 0.001) return '<0.001';
+  if (n < 0 && n > -0.001) return '>-0.001';
+  return n.toLocaleString('en-US', {maximumFractionDigits:3});
+}
+
 function recalculateBomFromStock() {
   const excludedWarehouses = new Set((BOMPK.assumptions.excluded_warehouses || []).map(x => String(x).trim()));
   const stockByCode = new Map();
@@ -7367,7 +7432,7 @@ function recalculateBomFromStock() {
   Object.entries(BOMPK.bom_detail).forEach(([fgCode, detail]) => {
     // Retain the source lines so changing a master classification is reversible on refresh.
     if (!detail.source_lines) detail.source_lines = detail.lines.slice();
-    detail.lines = detail.source_lines.filter(line => bomComponentType(line) !== 'non_packaging');
+    detail.lines = groupBomLines(detail.source_lines);
     detail.line_count = detail.lines.length;
     totalBomLines += detail.line_count;
     if (detail.line_count > 0) totalFgWithBom++;
@@ -7376,7 +7441,7 @@ function recalculateBomFromStock() {
     detail.lines.forEach(line => {
       const rows = stockByCode.get(String(line.pk_code || '').trim().toUpperCase()) || [];
       const targetUnit = normalizeBomUnit(line.unit);
-      let qty = 0, value = 0, valueKnown = true, error = '';
+      let qty = 0, value = 0, valueKnown = true, error = line.grouping_error || '';
       const notes = new Set();
       line.stock_excluded_warehouses = [];
       line.stock_excluded = 0;
@@ -7403,6 +7468,7 @@ function recalculateBomFromStock() {
           notes.add(`1 ${row.unit} = ${conversion.factor} ${line.unit} (${conversion.source})`);
       });
       const qtyPerUnit = bomNumber(line.qty_per_unit);
+      if (!Number.isFinite(qty) || !Number.isFinite(value)) error = 'จำนวนเกินขอบเขตที่คำนวณได้';
       line.stock_avail = error ? null : Math.max(0, qty);
       line.stock_unit_value = !error && qty > 0 && valueKnown ? value / qty : null;
       line.in_stock = line.stock_avail > 0;
@@ -7413,7 +7479,7 @@ function recalculateBomFromStock() {
         .filter(row => !excludedWarehouses.has(String(row.wh).trim()))
         .map(row => `คลัง ${row.wh}: ${bomNumber(row.qty) == null ? 'ไม่ทราบจำนวน' : row.qty} ${row.unit || 'ไม่ระบุหน่วย'}`)
         .join(' · ') : '';
-      line.producible = !error ? Math.max(0, Math.floor(line.stock_avail / qtyPerUnit + 1e-9)) : null;
+      line.producible = !error ? Math.max(0, Math.floor(line.stock_avail / qtyPerUnit)) : null;
       if (line.producible == null) incomplete = true;
       else if (fgProducible == null || line.producible < fgProducible) {
         fgProducible = line.producible; bottleneckLine = line;
@@ -7455,9 +7521,8 @@ function renderFgBom(rawCode) {
   const excludedLines = detail.lines.filter(line => excludedSet.has(line.pk_code));
   const isSimulation = excludedLines.length > 0;
 
-  // Recompute the FG-level bottleneck from each line's own (already-computed) producible
-  // figure, skipping any line the user has manually excluded from the calc. Each line's
-  // producible is independent of the others, so this is just a re-filtered min().
+  // Lines are grouped by component code before computing capacity. Exclude an entire
+  // grouped component in the simulation; never count its shared stock more than once.
   let effProducible = null, effBottleneckCode = null;
   const hasUnknown = detail.lines.some(l => !excludedSet.has(l.pk_code) && l.producible == null);
   detail.lines.forEach(l => {
@@ -7487,8 +7552,8 @@ function renderFgBom(rawCode) {
   function fgDiffCell(l) {
     const rem = fgRemainingStock(l);
     if (rem == null) return '<span style="color:var(--text-muted)">-</span>';
-    if (rem <= 0) return `<span style="color:var(--text-secondary)">${fmt3(rem)} ${bomUnit(l)}</span>`;
-    return `<span style="color:var(--status-good)">+${fmt3(rem)} ${bomUnit(l)}</span>`;
+    if (rem <= 0) return `<span style="color:var(--text-secondary)">${escapeHtml(formatBomQuantity(rem))} ${bomUnit(l)}</span>`;
+    return `<span style="color:var(--status-good)">+${escapeHtml(formatBomQuantity(rem))} ${bomUnit(l)}</span>`;
   }
 
   function fgDiffValue(l) {
@@ -7546,13 +7611,13 @@ function renderFgBom(rawCode) {
     if (!l.shared_fgs || !l.shared_fgs.length) return '';
     const shown = l.shared_fgs.slice(0, SHARED_FG_SHOW).join(', ');
     const more = l.shared_fgs.length > SHARED_FG_SHOW ? ` (+${fmt0(l.shared_fgs.length - SHARED_FG_SHOW)} อื่นๆ)` : '';
-    return ` · ใช้ร่วมกับ FG: ${shown}${more}`;
+    return ` · ใช้ร่วมกับ FG: ${escapeHtml(shown)}${more}`;
   }
 
   fgBomResult.innerHTML = `
     <div class="fg-bom-head">
-      <div style="background:var(--status-good); color:#ffffff; padding:10px 16px; border-radius:10px;">
-        <b style="font-size:14px;">${detail.fg_name}</b>
+      <div style="background:#166534; color:#ffffff; padding:10px 16px; border-radius:10px;">
+        <b style="font-size:14px;">${escapeHtml(detail.fg_name)}</b>
         <span class="code" style="display:block;margin-top:2px;color:#ffffff;opacity:0.85;">${q} · ${fmt0(detail.line_count)} ส่วนประกอบที่ระบุปริมาณใช้</span>
       </div>
       <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
@@ -7590,9 +7655,9 @@ function renderFgBom(rawCode) {
             return `
             <tr class="${rowClass}">
               <td class="num">${idx + 1}</td>
-              <td class="name-cell">${l.pk_name || '(ไม่พบในสต็อก)'}<span class="code">${l.pk_code}${l.unit ? ' · หน่วย: ' + l.unit : ''}${isBottleneck ? ' · ข้อจำกัดบรรจุภัณฑ์' : ''}${isExcluded ? ' · ไม่รวมคำนวณ' : ''}${sharedFgNote(l)}</span></td>
-              <td class="num">${l.qty_per_unit != null ? fmt3(l.qty_per_unit) : '<span style="color:var(--text-muted)">ไม่ระบุ</span>'}</td>
-              <td class="num" style="${stockAvailBg(l.stock_avail)}">${l.stock_avail == null ? '—' : fmt3(l.stock_avail) + ' ' + bomUnit(l)}${excludedStockNote(l)}${l.stock_source_note ? `<span class="code" style="display:block;white-space:normal">สต็อกต้นทาง · ${escapeHtml(l.stock_source_note)}</span>` : ''}${l.conversion_note ? `<span class="code" style="display:block;white-space:normal">${escapeHtml(l.conversion_note)}</span>` : ''}</td>
+              <td class="name-cell">${escapeHtml(l.pk_name || '(ไม่พบในสต็อก)')}<span class="code">${escapeHtml(l.pk_code)}${l.unit ? ' · หน่วย: ' + escapeHtml(l.unit) : ''}${l.source_line_count > 1 ? ' · รวมยอดใช้จาก ' + l.source_line_count + ' บรรทัดต้นฉบับ' : ''}${isBottleneck ? ' · ข้อจำกัดบรรจุภัณฑ์' : ''}${isExcluded ? ' · ไม่รวมคำนวณ' : ''}${sharedFgNote(l)}</span></td>
+              <td class="num">${l.qty_per_unit != null ? escapeHtml(formatBomQuantity(l.qty_per_unit)) : '<span style="color:var(--text-muted)">ไม่ระบุ</span>'}</td>
+              <td class="num" style="${stockAvailBg(l.stock_avail)}">${l.stock_avail == null ? '—' : escapeHtml(formatBomQuantity(l.stock_avail)) + ' ' + bomUnit(l)}${excludedStockNote(l)}${l.stock_source_note ? `<span class="code" style="display:block;white-space:normal">สต็อกต้นทาง · ${escapeHtml(l.stock_source_note)}</span>` : ''}${l.conversion_note ? `<span class="code" style="display:block;white-space:normal">${escapeHtml(l.conversion_note)}</span>` : ''}</td>
               <td class="num col-highlight">${stockValueCell(l)}</td>
               <td class="num col-highlight">${l.producible != null ? fmt0(l.producible) : '-'}</td>
               <td>${stockStatusCell(l)}</td>
@@ -7600,7 +7665,7 @@ function renderFgBom(rawCode) {
               <td class="num col-highlight">${fgDiffValueCell(l)}</td>
               <td>${l.shared_fgs && l.shared_fgs.length ? '<span class="badge warn">ใช้ร่วม</span>' : '<span class="badge blue">เฉพาะสูตร</span>'}</td>
               <td style="text-align:center;">
-                <button type="button" class="excl-toggle-btn${isExcluded ? ' excluded' : ''}" data-pk="${l.pk_code}" title="${isExcluded ? 'นำรายการนี้กลับมาคำนวณ' : 'ทดลองคำนวณโดยไม่รวมรายการนี้'}">${isExcluded ? '↺ นำกลับ' : 'ทดลองไม่รวม'}</button>
+                <button type="button" class="excl-toggle-btn${isExcluded ? ' excluded' : ''}" data-pk="${escapeHtml(l.pk_code)}" title="${isExcluded ? 'นำรายการนี้กลับมาคำนวณ' : 'ทดลองคำนวณโดยไม่รวมรายการนี้'}">${isExcluded ? '↺ นำกลับ' : 'ทดลองไม่รวม'}</button>
               </td>
             </tr>
           `;
@@ -7621,6 +7686,7 @@ function renderFgBom(rawCode) {
 // Initial embedded Stock is calculated once here; later Supabase loads/manual updates enter
 // through rebuildStockControls() and use the same recalculation path.
 window.__bomUiReady = true;
+renderStockSnapshotNotice();
 recalculateBomFromStock();
 fgBomSearch.addEventListener('input', () => {
   fgBomSearchMsg.hidden = true;

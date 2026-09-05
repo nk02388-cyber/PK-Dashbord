@@ -14,7 +14,7 @@ const ctx = vm.createContext({
   ] } } },
   fgBomResult: {}, fgBomSearchMsg: {}, fgBomSearchBtn: {},
   fgLineExclusions: { FG: excluded }, hideFgSuggestions() {},
-  fmt0: n => String(Math.round(n)), fmt3: n => String(n),
+  fmt0: n => String(Math.round(n)), fmt3: n => String(n), formatBomQuantity:n=>String(n),
   escapeHtml: s => String(s),
 });
 vm.runInContext(source, ctx);

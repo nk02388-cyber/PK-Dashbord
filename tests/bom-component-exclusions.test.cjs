@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
-const names = ['bomNumber','normalizeBomUnit','bomComponentType','bomConversion','recalculateBomFromStock'];
+const names = ['bomNumber','normalizeBomUnit','bomComponentType','bomConversion','groupBomLines','recalculateBomFromStock'];
 const source = names.map(name => html.match(new RegExp(`function ${name}\\([^]*?\\n\\}`))[0]).join('\n');
 const master = JSON.parse(html.match(/const BOM_COMPONENT_TYPES = Object.freeze\(([^]*?)\);/)[1]);
 const makeContext = (bom, stock) => vm.createContext({
@@ -57,13 +57,13 @@ vm.runInContext(source, real);
 real.recalculateBomFromStock();
 for (const [code, detail] of Object.entries(data.bomPk.bom_detail)) {
   const expected = originalBom.bom_detail[code].lines.filter(l => !String(l.pk_code).trim().startsWith('5'));
-  assert.deepEqual(Array.from(detail.lines, l => l.pk_code), expected.map(l => l.pk_code));
-  assert.equal(detail.line_count, expected.length);
+  assert.deepEqual(Array.from(detail.lines, l => l.pk_code), [...new Set(expected.map(l => String(l.pk_code).trim().toUpperCase()))]);
+  assert.equal(detail.line_count, new Set(expected.map(l => String(l.pk_code).trim().toUpperCase())).size);
   assert.ok(!String(detail.bottleneck_code || '').startsWith('5'));
 }
 assert.equal(data.bomPk.bom_detail['21-0021-06'].line_count, 6);
 assert.ok(data.bomPk.bom_detail['21-0021-06'].producible > 0);
-assert.equal(data.bomPk.kpis.total_bom_lines, 3375);
+assert.equal(data.bomPk.kpis.total_bom_lines, 3371);
 assert.equal(data.bomPk.kpis.unique_components, 1524);
 assert.equal(data.bomPk.kpis.total_fg_with_bom, 756);
 console.log('PASS: migrated component classifications, readiness, counts, empty formulas and stock refresh');

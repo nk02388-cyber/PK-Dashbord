@@ -1,6 +1,6 @@
 const assert=require('node:assert/strict'), fs=require('node:fs'), path=require('node:path'), vm=require('node:vm');
 const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
-const names=['bomNumber','normalizeBomUnit','bomComponentType','bomConversion','recalculateBomFromStock'];
+const names=['bomNumber','normalizeBomUnit','bomComponentType','bomConversion','groupBomLines','recalculateBomFromStock'];
 const source=names.map(n=>html.match(new RegExp(`function ${n}\\([^]*?\\n\\}`))[0]).join('\n');
 function scenario(lines,items,conversions=[]) {
   const ctx=vm.createContext({BOM_COMPONENT_TYPES:{},BOM_UNIT_CONVERSIONS:conversions,
