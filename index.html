@@ -2173,6 +2173,23 @@
       <div id="bomPlanResult" aria-live="polite"></div>
     </div>
 
+    <div class="panel" id="stockReconcilePanel">
+      <h2>เปรียบเทียบสต็อกในพาเลตกับสต็อกที่อัปเดต</h2>
+      <div class="stock-snapshot-notice" role="status"></div>
+      <p class="panel-sub">รวมยอดตามรหัสสินค้าและหน่วยเดียวกัน · สต็อกพาเลตใช้ยอดคงเหลือจาก STOCK CARD ทุกตำแหน่ง · สต็อกที่อัปเดตใช้ข้อมูลทุกคลัง</p>
+      <div class="bom-plan-form">
+        <label for="stockReconcileFilter">แสดงรายการ<select id="stockReconcileFilter">
+          <option value="mismatch">เฉพาะยอดไม่ตรง</option><option value="different">รายการต้องดำเนินการทั้งหมด</option><option value="all">ทั้งหมด</option>
+          <option value="missing_pallet">ไม่มีในพาเลต</option><option value="missing_stock">ไม่มีในสต็อกที่อัปเดต</option><option value="unknown">ต้องตรวจสอบ</option>
+        </select></label>
+        <button type="button" id="stockReconcileRefresh" class="excl-toggle-btn">คำนวณใหม่</button>
+        <button type="button" id="stockReconcileExport" class="excl-toggle-btn">ส่งออกผลเปรียบเทียบ Excel</button>
+      </div>
+      <p id="stockReconcileStatus" role="status" aria-live="polite">กำลังรอข้อมูลพาเลต…</p>
+      <div id="stockReconcileSummary"></div>
+      <div id="stockReconcileResult"></div>
+    </div>
+
     <div class="panel">
       <div class="panel-sub" style="margin:0;">
         ประเมินจากสต็อกพร้อมใช้ · ไม่รวมคลัง 800 / 900
@@ -3170,6 +3187,7 @@ function refreshAfterRemoteChange(zoneCode, slotCode) {
   }
   const selectedPin = document.querySelector('.floor-pin.selected, .floor-zone-fallback.selected');
   if (selectedPin) renderFloorZoneDetail(selectedPin.dataset.zone, selectedPin.dataset.wh);
+  if (typeof renderStockReconciliation === 'function') renderStockReconciliation();
 }
 
 // initSupabaseSync(): initial full fetch -- Supabase's stored state overrides the Excel-seeded
@@ -4189,6 +4207,88 @@ function getStockMovement(item) {
     mismatch: balance != null && stored != null && Math.abs(balance - stored) > 1e-8,
     undated: rows.some(row => !movementDateKey(row.date)) };
 }
+
+function buildStockReconciliation(stockItems, palletRows) {
+  const normalizeCode = value => String(value || '').trim().toUpperCase();
+  const normalizeUnit = value => normalizeBomUnit(value) || String(value || '').trim().toLowerCase();
+  const groups = new Map();
+  const ensure = (code,unit) => {
+    const key=JSON.stringify([code,unit]);
+    if (!groups.has(key)) groups.set(key,{code,unit,names:new Set(),stock:0,pallet:0,stockKnown:true,palletKnown:true,warehouses:new Set(),slots:new Set(),stockRows:0,palletItems:0});
+    return groups.get(key);
+  };
+  for (const item of stockItems || []) {
+    const code=normalizeCode(item.code),unit=normalizeUnit(item.unit),qty=movementNumber(item.qty);
+    if (!code) continue;
+    const row=ensure(code,unit); row.stockRows++;
+    if (item.name) row.names.add(String(item.name));
+    if (item.wh != null) row.warehouses.add(String(item.wh));
+    if (qty == null) row.stockKnown=false; else row.stock+=qty;
+  }
+  for (const pallet of palletRows || []) for (const item of Array.isArray(pallet.items)?pallet.items:[]) {
+    const code=normalizeCode(item.code),unit=normalizeUnit(item.unit),qty=movementNumber(getRemainingQty(item));
+    if (!code) continue;
+    const row=ensure(code,unit); row.palletItems++;
+    if (item.name) row.names.add(String(item.name));
+    row.slots.add(`${pallet.zone}/${pallet.slot_code}`);
+    if (qty == null) row.palletKnown=false; else row.pallet+=qty;
+  }
+  return [...groups.values()].map(row=>{
+    const hasStock=row.stockRows>0,hasPallet=row.palletItems>0;
+    let status='ตรงกัน',difference=null;
+    if (!row.unit || !row.stockKnown || !row.palletKnown) status='ต้องตรวจสอบ';
+    else { difference=Number((row.pallet-row.stock).toFixed(8));
+      if (!hasPallet) status='ไม่มีในพาเลต'; else if (!hasStock) status='ไม่มีในสต็อกที่อัปเดต'; else if (Math.abs(difference)>1e-8) status='ยอดไม่ตรง'; }
+    return {...row,name:[...row.names][0]||'',stock:row.stockKnown?row.stock:null,pallet:row.palletKnown?row.pallet:null,difference,status,
+      warehouses:[...row.warehouses].sort(),slots:[...row.slots].sort()};
+  }).sort((a,b)=>a.code.localeCompare(b.code)||a.unit.localeCompare(b.unit));
+}
+
+function filterStockReconciliation(rows,filter) {
+  if (filter==='all') return rows;
+  if (filter==='mismatch') return rows.filter(row=>row.status==='ยอดไม่ตรง');
+  if (filter==='different') return rows.filter(row=>row.status!=='ตรงกัน');
+  const labels={missing_pallet:'ไม่มีในพาเลต',missing_stock:'ไม่มีในสต็อกที่อัปเดต',unknown:'ต้องตรวจสอบ'};
+  return rows.filter(row=>row.status===labels[filter]);
+}
+
+function stockReconciliationTables(rows,meta) {
+  return [{name:'ข้อมูลเปรียบเทียบ',rows:[['รายการ','ค่า'],['ส่งออกเมื่อ',meta.exportedAt],['วันที่สต็อกที่อัปเดต',meta.stockDate],
+    ['สถานะสต็อก',meta.stockStatus],['ขอบเขตสต็อกที่อัปเดต','ทุกคลัง'],['ขอบเขตพาเลต','ทุกโซนและทุกตำแหน่ง'],
+    ['หลักการจับคู่','รหัสสินค้า + หน่วยมาตรฐานเดียวกัน'],['ส่วนต่าง','สต็อกในพาเลต - สต็อกที่อัปเดต'],
+    ['ข้อควรระวัง','คนละหน่วยจะเป็นคนละแถว ช่องว่างคือไม่ทราบค่า ไม่ใช่ศูนย์']]},
+    {name:'ผลเปรียบเทียบ',rows:[['รหัสสินค้า','ชื่อสินค้า','หน่วย','สต็อกในพาเลต','สต็อกที่อัปเดต','ส่วนต่าง','สถานะ','จำนวนรายการในพาเลต','ตำแหน่งพาเลต','คลังในสต็อก','จำนวนแถวสต็อก'],
+      ...rows.map(r=>[r.code,r.name,r.unit,r.pallet,r.stock,r.difference,r.status,r.palletItems,r.slots.join(', '),r.warehouses.join(', '),r.stockRows])]}
+  ];
+}
+
+let stockReconciliationRows=[];
+function renderStockReconciliation() {
+  const status=document.getElementById('stockReconcileStatus');
+  if (!status) return;
+  if (!palletDataReady) { status.textContent='กำลังรอข้อมูลพาเลต…'; return; }
+  stockReconciliationRows=buildStockReconciliation(STOCK.items||[],[...palletRemoteRows.values()]);
+  const shown=filterStockReconciliation(stockReconciliationRows,document.getElementById('stockReconcileFilter').value);
+  const counts={}; stockReconciliationRows.forEach(row=>counts[row.status]=(counts[row.status]||0)+1);
+  status.textContent=`คำนวณแล้ว ${stockReconciliationRows.length.toLocaleString()} รหัส/หน่วย · แสดง ${shown.length.toLocaleString()} รายการ`;
+  document.getElementById('stockReconcileSummary').innerHTML=`<div class="fg-bom-head"><b>ยอดตรงกัน ${counts['ตรงกัน']||0}</b><span>ยอดไม่ตรง ${counts['ยอดไม่ตรง']||0} · ไม่มีในพาเลต ${counts['ไม่มีในพาเลต']||0} · ไม่มีในสต็อกที่อัปเดต ${counts['ไม่มีในสต็อกที่อัปเดต']||0} · ต้องตรวจสอบ ${counts['ต้องตรวจสอบ']||0}</span></div>`;
+  const amount=value=>value==null?'ไม่ทราบ':escapeHtml(formatBomQuantity(value));
+  document.getElementById('stockReconcileResult').innerHTML=!shown.length?'<p>ไม่มีรายการที่ตรงกับตัวกรอง</p>':`<div class="table-scroll" tabindex="0" role="region" aria-label="ผลเปรียบเทียบสต็อก"><table><thead><tr><th>รหัส / ชื่อสินค้า</th><th>หน่วย</th><th class="num">ในพาเลต</th><th class="num">สต็อกที่อัปเดต</th><th class="num">ส่วนต่าง</th><th>สถานะ</th><th>ตำแหน่ง / คลัง</th></tr></thead><tbody>${shown.map(row=>`<tr><td>${escapeHtml(row.code)}<span class="code" style="display:block;white-space:normal">${escapeHtml(row.name)}</span></td><td>${escapeHtml(row.unit||'ไม่ระบุ')}</td><td class="num">${amount(row.pallet)}</td><td class="num">${amount(row.stock)}</td><td class="num">${amount(row.difference)}</td><td><span class="badge ${row.status==='ตรงกัน'?'good':row.status==='ยอดไม่ตรง'?'critical':'warn'}">${escapeHtml(row.status)}</span></td><td><span class="code" style="white-space:normal">พาเลต: ${escapeHtml(row.slots.join(', ')||'—')}<br>คลัง: ${escapeHtml(row.warehouses.join(', ')||'—')}</span></td></tr>`).join('')}</tbody></table></div>`;
+}
+
+document.getElementById('stockReconcileFilter').addEventListener('change',renderStockReconciliation);
+document.getElementById('stockReconcileRefresh').addEventListener('click',renderStockReconciliation);
+document.getElementById('stockReconcileExport').addEventListener('click',()=>{
+  try {
+    if (!window.XLSX || !palletDataReady) throw new Error('ข้อมูลยังไม่พร้อม กรุณารอสักครู่');
+    renderStockReconciliation();
+    const tables=stockReconciliationTables(stockReconciliationRows,{exportedAt:new Date().toISOString(),stockDate:STOCK.report_date||'',stockStatus:stockSnapshotState==='latest'?'โหลดจากระบบสำเร็จ':'ข้อมูลสำรอง/ยังไม่ยืนยันล่าสุด'});
+    const book=XLSX.utils.book_new();
+    tables.forEach(table=>{const sheet=XLSX.utils.aoa_to_sheet(table.rows);sheet['!cols']=table.rows[0].map((_,i)=>({wch:i===1?48:22}));if(table.name==='ผลเปรียบเทียบ')sheet['!autofilter']={ref:sheet['!ref']};XLSX.utils.book_append_sheet(book,sheet,table.name);});
+    XLSX.writeFile(book,`Stock-Reconcile-${new Date().toISOString().slice(0,10)}.xlsx`);
+    document.getElementById('stockReconcileStatus').textContent=`ส่งออกผลเปรียบเทียบแล้ว ${stockReconciliationRows.length.toLocaleString()} รายการ`;
+  } catch(error) { document.getElementById('stockReconcileStatus').textContent='ส่งออกไม่สำเร็จ · '+error.message; }
+});
 
 function prepareMovementEdit(item, type, index, values) {
   if (!['receive', 'withdraw', 'return'].includes(type)) throw new Error('ไม่พบประเภทรายการ');
@@ -7613,6 +7713,7 @@ function recalculateBomFromStock() {
   renderBomSummary();
   renderFgBom(BOMPK.bom_detail[fgBomSearch.value.trim()] ? fgBomSearch.value : '');
   renderBomPlan();
+  if (typeof renderStockReconciliation === 'function') renderStockReconciliation();
 }
 
 function renderFgBom(rawCode) {
