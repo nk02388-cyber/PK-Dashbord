@@ -2340,7 +2340,7 @@
             <small>* ข้อมูลจำเป็น</small>
           </div>
           <form class="fse-add-form" id="fseAddForm">
-            <label class="fse-add-field"><span>รหัสสินค้า *</span><input type="text" id="fseAddCode" placeholder="พิมพ์ชื่อหรือรหัสสินค้าบางส่วน" autocomplete="off" required aria-required="true" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="fseAddSuggestions" aria-describedby="fseAddCodeHelp"><small class="fse-add-code-help" id="fseAddCodeHelp" role="status" hidden>รหัสขึ้นต้นด้วย 2 หรือ 5 ไม่ใช้ในผังพาเลต</small></label>
+            <label class="fse-add-field"><span>รหัสสินค้า *</span><input type="text" id="fseAddCode" placeholder="พิมพ์ชื่อหรือรหัสสินค้าบางส่วน" autocomplete="off" required aria-required="true" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="fseAddSuggestions" aria-describedby="fseAddCodeHelp"><small class="fse-add-code-help" id="fseAddCodeHelp" role="status" hidden>รหัสขึ้นต้นด้วย 1, 2 หรือ 5 ไม่ใช้ในผังพาเลต</small></label>
             <div class="fse-add-suggestions" id="fseAddSuggestions" role="listbox" aria-label="สินค้าที่แนะนำสำหรับเพิ่มรายการ" hidden></div>
             <label class="fse-add-field"><span>ชื่อสินค้า *</span><input type="text" id="fseAddName" placeholder="ชื่อสินค้า" autocomplete="off" required aria-required="true"></label>
             <label class="fse-add-field"><span>Lot No.</span><input type="text" id="fseAddLotNo" placeholder="Lot No." autocomplete="off"></label>
@@ -4801,7 +4801,7 @@ function updateWithdrawBtnState() {
 // filled in -- code, name, receive date, quantity, and unit -- per Pornchai's 20 Aug 2026
 // request that a half-entered item never get silently added to the Layout data. Re-checked on
 // every keystroke/change (wired below) and once whenever the panel (re)renders.
-function isExcludedAddProductCode(code) { return /^[25]/.test(String(code || '').trim()); }
+function isExcludedAddProductCode(code) { return /^[125]/.test(String(code || '').trim()); }
 function isAddFormValid() {
   const code = fseAddCode.value.trim();
   const name = fseAddName.value.trim();
