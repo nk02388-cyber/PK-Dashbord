@@ -497,10 +497,10 @@
     touch-action: none;
   }
   .floorplan-image-wrap.ov-dragging { cursor: grabbing; }
-  /* Image and all overlays share one clockwise portrait transform. The outer aspect-ratio
-     reserves the cropped portrait viewport; ovApply sets the original landscape stage size.
+  /* Image and all overlays share one view-only transform. The outer aspect-ratio
+     reserves the cropped viewport; ovApply sets the original landscape stage size.
      Keeping source coordinates intact also preserves the separate per-zone detail viewer. */
-  .floorplan-stage { position: absolute; top: 0; left: 0; width: 100%; transform-origin: 0 0; will-change: transform; }
+  .floorplan-stage { position: absolute; top: 0; left: 0; width: 100%; container-type: inline-size; transform-origin: 0 0; will-change: transform; }
   .floorplan-image { display: block; width: 100%; height: auto; filter: contrast(1.08) brightness(1.02); }
   .floorplan-pins { position: absolute; inset: 0; }
   .floorplan-ov-controls {
@@ -543,22 +543,13 @@
   .floorplan-slot-status .ov-slot.age-green { background: rgba(22,163,74,0.94); border-color: #065f24; }
   .floorplan-slot-status .ov-slot.age-yellow { background: rgba(250,190,20,0.96); border-color: #854d0e; }
   .floorplan-slot-status .ov-slot.age-red { background: rgba(220,38,38,0.94); border-color: #7f1d1d; }
-  /* Rewritten 20 Aug 2026 per Pornchai's request to drop the relocated-label + arrow style
-     (used earlier the same day) in favor of each zone's label filling its own rack footprint
-     directly -- left/top/width/height are now all set inline per-element (see zoneLabelRect()
-     below) to literally the zone's own padded bounding box, instead of a fixed-size badge
-     centered via transform: translate(-50%,-50%) at a single point. container-type: size lets
-     the inner .fp-text span size its font with cqw/cqh units relative to THIS box's own
-     rendered dimensions, so text scales down automatically for a zone with a small/thin
-     footprint and up for a large one, without any JS pixel measurement (which wouldn't work
-     reliably here anyway, since this renders while the floor-plan tab may still be hidden and
-     therefore has no layout size yet -- % and container-query units don't have that problem,
-     they resolve correctly whenever the element actually becomes visible). */
+  /* Zone frames follow their own rack footprints. All labels use the same stage-relative
+     font size, so large rack boxes no longer enlarge their letters and narrow boxes remain
+     legible. The stage container scales the font and borders with the image on small screens. */
   .floor-pin {
     position: absolute;
     box-sizing: border-box;
-    container-type: size;
-    border-radius: 4px; border: 1.5px solid var(--border);
+    border-radius: 4px; border: clamp(.35px, .11cqw, 1.5px) solid var(--border);
     display: flex; align-items: center; justify-content: center;
     appearance: none; padding: 0; font: inherit;
     font-weight: 900; color: #0f172a;
@@ -568,11 +559,18 @@
   }
   .floor-pin .fp-text {
     line-height: 1; white-space: nowrap;
-    font-size: clamp(6px, min(58cqh, 20cqw), 34px);
-    text-shadow: 0 0 2px #fff, 1px 0 #fff, -1px 0 #fff, 0 1px #fff, 0 -1px #fff;
+    font-size: clamp(3px, .88cqw, 16px);
+    text-shadow: 0 0 .16em #fff, .08em 0 #fff, -.08em 0 #fff, 0 .08em #fff, 0 -.08em #fff;
   }
   .floor-pin:hover { filter: brightness(0.92); z-index: 5; }
-  .floor-pin.selected { border-color: var(--text-primary); border-width: 2.5px; z-index: 6; }
+  .floor-pin.selected { border-color: var(--text-primary); border-width: clamp(.8px, .18cqw, 2.5px); z-index: 6; }
+  @media (max-width: 700px) {
+    /* Some horizontal racks are only a few pixels tall before pinch zoom. Draw their frame
+       without taking space away from the uniformly sized letter inside. */
+    .floor-pin, .floor-pin.selected { border-width: 0; }
+    .floor-pin { box-shadow: inset 0 0 0 1px #7a7a7a; }
+    .floor-pin.selected { outline: 1px solid var(--text-primary); }
+  }
   .floorplan-map-key {
     display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px;
     max-width: 1280px; margin: -2px auto 10px; color: var(--text-secondary); font-size: 12px;
