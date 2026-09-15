@@ -1021,6 +1021,8 @@
   .fse-add-form { display: grid; grid-template-columns: 1.05fr 1.7fr .9fr .95fr .72fr .78fr 1.15fr auto; gap: 8px; align-items: end; }
   .fse-add-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
   .fse-add-field > span { color: var(--text-secondary); font-size: 10.5px; font-weight: 700; }
+  .fse-add-code-help { color: #b42318; font-size: 10.5px; line-height: 1.3; }
+  .fse-add-code-help[hidden] { display: none; }
   .fse-add-suggestions { grid-column: 1 / -1; max-height: 190px; overflow-y: auto; padding: 6px; border: 1px solid var(--border); border-radius: 9px; background: var(--page-plane); box-shadow: 0 8px 20px rgba(15,23,42,.12); }
   .fse-add-suggestions[hidden] { display: none; }
   .fse-add-suggestion { display: grid; grid-template-columns: minmax(120px,.3fr) minmax(0,1fr) auto; gap: 10px; align-items: center; width: 100%; padding: 8px 10px; border: 0; border-radius: 6px; background: transparent; color: var(--text-primary); text-align: left; cursor: pointer; }
@@ -2338,7 +2340,7 @@
             <small>* ข้อมูลจำเป็น</small>
           </div>
           <form class="fse-add-form" id="fseAddForm">
-            <label class="fse-add-field"><span>รหัสสินค้า *</span><input type="text" id="fseAddCode" placeholder="พิมพ์ชื่อหรือรหัสสินค้าบางส่วน" autocomplete="off" required aria-required="true" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="fseAddSuggestions"></label>
+            <label class="fse-add-field"><span>รหัสสินค้า *</span><input type="text" id="fseAddCode" placeholder="พิมพ์ชื่อหรือรหัสสินค้าบางส่วน" autocomplete="off" required aria-required="true" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="fseAddSuggestions" aria-describedby="fseAddCodeHelp"><small class="fse-add-code-help" id="fseAddCodeHelp" role="status" hidden>รหัสขึ้นต้นด้วย 2 หรือ 5 ไม่ใช้ในผังพาเลต</small></label>
             <div class="fse-add-suggestions" id="fseAddSuggestions" role="listbox" aria-label="สินค้าที่แนะนำสำหรับเพิ่มรายการ" hidden></div>
             <label class="fse-add-field"><span>ชื่อสินค้า *</span><input type="text" id="fseAddName" placeholder="ชื่อสินค้า" autocomplete="off" required aria-required="true"></label>
             <label class="fse-add-field"><span>Lot No.</span><input type="text" id="fseAddLotNo" placeholder="Lot No." autocomplete="off"></label>
@@ -4192,6 +4194,7 @@ const fseItemCount = document.getElementById('fseItemCount');
 const fseItemsList = document.getElementById('fseItemsList');
 const fseAddForm = document.getElementById('fseAddForm');
 const fseAddCode = document.getElementById('fseAddCode');
+const fseAddCodeHelp = document.getElementById('fseAddCodeHelp');
 const fseAddSuggestions = document.getElementById('fseAddSuggestions');
 const fseAddName = document.getElementById('fseAddName');
 const fseAddLotNo = document.getElementById('fseAddLotNo');
@@ -4798,6 +4801,7 @@ function updateWithdrawBtnState() {
 // filled in -- code, name, receive date, quantity, and unit -- per Pornchai's 20 Aug 2026
 // request that a half-entered item never get silently added to the Layout data. Re-checked on
 // every keystroke/change (wired below) and once whenever the panel (re)renders.
+function isExcludedAddProductCode(code) { return /^[25]/.test(String(code || '').trim()); }
 function isAddFormValid() {
   const code = fseAddCode.value.trim();
   const name = fseAddName.value.trim();
@@ -4805,9 +4809,13 @@ function isAddFormValid() {
   const qty = fseAddQty.value;
   const unit = fseAddUnit.value.trim();
   const qtyNum = parseFloat(qty);
-  return !!code && !!name && !!receiveDate && qty !== '' && !isNaN(qtyNum) && qtyNum > 0 && !!unit;
+  return !!code && !isExcludedAddProductCode(code) && !!name && !!receiveDate && qty !== '' && !isNaN(qtyNum) && qtyNum > 0 && !!unit;
 }
 function updateAddBtnState() {
+  const excluded = isExcludedAddProductCode(fseAddCode.value);
+  fseAddCodeHelp.hidden = !excluded;
+  if (excluded) fseAddCode.setAttribute('aria-invalid','true');
+  else fseAddCode.removeAttribute('aria-invalid');
   fseAddBtn.disabled = !isAddFormValid();
 }
 
@@ -4831,7 +4839,7 @@ function getAddProductSuggestions(query) {
   const catalog = new Map();
   const add = (item, source) => {
     const code = String(item.code || '').trim(), key = normalizeSearchText(code);
-    if (!key) return;
+    if (!key || isExcludedAddProductCode(code)) return;
     const name = String(item.name || '').trim(), unit = String(item.unit || '').trim();
     const previous = catalog.get(key);
     if (!previous) catalog.set(key, {code, name, unit, source});
@@ -4876,7 +4884,7 @@ function setActiveAddSuggestion(index) {
 }
 function renderAddProductSuggestions(query) {
   const raw = String(query || '').trim();
-  if (!raw) { hideAddProductSuggestions(); return; }
+  if (!raw || isExcludedAddProductCode(raw)) { hideAddProductSuggestions(); return; }
   const results = getAddProductSuggestions(raw);
   addSuggestionItems = results.slice(0,8); activeAddSuggestion = -1;
   fseAddSuggestions.innerHTML = results.length ? addSuggestionItems.map((item,i) => `
@@ -4891,7 +4899,7 @@ function renderAddProductSuggestions(query) {
   fseAddCode.setAttribute('aria-expanded','true');
 }
 function selectAddProductSuggestion(item) {
-  if (!item) return;
+  if (!item || isExcludedAddProductCode(item.code)) return;
   fseAddCode.value = item.code;
   hideAddProductSuggestions();
   autofillAddProductDetails();
@@ -4899,7 +4907,7 @@ function selectAddProductSuggestion(item) {
 }
 
 function autofillAddProductDetails() {
-  const product = findKnownProduct(fseAddCode.value);
+  const product = isExcludedAddProductCode(fseAddCode.value) ? null : findKnownProduct(fseAddCode.value);
   if (product) {
     fseAddName.value = product.name || '';
     fseAddName.dataset.autofilled = 'true';
