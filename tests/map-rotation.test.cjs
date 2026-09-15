@@ -36,9 +36,9 @@ for (const angle of [0, 90, 180, 270]) {
     assert.ok(.03 * 3366 * fit.scale <= (turn % 2 ? width : height) * .78 + 1e-7);
   }
 }
-const state = vm.createContext({mapRotation:90, ovReset(){}, zoomModal:{hidden:false}, currentZoomZone:'F', fitCalls:0});
+const state = vm.createContext({mapRotation:0, ovReset(){}, zoomModal:{hidden:false}, currentZoomZone:'F', fitCalls:0});
 vm.runInContext(`function resetZoomFit(){fitCalls++}\n${source('rotateFloorplan')}`, state);
-for (const expected of [180,270,0,90]) { state.rotateFloorplan(); assert.equal(state.mapRotation, expected); }
+for (const expected of [90,180,270,0]) { state.rotateFloorplan(); assert.equal(state.mapRotation, expected); }
 assert.equal(state.fitCalls,4);
 state.zoomModal.hidden=true;
 state.rotateFloorplan();
