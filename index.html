@@ -2218,7 +2218,7 @@
     <div class="panel" id="stockReconcilePanel">
       <h2>เปรียบเทียบสต็อกในพาเลตกับสต็อกที่อัปเดต</h2>
       <div class="stock-snapshot-notice" role="status"></div>
-      <p class="panel-sub">รวมยอดตามรหัสสินค้าและหน่วยเดียวกัน · สต็อกพาเลตใช้ยอดคงเหลือจาก STOCK CARD ทุกตำแหน่ง · สต็อกที่อัปเดตใช้ข้อมูลทุกคลัง</p>
+      <p class="panel-sub">รวมยอดตามรหัสสินค้าและหน่วยเดียวกัน · สต็อกพาเลตใช้ยอดคงเหลือจาก STOCK CARD ทุกตำแหน่ง · สต็อกที่อัปเดตไม่นับคลัง 200, 800, 900 และ 300-S</p>
       <div class="bom-plan-form">
         <label for="stockReconcileFilter">แสดงรายการ<select id="stockReconcileFilter">
           <option value="mismatch">เฉพาะยอดไม่ตรง</option><option value="different">รายการต้องดำเนินการทั้งหมด</option><option value="all">ทั้งหมด</option>
@@ -4360,6 +4360,7 @@ function buildSlotMovePlan(sourceRow, destinationRow, selections, date, by) {
     destination:{...destinationRow, items:destinationItems, occupied:true}, movedCount };
 }
 
+const RECONCILE_EXCLUDED_WAREHOUSES = new Set(['200','800','900','300-S','300']);
 function buildStockReconciliation(stockItems, palletRows) {
   const normalizeCode = value => String(value || '').trim().toUpperCase();
   const normalizeUnit = value => normalizeBomUnit(value) || String(value || '').trim().toLowerCase();
@@ -4370,6 +4371,7 @@ function buildStockReconciliation(stockItems, palletRows) {
     return groups.get(key);
   };
   for (const item of stockItems || []) {
+    if (RECONCILE_EXCLUDED_WAREHOUSES.has(String(item.wh || '').trim().toUpperCase())) continue;
     const code=normalizeCode(item.code),unit=normalizeUnit(item.unit),qty=movementNumber(item.qty);
     if (!code) continue;
     const row=ensure(code,unit); row.stockRows++;
@@ -4406,7 +4408,7 @@ function filterStockReconciliation(rows,filter) {
 
 function stockReconciliationTables(rows,meta) {
   return [{name:'ข้อมูลเปรียบเทียบ',rows:[['รายการ','ค่า'],['ส่งออกเมื่อ',meta.exportedAt],['วันที่สต็อกที่อัปเดต',meta.stockDate],
-    ['สถานะสต็อก',meta.stockStatus],['ขอบเขตสต็อกที่อัปเดต','ทุกคลัง'],['ขอบเขตพาเลต','ทุกโซนและทุกตำแหน่ง'],
+    ['สถานะสต็อก',meta.stockStatus],['ขอบเขตสต็อกที่อัปเดต','ไม่นับคลัง 200, 800, 900 และ 300-S'],['ขอบเขตพาเลต','ทุกโซนและทุกตำแหน่ง'],
     ['หลักการจับคู่','รหัสสินค้า + หน่วยมาตรฐานเดียวกัน'],['ส่วนต่าง','สต็อกในพาเลต - สต็อกที่อัปเดต'],
     ['ข้อควรระวัง','คนละหน่วยจะเป็นคนละแถว ช่องว่างคือไม่ทราบค่า ไม่ใช่ศูนย์']]},
     {name:'ผลเปรียบเทียบ',rows:[['รหัสสินค้า','ชื่อสินค้า','หน่วย','สต็อกในพาเลต','สต็อกที่อัปเดต','ส่วนต่าง','สถานะ','จำนวนรายการในพาเลต','ตำแหน่งพาเลต','คลังในสต็อก','จำนวนแถวสต็อก'],
