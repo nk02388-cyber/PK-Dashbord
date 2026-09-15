@@ -43,5 +43,5 @@ assert.equal(JSON.stringify({stock,slots}),before,'Suggestions never alter sourc
 assert.match(html,/id="fseAddCode"[^>]*role="combobox"[^>]*aria-controls="fseAddSuggestions"/);
 assert.match(html,/fseAddCode\.addEventListener\('keydown'/);
 assert.match(html,/selectAddProductSuggestion\(addSuggestionItems\[Number\(option\.dataset\.index\)\]\)/);
-assert.match(html,/id="fseAddCodeHelp"[^>]*role="status"[^>]*hidden/);
+assert.doesNotMatch(html,/id="fseAddCodeHelp"/,'Excluded-code note stays hidden from the form');
 console.log('PASS: add-product suggestions omit 1/2/5 codes in stock and pallet catalogs; manual add blocks them');
