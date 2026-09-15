@@ -44,4 +44,5 @@ assert.match(html,/id="fseAddCode"[^>]*role="combobox"[^>]*aria-controls="fseAdd
 assert.match(html,/fseAddCode\.addEventListener\('keydown'/);
 assert.match(html,/selectAddProductSuggestion\(addSuggestionItems\[Number\(option\.dataset\.index\)\]\)/);
 assert.doesNotMatch(html,/id="fseAddCodeHelp"/,'Excluded-code note stays hidden from the form');
+assert.doesNotMatch(html,/id="fseAddNote"/,'Add-item note field is no longer displayed');
 console.log('PASS: add-product suggestions omit 1/2/5 codes in stock and pallet catalogs; manual add blocks them');

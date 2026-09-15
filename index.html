@@ -2345,7 +2345,6 @@
             <label class="fse-add-field"><span>วันที่รับ *</span><input type="date" id="fseAddReceiveDate" title="วันที่รับสินค้า" required aria-required="true"></label>
             <label class="fse-add-field"><span>จำนวนรับ *</span><input type="number" id="fseAddQty" placeholder="0" min="0" step="any" inputmode="decimal" required aria-required="true"></label>
             <label class="fse-add-field"><span>หน่วย *</span><input type="text" id="fseAddUnit" list="fseUnitOptions" placeholder="ขวด/กระปุก" autocomplete="off" required aria-required="true"></label>
-            <label class="fse-add-field"><span>หมายเหตุ</span><input type="text" id="fseAddNote" placeholder="ระบุเพิ่มเติม (ถ้ามี)" autocomplete="off"></label>
             <datalist id="fseUnitOptions">
               <option value="ขวด"></option><option value="กระปุก"></option><option value="ฝา"></option>
               <option value="ใบ"></option><option value="ม้วน"></option><option value="ดวง"></option>
@@ -4198,7 +4197,6 @@ const fseAddLotNo = document.getElementById('fseAddLotNo');
 const fseAddReceiveDate = document.getElementById('fseAddReceiveDate');
 const fseAddQty = document.getElementById('fseAddQty');
 const fseAddUnit = document.getElementById('fseAddUnit');
-const fseAddNote = document.getElementById('fseAddNote');
 const fseAddBtn = document.getElementById('fseAddBtn');
 const fseMarkEmptyBtn = document.getElementById('fseMarkEmptyBtn');
 const fseMarkOccupiedBtn = document.getElementById('fseMarkOccupiedBtn');
@@ -5113,9 +5111,8 @@ fseAddForm.addEventListener('submit', async (e) => {
   const receiveDate = fseAddReceiveDate.value;
   const qty = parseFloat(fseAddQty.value);
   const unit = fseAddUnit.value.trim();
-  const note = fseAddNote.value.trim();
-  if (!await runSlotMutation(editingSlot.zone, editingSlot.slot, () => addSlotItem(editingSlot.zone, editingSlot.slot, code, name, lotNo, receiveDate, qty, unit, note))) return;
-  fseAddCode.value = ''; fseAddName.value = ''; fseAddLotNo.value = ''; fseAddReceiveDate.value = ''; fseAddQty.value = ''; fseAddUnit.value = ''; fseAddNote.value = '';
+  if (!await runSlotMutation(editingSlot.zone, editingSlot.slot, () => addSlotItem(editingSlot.zone, editingSlot.slot, code, name, lotNo, receiveDate, qty, unit, ''))) return;
+  fseAddCode.value = ''; fseAddName.value = ''; fseAddLotNo.value = ''; fseAddReceiveDate.value = ''; fseAddQty.value = ''; fseAddUnit.value = '';
   hideAddProductSuggestions();
   fseAddName.dataset.autofilled = ''; fseAddName.classList.remove('is-autofilled');
   fseAddUnit.dataset.autofilled = ''; fseAddUnit.classList.remove('is-autofilled');
@@ -5124,7 +5121,7 @@ fseAddForm.addEventListener('submit', async (e) => {
   fseAddCode.focus();
 });
 
-[fseAddCode, fseAddName, fseAddLotNo, fseAddReceiveDate, fseAddQty, fseAddUnit, fseAddNote].forEach(el => {
+[fseAddCode, fseAddName, fseAddLotNo, fseAddReceiveDate, fseAddQty, fseAddUnit].forEach(el => {
   el.addEventListener('input', updateAddBtnState);
   el.addEventListener('change', updateAddBtnState);
 });
