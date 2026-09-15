@@ -33,4 +33,6 @@ assert.equal(capacity.usedPct.toFixed(1), '0.3');
 assert.equal(JSON.stringify(ctx.SLOT_ITEMS), before, 'capacity calculation does not edit stock history');
 assert.match(html, /if \(!isCapacityUsed\(zoneCode, slot\.code\)\) return;/,
   'age summary and capacity use the same slot rule');
+assert.match(html, /if \(!palletDataReady\) \{\s*gaugeWrap\.innerHTML = '';\s*document\.getElementById\('pkSpeedMeterValue'\)\.textContent = '—';\s*document\.getElementById\('pkSpeedMeterSub'\)\.textContent = 'รอข้อมูลพาเลต';\s*return;/,
+  'gauge does not present a temporary zero as a confirmed capacity');
 console.log('PASS: pallet capacity counts active stock, explicit occupancy and unknown balances');

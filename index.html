@@ -1639,7 +1639,7 @@
       <circle cx="84" cy="80" r="6" fill="var(--status-good)" stroke="var(--surface-1)" stroke-width="1.6"></circle>
     </svg>
   </div>
-          <div class="sm-value" id="pkSpeedMeterValue" style="color: var(--status-good);">9.6%</div>
+          <div class="sm-value" id="pkSpeedMeterValue" style="color: var(--status-good);">—</div>
           <div class="sm-sub" id="pkSpeedMeterSub">95/992 ช่อง</div>
         </div>
         <div class="kpi-total-fixed" id="stockTotalKpiFixed" title="มูลค่าคงเหลือรวม">
@@ -3434,6 +3434,12 @@ function speedMeterZoneColor(pct) {
 function renderSpeedMeter() {
   const gaugeWrap = document.getElementById('pkSpeedMeterGauge');
   if (!gaugeWrap) return;
+  if (!palletDataReady) {
+    gaugeWrap.innerHTML = '';
+    document.getElementById('pkSpeedMeterValue').textContent = '—';
+    document.getElementById('pkSpeedMeterSub').textContent = 'รอข้อมูลพาเลต';
+    return;
+  }
   const cap = computeTotalCapacity();
   const pctClamped = Math.min(100, Math.max(0, cap.usedPct));
   const cx = 84, cy = 80, r = 62, sw = 15;
