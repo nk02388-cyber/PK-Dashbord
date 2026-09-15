@@ -3039,6 +3039,17 @@ async function setReceiveDate(code, iso, expected) {
 function isOccupied(zoneCode, slotCode) {
   return !!(PALLET_STATUS[zoneCode] && PALLET_STATUS[zoneCode][slotCode] === 'occupied');
 }
+// The remote occupied flags can be false even while a slot still holds book stock.
+// Keep the explicit physical flag, and also count slots with a positive or unknown
+// item balance. Fully depleted history alone does not consume a pallet position.
+function isCapacityUsed(zoneCode, slotCode) {
+  if (isOccupied(zoneCode, slotCode)) return true;
+  const items = SLOT_ITEMS[zoneCode]?.[slotCode] || [];
+  return items.some(item => {
+    const balance = getRemainingQty(item);
+    return balance == null || !Number.isFinite(Number(balance)) || Number(balance) > 0;
+  });
+}
 function setOccupied(zoneCode, slotCode, occupied) {
   if (!PALLET_STATUS[zoneCode]) PALLET_STATUS[zoneCode] = {};
   if (occupied) PALLET_STATUS[zoneCode][slotCode] = 'occupied';
@@ -3345,7 +3356,7 @@ function computeAreaBuildingUsage(building) {
   let used = 0;
   building.zones.forEach(zoneCode => {
     (ZONE_SLOTS[zoneCode] || []).forEach(slot => {
-      if (isOccupied(zoneCode, slot.code)) used++;
+      if (isCapacityUsed(zoneCode, slot.code)) used++;
     });
   });
   const palletNo = building.palletNo;
@@ -3493,7 +3504,7 @@ function computePackagingAgeStatus() {
   AREA_BUILDINGS.forEach(building => {
     building.zones.forEach(zoneCode => {
       (ZONE_SLOTS[zoneCode] || []).forEach(slot => {
-        if (!isOccupied(zoneCode, slot.code)) return;
+        if (!isCapacityUsed(zoneCode, slot.code)) return;
         const status = slotAgeStatus(zoneCode, slot.code);
         if (Object.prototype.hasOwnProperty.call(counts, status)) counts[status]++;
       });
