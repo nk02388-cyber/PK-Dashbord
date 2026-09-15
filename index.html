@@ -1086,6 +1086,30 @@
   .fse-feedback { min-height: 18px; margin-left: auto; font-size: 11px; font-weight: 700; }
   .fse-feedback.success { color: var(--status-good, #2e7d32); }
   .fse-feedback.error { color: #c0392b; }
+  .fse-move-form { margin-top: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface-1); }
+  .fse-move-form[hidden] { display: none; }
+  .fse-move-form > strong { display: block; margin-bottom: 4px; font-size: 13px; }
+  .fse-move-form > p, .fse-move-hint { margin: 0 0 10px; color: var(--text-secondary); font-size: 11.5px; }
+  .fse-move-fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; margin-bottom: 10px; }
+  .fse-move-fields label { display: grid; gap: 4px; color: var(--text-secondary); font-size: 11px; font-weight: 700; }
+  .fse-move-fields select, .fse-move-fields input, .fse-move-item input[type="number"] {
+    width: 100%; min-width: 0; box-sizing: border-box; padding: 8px; border: 1px solid var(--border); border-radius: 7px;
+    background: var(--page-plane); color: var(--text-primary); font-size: 12px;
+  }
+  .fse-move-select-all { display: flex; align-items: center; gap: 7px; margin: 6px 0; font-size: 11.5px; font-weight: 700; }
+  .fse-move-items { display: grid; gap: 6px; max-height: 160px; overflow-y: auto; }
+  .fse-move-item { display: grid; grid-template-columns: minmax(0, 1fr) minmax(90px, 135px); align-items: center; gap: 9px; padding: 7px; border: 1px solid var(--border); border-radius: 7px; }
+  .fse-move-item label { display: flex; align-items: center; gap: 7px; min-width: 0; font-size: 11.5px; }
+  .fse-move-item label span { min-width: 0; overflow-wrap: anywhere; }
+  .fse-move-actions { display: flex; gap: 8px; align-items: center; justify-content: flex-end; margin-top: 10px; }
+  .fse-move-actions button { min-height: 36px; padding: 7px 12px; border-radius: 7px; border: 1px solid var(--border); background: var(--page-plane); color: var(--text-primary); cursor: pointer; }
+  #fseMoveConfirm { background: var(--series-1, #2a78d6); color: #fff; border-color: var(--series-1, #2a78d6); }
+  #fseMoveConfirm:disabled { opacity: .48; cursor: not-allowed; }
+  #fseMoveStatus { min-height: 18px; margin-top: 8px; font-size: 11.5px; }
+  #fseMoveStatus.error { color: #c0392b; }
+  #fseMoveStatus.success { color: var(--status-good, #2e7d32); }
+  @media (max-width: 800px) { .fse-move-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 480px) { .fse-move-fields { grid-template-columns: 1fr; } }
 
   /* Unified warehouse action language: all idle actions share one quiet control strip.
      Semantic color appears only after an action is selected, so operators read state before color. */
@@ -2324,9 +2348,25 @@
           </form>
         </div>
         <div class="fse-quick-actions">
+          <button type="button" class="fse-quick-btn" id="fseMoveToggle" aria-expanded="false" aria-controls="fseMoveForm">↗ ย้ายสินค้าไปพาเลตอื่น</button>
           <button type="button" class="fse-quick-btn" id="fseMarkEmptyBtn">ล้างรายการและระบุว่าว่าง</button>
           <button type="button" class="fse-quick-btn" id="fseMarkOccupiedBtn">ระบุว่ามีสินค้า (ไม่ระบุรายการ)</button>
           <span class="fse-feedback" id="fseFeedback" role="status" aria-live="polite"></span>
+        </div>
+        <div class="fse-move-form" id="fseMoveForm" role="region" aria-label="ย้ายสินค้าไปตำแหน่งพาเลตอื่น" hidden>
+          <strong id="fseMoveSource">ย้ายจากตำแหน่ง --</strong>
+          <p>เลือกสินค้าและจำนวนที่จะย้าย ปลายทางที่มีสินค้าอยู่แล้วจะเพิ่มรายการเข้าพาเลตเดิม</p>
+          <div class="fse-move-fields">
+            <label>โซนปลายทาง<select id="fseMoveZone"></select></label>
+            <label>ตำแหน่งปลายทาง<select id="fseMoveSlot"></select></label>
+            <label>วันที่ย้าย<input type="date" id="fseMoveDate" required></label>
+            <label>ผู้ย้าย<input type="text" id="fseMoveBy" placeholder="ชื่อผู้ย้าย" required></label>
+          </div>
+          <div class="fse-move-hint" id="fseMoveDestinationHint"></div>
+          <label class="fse-move-select-all"><input type="checkbox" id="fseMoveSelectAll"> เลือกทุกสินค้าและย้ายทั้งหมด</label>
+          <div class="fse-move-items" id="fseMoveItems"></div>
+          <div id="fseMoveStatus" role="status" aria-live="polite"></div>
+          <div class="fse-move-actions"><button type="button" id="fseMoveCancel">ยกเลิก</button><button type="button" id="fseMoveConfirm" disabled>ยืนยันย้ายตำแหน่ง</button></div>
         </div>
       </div>
       <div class="floorplan-zoom-status">
@@ -3303,7 +3343,7 @@ if (supabaseClient) initSupabaseSync();
 
 // Capture phase prevents read-only UI from changing local data, including Enter/file inputs.
 function guardPalletWrite(e) {
-  const target = e.target.closest('#fseAddForm, #fseMarkEmptyBtn, #fseMarkOccupiedBtn, .fse-item-edit-btn, .fse-item-withdraw-btn, .fse-item-return-btn, .fse-item-remove, .sm-edit, .fz-receive-date, #floorplanZoomImportInput, label[for="floorplanZoomImportInput"]');
+  const target = e.target.closest('#fseAddForm, #fseMarkEmptyBtn, #fseMarkOccupiedBtn, #fseMoveToggle, #fseMoveConfirm, .fse-item-edit-btn, .fse-item-withdraw-btn, .fse-item-return-btn, .fse-item-remove, .sm-edit, .fz-receive-date, #floorplanZoomImportInput, label[for="floorplanZoomImportInput"]');
   if (!target) return;
   if (!supabaseClient || !palletDataReady || palletWriteBusy) {
     e.preventDefault(); e.stopImmediatePropagation();
@@ -4067,7 +4107,9 @@ function updateSlotItem(zoneCode, slotCode, index, updates) {
   if (!item) return false;
   const withdrawn = (item.withdrawals || []).reduce((sum, row) => sum + (Number(row.qty) || 0), 0);
   const returned = (item.returns || []).reduce((sum, row) => sum + (Number(row.qty) || 0), 0);
-  if (updates.qty != null && (!Number.isFinite(updates.qty) || updates.qty - withdrawn + returned < -1e-8)) return false;
+  const movedOut = (item.transfersOut || []).reduce((sum, row) => sum + (Number(row.qty) || 0), 0);
+  const movedIn = (item.transfersIn || []).reduce((sum, row) => sum + (Number(row.qty) || 0), 0);
+  if (updates.qty != null && (!Number.isFinite(updates.qty) || updates.qty - withdrawn + returned - movedOut + movedIn < -1e-8)) return false;
   item.code = updates.code;
   item.name = updates.name;
   item.lotNo = updates.lotNo || '';
@@ -4076,7 +4118,7 @@ function updateSlotItem(zoneCode, slotCode, index, updates) {
   else delete item.receiveDate;
   if (updates.qty != null) {
     item.qty = updates.qty;
-    item.remainingQty = Math.max(0, Number((updates.qty - withdrawn + returned).toFixed(8)));
+    item.remainingQty = Math.max(0, Number((updates.qty - withdrawn + returned - movedOut + movedIn).toFixed(8)));
   } else {
     delete item.qty;
     delete item.remainingQty;
@@ -4155,6 +4197,17 @@ const fseMarkEmptyBtn = document.getElementById('fseMarkEmptyBtn');
 const fseMarkOccupiedBtn = document.getElementById('fseMarkOccupiedBtn');
 const fseCloseBtn = document.getElementById('fseCloseBtn');
 const fseFeedback = document.getElementById('fseFeedback');
+const fseMoveToggle = document.getElementById('fseMoveToggle');
+const fseMoveForm = document.getElementById('fseMoveForm');
+const fseMoveZone = document.getElementById('fseMoveZone');
+const fseMoveSlot = document.getElementById('fseMoveSlot');
+const fseMoveDate = document.getElementById('fseMoveDate');
+const fseMoveBy = document.getElementById('fseMoveBy');
+const fseMoveItems = document.getElementById('fseMoveItems');
+const fseMoveStatus = document.getElementById('fseMoveStatus');
+const fseMoveConfirm = document.getElementById('fseMoveConfirm');
+let moveSourceVersion = 0;
+let moveDestinationVersion = 0;
 let fseFeedbackTimer = null;
 let clearSlotConfirmTimer = null;
 
@@ -4230,24 +4283,81 @@ function movementDateKey(value) {
 }
 
 function getStockMovement(item) {
-  const rows = [{ type: 'receive', index: 0, label: 'รับเข้า', date: item.receiveDate || '',
-    qty: movementNumber(item.qty), lotNo: item.lotNo || '', by: item.receivedBy || '', unit: item.unit || '' }];
+  const rows = [];
+  if (movementNumber(item.qty) !== 0 || !(item.transfersIn || []).length) rows.push({ type: 'receive', index: 0, label: 'รับเข้า', date: item.receiveDate || '',
+    qty: movementNumber(item.qty), lotNo: item.lotNo || '', by: item.receivedBy || '', unit: item.unit || '' });
   for (const [key, type, label] of [['withdrawals', 'withdraw', 'เบิก'], ['returns', 'return', 'รับคืน']]) {
     (item[key] || []).forEach((row, index) => rows.push({ type, index, label, date: row.date || '',
       qty: movementNumber(row.qty), lotNo: row.lotNo ?? item.lotNo ?? '', by: row.by || '', unit: row.unit || item.unit || '' }));
   }
+  for (const [key, type, prefix, other] of [['transfersOut','transfer_out','ย้ายไป','to'],['transfersIn','transfer_in','รับย้ายจาก','from']]) {
+    (item[key] || []).forEach((row, index) => rows.push({ type, index, label: `${prefix} ${row[other] || 'พาเลตอื่น'}`, date: row.date || '',
+      qty: movementNumber(row.qty), lotNo: item.lotNo || '', by: row.by || '', unit: row.unit || item.unit || '' }));
+  }
+  (item.locationMoves || []).forEach((row, index) => rows.push({ type:'move', index, label:`ย้าย ${row.from || 'พาเลตอื่น'} → ${row.to || 'พาเลตอื่น'}`,
+    date:row.date || '', qty:0, lotNo:item.lotNo || '', by:row.by || '', unit:item.unit || '' }));
   rows.sort((a, b) => (movementDateKey(a.date) || (a.type === 'receive' ? '00000000' : '99999999'))
     .localeCompare(movementDateKey(b.date) || (b.type === 'receive' ? '00000000' : '99999999')));
   let balance = movementNumber(item.qty) == null ? null : 0;
   for (const row of rows) {
     if (row.qty == null || (item.unit && row.unit && item.unit !== row.unit)) balance = null;
-    if (balance != null) balance = Number((balance + (row.type === 'withdraw' ? -row.qty : row.qty)).toFixed(8));
+    if (balance != null) balance = Number((balance + (row.type === 'withdraw' || row.type === 'transfer_out' ? -row.qty : row.qty)).toFixed(8));
     row.balance = balance;
   }
   const stored = movementNumber(getRemainingQty(item));
   return { rows, computed: balance, stored,
     mismatch: balance != null && stored != null && Math.abs(balance - stored) > 1e-8,
     undated: rows.some(row => !movementDateKey(row.date)) };
+}
+
+// Build both slot values without changing the page. One version-checked RPC commits them together.
+function buildSlotMovePlan(sourceRow, destinationRow, selections, date, by) {
+  const from = `${sourceRow.zone}/${sourceRow.slot_code}`;
+  const to = `${destinationRow.zone}/${destinationRow.slot_code}`;
+  if (from === to) throw new Error('ต้นทางกับปลายทางต้องเป็นคนละตำแหน่ง');
+  if (!movementDateKey(date)) throw new Error('กรุณาระบุวันที่ย้ายให้ถูกต้อง');
+  if (!String(by || '').trim()) throw new Error('กรุณาระบุผู้ย้าย');
+  if (!Array.isArray(selections) || !selections.length) throw new Error('กรุณาเลือกสินค้าอย่างน้อยหนึ่งรายการ');
+  const sourceItems = JSON.parse(JSON.stringify(sourceRow.items || []));
+  const destinationItems = JSON.parse(JSON.stringify(destinationRow.items || []));
+  const selected = new Map();
+  for (const selection of selections) {
+    if (!Number.isInteger(selection.index) || selection.index < 0 || selection.index >= sourceItems.length || selected.has(selection.index))
+      throw new Error('รายการที่เลือกไม่ถูกต้อง กรุณาเปิดตำแหน่งใหม่');
+    selected.set(selection.index, selection);
+  }
+  const remaining = [];
+  let movedCount = 0;
+  for (let index = 0; index < sourceItems.length; index++) {
+    const item = sourceItems[index];
+    const selection = selected.get(index);
+    if (!selection) { remaining.push(item); continue; }
+    const received = movementDateKey(item.receiveDate);
+    if (received && movementDateKey(date) < received)
+      throw new Error(`วันที่ย้ายของ ${item.code || item.name} ต้องไม่ก่อนวันที่รับเข้า`);
+    const available = movementNumber(getRemainingQty(item));
+    const quantity = selection.whole ? available : movementNumber(selection.qty);
+    if (!selection.whole && (available == null || quantity == null || quantity <= 0 || quantity > available + 1e-8))
+      throw new Error(`จำนวนย้ายของ ${item.code || item.name} ไม่ถูกต้องหรือเกินยอดคงเหลือ`);
+    const whole = selection.whole || (available != null && Math.abs(quantity - available) <= 1e-8);
+    if (whole) {
+      item.locationMoves = [...(item.locationMoves || []), { date, from, to, by: String(by).trim() }];
+      destinationItems.push(item);
+    } else {
+      const ledger = getStockMovement(item);
+      if (ledger.computed == null || ledger.mismatch)
+        throw new Error(`ยอดประวัติของ ${item.code || item.name} ไม่ตรงยอดคงเหลือ กรุณาตรวจสอบก่อนแบ่งย้าย`);
+      item.remainingQty = Number((available - quantity).toFixed(8));
+      item.transfersOut = [...(item.transfersOut || []), { date, qty: quantity, to, unit: item.unit || '', by: String(by).trim() }];
+      remaining.push(item);
+      destinationItems.push({ code:item.code, name:item.name, lotNo:item.lotNo || '', receiveDate:item.receiveDate || '',
+        unit:item.unit || '', note:item.note || '', qty:0, remainingQty:quantity, withdrawals:[], returns:[],
+        transfersIn:[{ date, qty:quantity, from, unit:item.unit || '', by:String(by).trim() }] });
+    }
+    movedCount++;
+  }
+  return { source:{...sourceRow, items:remaining, occupied:remaining.length > 0},
+    destination:{...destinationRow, items:destinationItems, occupied:true}, movedCount };
 }
 
 function buildStockReconciliation(stockItems, palletRows) {
@@ -4380,11 +4490,11 @@ function renderStockMovement(item, itemIndex) {
       <table><thead><tr><th>วันที่</th><th>Lot / PK No.</th><th>รายการ</th><th class="num sm-in">รับเข้า</th><th class="num sm-out">จ่ายออก</th><th class="num sm-balance">คงเหลือ</th><th>ผู้ทำรายการ</th><th>จัดการ</th></tr></thead>
       <tbody>${ledger.rows.map(row => `<tr>
         <td class="sm-date">${formatMovementDate(row.date)}</td><td>${escapeHtml(row.lotNo || '—')}</td>
-        <td class="sm-${row.type}">${row.label}</td>
-        <td class="num sm-in">${row.type === 'withdraw' ? '—' : number(row.qty)}</td>
-        <td class="num sm-out">${row.type === 'withdraw' ? number(row.qty) : '—'}</td>
-        <td class="num sm-balance">${number(row.balance)}</td><td>${escapeHtml(row.by || '—')}</td>
-        <td><button type="button" class="sm-edit" data-item="${itemIndex}" data-type="${row.type}" data-index="${row.index}" aria-label="แก้ไข${row.label} ${formatMovementDate(row.date)}" ${busy ? 'disabled' : ''}>แก้ไข</button></td>
+         <td class="sm-${row.type}">${escapeHtml(row.label)}</td>
+         <td class="num sm-in">${row.type === 'withdraw' || row.type === 'transfer_out' || row.type === 'move' ? '—' : number(row.qty)}</td>
+         <td class="num sm-out">${row.type === 'withdraw' || row.type === 'transfer_out' ? number(row.qty) : '—'}</td>
+         <td class="num sm-balance">${number(row.balance)}</td><td>${escapeHtml(row.by || '—')}</td>
+         <td>${['receive','withdraw','return'].includes(row.type) ? `<button type="button" class="sm-edit" data-item="${itemIndex}" data-type="${row.type}" data-index="${row.index}" aria-label="แก้ไข${row.label} ${formatMovementDate(row.date)}" ${busy ? 'disabled' : ''}>แก้ไข</button>` : '—'}</td>
       </tr>`).join('')}</tbody></table>
     </div>
     ${ledger.undated ? '<div class="sm-note">บางรายการไม่ระบุวันที่ จึงยืนยันลำดับเวลาไม่ได้</div>' : ''}
@@ -4738,6 +4848,7 @@ function autofillAddProductDetails() {
 // overview until some unrelated occupied-toggle happened to refresh it. Cheap enough to just
 // always include here rather than track which specific mutations need it.
 function syncAfterSlotEdit() {
+  if (!fseMoveForm.hidden && !palletWriteBusy) closeSlotMoveForm();
   rebuildItemToSlots();
   refreshSearchDatalist();
   renderZoomSlots(currentZoomZone);
@@ -4748,6 +4859,7 @@ function syncAfterSlotEdit() {
 }
 
 function openSlotEdit(zoneCode, slotCode) {
+  closeSlotMoveForm();
   movementEdit = null;
   resetClearSlotConfirm();
   const latest = palletRemoteRows.get(JSON.stringify([zoneCode,slotCode]));
@@ -4765,6 +4877,7 @@ function openSlotEdit(zoneCode, slotCode) {
   requestAnimationFrame(updateZoomView);
 }
 function closeSlotEdit() {
+  closeSlotMoveForm();
   movementEdit = null;
   if (!editingSlot) return;
   resetClearSlotConfirm();
@@ -4781,6 +4894,120 @@ function closeSlotEdit() {
   highlightEditingSlot();
   requestAnimationFrame(updateZoomView);
 }
+
+function closeSlotMoveForm() {
+  fseMoveForm.hidden = true;
+  fseMoveToggle.setAttribute('aria-expanded', 'false');
+  fseMoveStatus.textContent = '';
+  fseMoveStatus.className = '';
+}
+function moveDestinationKey() { return JSON.stringify([fseMoveZone.value, fseMoveSlot.value]); }
+function populateMoveDestinationSlots() {
+  const zone = fseMoveZone.value;
+  fseMoveSlot.innerHTML = (ZONE_SLOTS[zone] || []).map(slot => `<option value="${escapeHtml(slot.code)}">${escapeHtml(slot.code)}</option>`).join('');
+  if (editingSlot?.zone === zone && fseMoveSlot.value === editingSlot.slot && fseMoveSlot.options.length > 1) fseMoveSlot.selectedIndex = 1;
+  moveDestinationVersion = palletVersions.get(moveDestinationKey()) || 0;
+  updateSlotMoveState();
+}
+function renderSlotMoveItems() {
+  if (!editingSlot) return;
+  const items = slotItemsFor(editingSlot.zone, editingSlot.slot);
+  fseMoveItems.innerHTML = items.map((item, index) => {
+    const available = movementNumber(getRemainingQty(item));
+    const wholeOnly = available == null || available <= 0;
+    const balance = available == null ? 'ไม่ทราบคงเหลือ · ย้ายได้ทั้งรายการ' : `${fmt3(available)} ${escapeHtml(item.unit || '')}`;
+    return `<div class="fse-move-item" data-index="${index}">
+      <label><input type="checkbox" class="fse-move-check" data-index="${index}"><span><strong>${escapeHtml(item.code || '')}</strong> ${escapeHtml(item.name || '')}${item.lotNo ? ` · Lot ${escapeHtml(item.lotNo)}` : ''}<br>คงเหลือ ${balance}</span></label>
+      <input type="number" class="fse-move-qty" data-index="${index}" aria-label="จำนวนย้าย ${escapeHtml(item.code || item.name || '')}" min="0" step="any" ${wholeOnly ? 'placeholder="ทั้งรายการ" data-whole="true"' : `max="${available}" value="${available}"`} disabled>
+    </div>`;
+  }).join('');
+  document.getElementById('fseMoveSelectAll').checked = false;
+}
+function collectSlotMoveSelections() {
+  return [...fseMoveItems.querySelectorAll('.fse-move-check:checked')].map(check => {
+    const input = fseMoveItems.querySelector(`.fse-move-qty[data-index="${check.dataset.index}"]`);
+    return { index:Number(check.dataset.index), whole:input.dataset.whole === 'true', qty:input.value };
+  });
+}
+function updateSlotMoveState(preserveError = false) {
+  if (fseMoveForm.hidden || !editingSlot) return;
+  const dest = palletRemoteRows.get(moveDestinationKey());
+  const count = Array.isArray(dest?.items) ? dest.items.length : slotItemsFor(fseMoveZone.value,fseMoveSlot.value).length;
+  document.getElementById('fseMoveDestinationHint').textContent = `ปลายทาง ${fseMoveZone.value}/${fseMoveSlot.value} · ${count} รายการเดิม · จะเพิ่มรายการที่ย้าย ไม่ลบรายการเดิม`;
+  try {
+    if (editingSlot.version !== moveSourceVersion || (palletVersions.get(moveDestinationKey()) || 0) !== moveDestinationVersion)
+      throw new Error('ต้นทางหรือปลายทางมีข้อมูลใหม่ กรุณาปิดแล้วเปิดคำสั่งย้ายอีกครั้ง');
+    buildSlotMovePlan(buildSlotRow(editingSlot.zone,editingSlot.slot),buildSlotRow(fseMoveZone.value,fseMoveSlot.value),
+      collectSlotMoveSelections(),fseMoveDate.value,fseMoveBy.value);
+    fseMoveConfirm.disabled = palletWriteBusy;
+    if (preserveError !== true) { fseMoveStatus.textContent = ''; fseMoveStatus.className = ''; }
+  } catch(error) {
+    fseMoveConfirm.disabled = true;
+    fseMoveStatus.textContent = error.message;
+    fseMoveStatus.className = 'error';
+  }
+}
+fseMoveToggle.addEventListener('click', () => {
+  if (!fseMoveForm.hidden) { closeSlotMoveForm(); return; }
+  if (!editingSlot || !slotItemsFor(editingSlot.zone,editingSlot.slot).length) { showFseFeedback('ตำแหน่งนี้ไม่มีรายการสินค้าให้ย้าย','error'); return; }
+  moveSourceVersion = editingSlot.version;
+  fseMoveForm.hidden = false;
+  fseMoveToggle.setAttribute('aria-expanded', 'true');
+  document.getElementById('fseMoveSource').textContent = `ย้ายจาก ${editingSlot.zone}/${editingSlot.slot}`;
+  fseMoveZone.innerHTML = Object.keys(ZONE_SLOTS).filter(zone => ZONE_SLOTS[zone].length).map(zone => `<option value="${escapeHtml(zone)}">โซน ${escapeHtml(zone)}</option>`).join('');
+  fseMoveZone.value = editingSlot.zone;
+  const now = new Date();
+  fseMoveDate.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  fseMoveBy.value = '';
+  renderSlotMoveItems();
+  populateMoveDestinationSlots();
+  fseMoveForm.scrollIntoView({ block:'nearest' });
+});
+fseMoveZone.addEventListener('change',populateMoveDestinationSlots);
+fseMoveSlot.addEventListener('change',() => { moveDestinationVersion = palletVersions.get(moveDestinationKey()) || 0; updateSlotMoveState(); });
+for (const control of [fseMoveDate,fseMoveBy]) control.addEventListener('input',updateSlotMoveState);
+fseMoveItems.addEventListener('change',event => {
+  if (event.target.matches('.fse-move-check')) {
+    const input = fseMoveItems.querySelector(`.fse-move-qty[data-index="${event.target.dataset.index}"]`);
+    input.disabled = !event.target.checked || input.dataset.whole === 'true';
+  }
+  updateSlotMoveState();
+});
+fseMoveItems.addEventListener('input',updateSlotMoveState);
+document.getElementById('fseMoveSelectAll').addEventListener('change',event => {
+  fseMoveItems.querySelectorAll('.fse-move-check').forEach(check => {
+    check.checked = event.target.checked;
+    const input = fseMoveItems.querySelector(`.fse-move-qty[data-index="${check.dataset.index}"]`);
+    if (check.checked && input.dataset.whole !== 'true') input.value = input.max;
+    input.disabled = !check.checked || input.dataset.whole === 'true';
+  });
+  updateSlotMoveState();
+});
+document.getElementById('fseMoveCancel').addEventListener('click',closeSlotMoveForm);
+fseMoveConfirm.addEventListener('click', async () => {
+  if (!editingSlot || palletWriteBusy || fseMoveConfirm.disabled) return;
+  const source = buildSlotRow(editingSlot.zone,editingSlot.slot);
+  const destination = buildSlotRow(fseMoveZone.value,fseMoveSlot.value);
+  let plan;
+  try {
+    plan = buildSlotMovePlan(source,destination,collectSlotMoveSelections(),fseMoveDate.value,fseMoveBy.value);
+    if (editingSlot.version !== moveSourceVersion || (palletVersions.get(moveDestinationKey()) || 0) !== moveDestinationVersion)
+      throw new Error('ข้อมูลเปลี่ยนระหว่างเตรียมย้าย กรุณาเปิดคำสั่งย้ายอีกครั้ง');
+    palletWriteBusy = true;
+    fseMoveConfirm.disabled = true;
+    fseMoveStatus.textContent = 'กำลังตรวจเวอร์ชันและบันทึกทั้งสองตำแหน่ง…';
+    fseMoveStatus.className = '';
+    await savePalletBatch([{...plan.source,expected_version:moveSourceVersion},{...plan.destination,expected_version:moveDestinationVersion}]);
+    closeSlotMoveForm();
+    syncAfterSlotEdit();
+    showFseFeedback(`ย้าย ${plan.movedCount} รายการไป ${destination.zone}/${destination.slot_code} แล้ว`);
+    setSyncStatus('connected','บันทึกการย้ายตำแหน่งแล้ว');
+  } catch(error) {
+    fseMoveStatus.textContent = error.message;
+    fseMoveStatus.className = 'error';
+    setSyncStatus('error',error.message);
+  } finally { palletWriteBusy = false; updateSlotMoveState(true); }
+});
 
 fseCloseBtn.addEventListener('click', closeSlotEdit);
 
@@ -5188,7 +5415,7 @@ function buildPalletExcelTables(rows, dates, geometry, buildings, meta) {
       items.push([...base,index+1,String(item.code||''),String(item.name||''),String(item.lotNo||''),dateCell(received),item.receiveDate?'รายการสินค้า':received?'วันที่กลางตามรหัสสินค้า':'ไม่ระบุ',
         movementNumber(item.qty),quantity,String(item.unit||''),issues||'ข้อมูลครบ',String(item.note||''),row.version??null]);
       ledger.rows.forEach(m=>movements.push([...base,index+1,String(item.code||''),String(item.name||''),String(m.lotNo||''),dateCell(m.date),m.label,
-        m.type==='receive'?m.qty:null,m.type==='withdraw'?m.qty:null,m.type==='return'?m.qty:null,m.balance,String(m.unit||''),String(m.by||''),
+        ['receive','transfer_in'].includes(m.type)?m.qty:null,['withdraw','transfer_out'].includes(m.type)?m.qty:null,m.type==='return'?m.qty:null,m.balance,String(m.unit||''),String(m.by||''),
         [!movementDateKey(m.date)?'วันที่ไม่ครบ: '+String(m.date||'ไม่ระบุ'):'',m.qty==null?'ไม่ทราบจำนวน':'',issues].filter(Boolean).join(' · ')]));
     });
   }
