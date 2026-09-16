@@ -3,6 +3,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Packaging Stock &amp; BOM Dashboard</title>
+<script>
+  // Apply the saved two-state theme before CSS paints to avoid a light/dark flash. The previous
+  // toggle removed data-theme for "normal", which silently re-enabled OS auto-dark and made the
+  // button appear not to work on devices whose system theme was dark.
+  (() => {
+    let theme = 'light';
+    try {
+      const saved = localStorage.getItem('pk-dashboard-theme');
+      if (saved === 'light' || saved === 'dark') theme = saved;
+    } catch (_) { /* Storage can be unavailable in private/restricted webviews. */ }
+    document.documentElement.setAttribute('data-theme', theme);
+  })();
+</script>
 <style>
   :root { color-scheme: light; }
   .viz-root {
@@ -9240,18 +9253,28 @@ saveIconsBtn.addEventListener('click', () => {
 
 // ---------- Theme toggle ----------
 const btn = document.getElementById('themeToggle');
-btn.addEventListener('click', () => {
-  const root = document.documentElement;
-  const current = root.getAttribute('data-theme');
-  if (current === 'dark') {
-    root.removeAttribute('data-theme');
-    btn.textContent = 'โหมดมืด';
-    btn.setAttribute('aria-pressed', 'false');
-  } else {
-    root.setAttribute('data-theme', 'dark');
-    btn.textContent = 'โหมดสว่าง';
-    btn.setAttribute('aria-pressed', 'true');
+function applyDashboardTheme(theme, persist = false) {
+  const selected = theme === 'dark' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', selected);
+  btn.textContent = selected === 'dark' ? 'โหมดสว่าง' : 'โหมดมืด';
+  btn.setAttribute('aria-pressed', selected === 'dark' ? 'true' : 'false');
+  btn.setAttribute('aria-label', selected === 'dark' ? 'เปลี่ยนเป็นโหมดสว่าง' : 'เปลี่ยนเป็นโหมดมืด');
+  if (persist) {
+    try { localStorage.setItem('pk-dashboard-theme', selected); }
+    catch (_) { /* Theme still works for this page when storage is unavailable. */ }
   }
+}
+applyDashboardTheme(document.documentElement.getAttribute('data-theme'));
+btn.addEventListener('click', () => applyDashboardTheme(
+  document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark', true
+));
+window.addEventListener('storage', event => {
+  if (event.key === 'pk-dashboard-theme' && (event.newValue === 'light' || event.newValue === 'dark')) applyDashboardTheme(event.newValue);
+});
+window.addEventListener('pageshow', () => {
+  let saved = null;
+  try { saved = localStorage.getItem('pk-dashboard-theme'); } catch (_) {}
+  applyDashboardTheme(saved === 'dark' ? 'dark' : 'light');
 });
 </script>
 <script src="daily-movements.js"></script>
