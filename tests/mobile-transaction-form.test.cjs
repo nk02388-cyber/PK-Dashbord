@@ -1,0 +1,13 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
+assert.match(html,/@media \(max-width: 640px\)[\s\S]*?\.fse-withdraw-form \.fw-entry-row[\s\S]*?grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1fr\)/);
+assert.match(html,/\.fse-withdraw-form \.fw-entry-row td:nth-child\(1\)::before \{ content: "วันที่เบิก \*"; \}/);
+assert.match(html,/\.fse-return-form \.fw-entry-row td:nth-child\(1\)::before \{ content: "วันที่รับคืน \*"; \}/);
+assert.match(html,/\.fse-withdraw-form input, \.fse-return-form input \{ min-width: 0; min-height: 44px; font-size: 16px; \}/);
+const withdraw=html.match(/function renderWithdrawForm\([^]*?\n\}/)[0];
+const referenceAt=withdraw.indexOf('เลขเอกสารเบิก *');
+const confirmAt=withdraw.indexOf('ยืนยันการเบิก');
+assert.ok(referenceAt>0 && confirmAt>referenceAt,'Document reference appears before confirmation actions');
+const returns=html.match(/function renderReturnForm\([^]*?\n\}/)[0];
+assert.ok(returns.indexOf('ยืนยันรับคืน')>returns.indexOf('เลขเอกสารรับคืน *'));
+console.log('PASS: mobile issue/return forms stack readable fields and confirm after document reference');

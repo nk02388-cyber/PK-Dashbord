@@ -1276,6 +1276,44 @@
     .fse-add-form { grid-template-columns: 1fr 1fr; }
     .fse-add-field:nth-child(2) { grid-column: 1 / -1; }
     .fse-add-btn { width: 100%; grid-column: 1 / -1; }
+    /* The transaction entry row is a desktop table. On narrow screens each field becomes a
+       labelled, full-width control so dates, quantities and action labels never collapse. */
+    .fse-withdraw-form, .fse-return-form { min-width: 0; padding: 12px; overflow: hidden; }
+    .fse-withdraw-form .fw-table, .fse-return-form .fw-table,
+    .fse-withdraw-form .fw-table tbody, .fse-return-form .fw-table tbody { display: block; width: 100%; }
+    .fse-withdraw-form .fw-table thead, .fse-return-form .fw-table thead { display: none; }
+    .fse-withdraw-form .fw-entry-row, .fse-return-form .fw-entry-row {
+      display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; width: 100%;
+    }
+    .fse-withdraw-form .fw-entry-row td, .fse-return-form .fw-entry-row td {
+      display: flex; min-width: 0; padding: 0; flex-direction: column; gap: 5px; white-space: normal;
+    }
+    .fse-withdraw-form .fw-entry-row td::before, .fse-return-form .fw-entry-row td::before {
+      color: var(--text-secondary); font-size: 11px; font-weight: 700; line-height: 1.25;
+    }
+    .fse-withdraw-form .fw-entry-row td:nth-child(1)::before { content: "วันที่เบิก *"; }
+    .fse-withdraw-form .fw-entry-row td:nth-child(2)::before { content: "จำนวนที่เบิก *"; }
+    .fse-withdraw-form .fw-entry-row td:nth-child(3)::before { content: "หน่วย *"; }
+    .fse-withdraw-form .fw-entry-row td:nth-child(4)::before { content: "ผู้เบิก *"; }
+    .fse-return-form .fw-entry-row td:nth-child(1)::before { content: "วันที่รับคืน *"; }
+    .fse-return-form .fw-entry-row td:nth-child(2)::before { content: "จำนวนรับคืน *"; }
+    .fse-return-form .fw-entry-row td:nth-child(3)::before { content: "หน่วย *"; }
+    .fse-return-form .fw-entry-row td:nth-child(4)::before { content: "ผู้คืน *"; }
+    .fse-withdraw-form > .fw-actions, .fse-return-form > .fw-actions { margin-top: 10px; }
+    .fse-withdraw-form > .fw-actions button,
+    .fse-return-form > .fw-actions button { flex: 1 1 0; min-height: 44px; white-space: normal; }
+    .fse-withdraw-form > label, .fse-return-form > label {
+      display: flex; flex-direction: column; gap: 6px; margin-top: 12px; color: var(--text-primary); font-size: 12px; font-weight: 700;
+    }
+    .fse-withdraw-form input, .fse-return-form input { min-width: 0; min-height: 44px; font-size: 16px; }
+    .fse-withdraw-form .fw-history-row, .fse-return-form .fw-history-row {
+      display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr) minmax(0, .8fr) minmax(0, 1fr);
+      width: 100%; margin-bottom: 8px; border-bottom: 1px solid var(--border);
+    }
+    .fse-withdraw-form .fw-history-row td, .fse-return-form .fw-history-row td {
+      min-width: 0; padding: 5px 3px; border: 0; overflow-wrap: anywhere; white-space: normal;
+    }
+    .fse-withdraw-form .fw-history-row td:last-child, .fse-return-form .fw-history-row td:last-child { display: none; }
   }
 
   /* =====================================================================
@@ -4777,14 +4815,11 @@ function renderWithdrawForm(i, item, remaining) {
             <td><input type="number" class="fw-qty" placeholder="จำนวน" min="0"${maxAttr} step="any" inputmode="decimal"></td>
             <td><input type="text" class="fw-unit" placeholder="หน่วย" value="${escapeHtml(item.unit || '')}"></td>
             <td><input type="text" class="fw-by" placeholder="ชื่อผู้เบิก"></td>
-            <td class="fw-actions">
-              <button type="button" class="fw-save-btn" data-idx="${i}" disabled>ยืนยันการเบิก</button>
-              <button type="button" class="fw-cancel-btn" data-idx="${i}">ยกเลิก</button>
-            </td>
           </tr>
         </tbody>
       </table>
       <label>เลขเอกสารเบิก * <input type="text" class="fw-reference" placeholder="เลขใบเบิก / เลขอ้างอิง" required></label>
+      <div class="fw-actions"><button type="button" class="fw-save-btn" data-idx="${i}" disabled>ยืนยันการเบิก</button><button type="button" class="fw-cancel-btn" data-idx="${i}">ยกเลิก</button></div>
       <div class="fw-hint">${hint}</div>
     </div>`;
 }
@@ -4801,10 +4836,10 @@ function renderReturnForm(i, item, returnable) {
           <td><input type="number" class="fr-qty" placeholder="จำนวน" min="0" max="${returnable}" step="any" inputmode="decimal"></td>
           <td><input type="text" class="fr-unit" placeholder="หน่วย" value="${escapeHtml(item.unit || '')}"></td>
           <td><input type="text" class="fr-by" placeholder="ชื่อผู้คืน"></td>
-          <td class="fw-actions"><button type="button" class="fr-save-btn" data-idx="${i}" disabled>ยืนยันรับคืน</button><button type="button" class="fr-cancel-btn" data-idx="${i}">ยกเลิก</button></td>
         </tr></tbody>
       </table>
       <label>เลขเอกสารรับคืน * <input type="text" class="fr-reference" placeholder="เลขใบรับคืน / เลขอ้างอิง" required></label>
+      <div class="fw-actions"><button type="button" class="fr-save-btn" data-idx="${i}" disabled>ยืนยันรับคืน</button><button type="button" class="fr-cancel-btn" data-idx="${i}">ยกเลิก</button></div>
       <div class="fr-hint">รับคืนได้ไม่เกิน ${escapeHtml(String(returnable))}${item.unit ? ' ' + escapeHtml(item.unit) : ''}</div>
     </div>`;
 }
