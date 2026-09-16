@@ -1197,6 +1197,19 @@
     .fse-add-form { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .fse-add-btn { width: 100%; }
   }
+  /* Tablet portrait still uses the desktop 4:3 modal. When the slot editor opens, the
+     viewport's 32vh minimum previously squeezed the editor down to roughly one header row,
+     placing its sticky close button over the first item's เบิก/รับคืน actions. Reserve enough
+     height for both regions so every action remains visible and receives the intended tap. */
+  @media (min-width: 641px) and (max-width: 900px) {
+    .floorplan-zoom-box:has(.floorplan-slot-edit:not([hidden])) .floorplan-zoom-viewport {
+      min-height: 180px;
+    }
+    .floorplan-slot-edit:not([hidden]) {
+      flex: 0 0 220px;
+      min-height: 220px;
+    }
+  }
   .kota-chip-list {
     display:flex; flex-wrap:wrap; gap: 8px; margin-bottom: 14px; padding: 12px;
     background: var(--page-plane); border: 1px solid var(--border); border-radius: 10px;
