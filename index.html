@@ -1552,6 +1552,29 @@
   .sm-actions button { border: 1px solid var(--border); border-radius: 6px; padding: 7px 12px; background: var(--surface-1); color: var(--text-primary); cursor: pointer; font: inherit; }
   .sm-actions .sm-save { background: var(--series-1); color: #fff; }
   @media (max-width: 700px) { .sm-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .daily-controls { display:flex; flex-wrap:wrap; align-items:end; gap:10px; margin:14px 0; }
+  .daily-controls label { display:grid; gap:4px; min-width:170px; font-size:12px; font-weight:600; }
+  .daily-controls input { min-height:40px; border:1px solid var(--border); border-radius:8px; background:var(--surface-1); color:var(--text-primary); padding:7px 10px; font:inherit; }
+  .daily-controls .daily-search { flex:1; min-width:min(240px,100%); }
+  .daily-controls button { min-height:40px; border:1px solid var(--border); border-radius:8px; background:var(--surface-1); color:var(--text-primary); padding:7px 12px; font:inherit; cursor:pointer; }
+  .daily-kpis { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin:14px 0; }
+  .daily-kpi { border:1px solid var(--border); border-radius:12px; background:var(--surface-1); padding:14px; }
+  .daily-kpi span { display:block; font-size:12px; color:var(--text-secondary); }
+  .daily-kpi strong { display:block; margin-top:5px; font-size:24px; color:var(--text-primary); }
+  .daily-unit-list { display:flex; flex-wrap:wrap; gap:7px; margin:10px 0 16px; }
+  .daily-unit-list span { border:1px solid var(--border); border-radius:20px; padding:5px 10px; background:var(--series-1-wash); font-size:12px; }
+  .daily-chart { display:grid; gap:8px; margin:10px 0 18px; }
+  .daily-bar { display:grid; grid-template-columns:80px 1fr 48px; align-items:center; gap:8px; font-size:12px; }
+  .daily-bar-track { height:14px; border-radius:10px; background:var(--gridline); overflow:hidden; }
+  .daily-bar-fill { height:100%; border-radius:10px; background:var(--series-1); }
+  .daily-table-wrap { overflow:auto; max-height:560px; border:1px solid var(--border); border-radius:10px; }
+  .daily-table { border-collapse:collapse; width:100%; min-width:850px; font-size:12px; }
+  .daily-table th,.daily-table td { text-align:left; padding:9px 11px; border-bottom:1px solid var(--border); vertical-align:top; }
+  .daily-table th { position:sticky; top:0; z-index:1; background:var(--surface-1); }
+  .daily-table tbody tr:nth-child(even) { background:var(--series-1-wash); }
+  .daily-table .num { text-align:right; white-space:nowrap; }
+  .daily-empty { padding:16px; color:var(--text-secondary); }
+  @media (max-width:700px) { .daily-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); } .daily-kpi strong { font-size:21px; } }
 </style>
 </head>
 <body class="viz-root">
@@ -1576,6 +1599,8 @@
     <button class="tab-btn" id="tab-stock" data-tab="stock" type="button" role="tab" aria-selected="false" aria-controls="pane-stock" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m4 7 8-4 8 4-8 4-8-4Z" stroke-width="1.8"/><path d="m4 7v10l8 4 8-4V7M12 11v10" stroke-width="1.8"/></svg><span>สต็อกบรรจุภัณฑ์</span><span class="tab-badge" id="tabBadgeStock">฿32.41M</span></button>
     <button class="tab-btn" id="tab-bompk" data-tab="bompk" type="button" role="tab" aria-selected="false" aria-controls="pane-bompk" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 21V9l6 3V8l6 4V5h6v16H3Z" stroke-width="1.8"/><path d="M7 17h2m3 0h2m3 0h2" stroke-width="1.8"/></svg><span>ความพร้อมบรรจุภัณฑ์ (BOM PK)</span><span class="tab-badge critical" id="tabBadgeBompk">612 ติดขัด</span></button>
     <button class="tab-btn active" id="tab-floorplan" data-tab="floorplan" type="button" role="tab" aria-selected="true" aria-controls="pane-floorplan"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z" stroke-width="1.8"/><path d="M9 3v15m6-12v15" stroke-width="1.8"/></svg><span>ผังพื้นที่ชั้น 2</span><span class="tab-badge" id="tabBadgeFloorplan">46 โซน</span></button>
+    <button class="tab-btn" id="tab-daily-receive" data-tab="daily-receive" type="button" role="tab" aria-selected="false" aria-controls="pane-daily-receive" tabindex="-1"><span>รายการรับเข้าประจำวัน</span><span class="tab-badge" id="tabBadgeDailyReceive">วันนี้</span></button>
+    <button class="tab-btn" id="tab-daily-issue" data-tab="daily-issue" type="button" role="tab" aria-selected="false" aria-controls="pane-daily-issue" tabindex="-1"><span>รายการเบิกประจำวัน</span><span class="tab-badge" id="tabBadgeDailyIssue">วันนี้</span></button>
   </div>
 
   <!-- ============ TAB: STOCK ============ -->
@@ -2388,6 +2413,42 @@
           <button type="button" class="fz-status-btn" id="floorplanZoomExportBtn">ส่งออกข้อมูลพาเลต</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <div class="tab-pane" id="pane-daily-receive" role="tabpanel" aria-labelledby="tab-daily-receive" hidden>
+    <div class="panel daily-panel" data-kind="receive">
+      <h2>รายการรับเข้าประจำวัน</h2>
+      <p class="panel-sub">จาก STOCK CARD พาเลตทุกโซน · แสดงรับเข้าและรับคืนแยกประเภท · ไม่นับการย้ายพาเลต</p>
+      <div class="daily-controls">
+        <label>วันที่ <input type="date" class="daily-date" aria-label="วันที่รายการรับเข้า"></label>
+        <button type="button" class="daily-prev" aria-label="วันก่อนหน้า">← วันก่อน</button>
+        <button type="button" class="daily-today">วันนี้</button>
+        <label class="daily-search">ค้นหารหัส ชื่อสินค้า Lot หรือตำแหน่ง <input type="search" class="daily-query" placeholder="ค้นหารายการในวันที่เลือก"></label>
+      </div>
+      <p class="daily-status" role="status" aria-live="polite"></p>
+      <div class="daily-kpis"></div>
+      <h3>จำนวนรายการตามโซน</h3><div class="daily-chart"></div>
+      <h3>ยอดรับแยกตามหน่วย</h3><div class="daily-unit-list"></div>
+      <h3>รายละเอียดรายการ</h3><div class="daily-result"></div>
+    </div>
+  </div>
+
+  <div class="tab-pane" id="pane-daily-issue" role="tabpanel" aria-labelledby="tab-daily-issue" hidden>
+    <div class="panel daily-panel" data-kind="issue">
+      <h2>รายการเบิกประจำวัน</h2>
+      <p class="panel-sub">จาก STOCK CARD พาเลตทุกโซน · นับเฉพาะรายการเบิก · ไม่นับการย้ายพาเลต</p>
+      <div class="daily-controls">
+        <label>วันที่ <input type="date" class="daily-date" aria-label="วันที่รายการเบิก"></label>
+        <button type="button" class="daily-prev" aria-label="วันก่อนหน้า">← วันก่อน</button>
+        <button type="button" class="daily-today">วันนี้</button>
+        <label class="daily-search">ค้นหารหัส ชื่อสินค้า Lot หรือตำแหน่ง <input type="search" class="daily-query" placeholder="ค้นหารายการในวันที่เลือก"></label>
+      </div>
+      <p class="daily-status" role="status" aria-live="polite"></p>
+      <div class="daily-kpis"></div>
+      <h3>จำนวนรายการตามโซน</h3><div class="daily-chart"></div>
+      <h3>ยอดเบิกแยกตามหน่วย</h3><div class="daily-unit-list"></div>
+      <h3>รายละเอียดรายการ</h3><div class="daily-result"></div>
     </div>
   </div>
 
@@ -3269,6 +3330,7 @@ function refreshAfterRemoteChange(zoneCode, slotCode) {
   const selectedPin = document.querySelector('.floor-pin.selected, .floor-zone-fallback.selected');
   if (selectedPin) renderFloorZoneDetail(selectedPin.dataset.zone, selectedPin.dataset.wh);
   if (typeof renderStockReconciliation === 'function') renderStockReconciliation();
+  window.PKDaily?.refresh();
 }
 
 // initSupabaseSync(): initial full fetch -- Supabase's stored state overrides the Excel-seeded
@@ -4940,6 +5002,7 @@ function syncAfterSlotEdit() {
   highlightEditingSlot();
   renderSlotEdit();
   renderOverviewSlotStatus();
+  window.PKDaily?.refresh();
 }
 
 function openSlotEdit(zoneCode, slotCode) {
@@ -9111,6 +9174,7 @@ btn.addEventListener('click', () => {
   }
 });
 </script>
+<script src="daily-movements.js"></script>
 
 
 </body></html>
