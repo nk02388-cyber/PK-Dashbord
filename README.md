@@ -2,6 +2,8 @@
 
 แดชบอร์ด Stock Inventory และ BOM PK สำหรับเผยแพร่ผ่าน GitHub Pages
 
+การเตรียมข้อมูลพาเลตเพื่อเริ่มใช้ Odoo 19 Community อยู่ใน [docs/ODOO-19-ADOPTION.md](docs/ODOO-19-ADOPTION.md) และตัวแปลง `tools/odoo-pallet-export.mjs`
+
 ## ฐานข้อมูลปัจจุบัน
 
 - ตั้งแต่ 2 กันยายน 2026 พาเลตและ Stock ใช้โปรเจกต์ `zgsxbuckjrplkpvtlbmn` ร่วมกัน แต่แยกตารางและกระบวนการบันทึก
