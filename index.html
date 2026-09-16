@@ -4796,7 +4796,6 @@ function updateWithdrawBtnState() {
 // filled in -- code, name, receive date, quantity, and unit -- per Pornchai's 20 Aug 2026
 // request that a half-entered item never get silently added to the Layout data. Re-checked on
 // every keystroke/change (wired below) and once whenever the panel (re)renders.
-function isExcludedAddProductCode(code) { return /^[125]/.test(String(code || '').trim()); }
 function isAddFormValid() {
   const code = fseAddCode.value.trim();
   const name = fseAddName.value.trim();
@@ -4804,12 +4803,10 @@ function isAddFormValid() {
   const qty = fseAddQty.value;
   const unit = fseAddUnit.value.trim();
   const qtyNum = parseFloat(qty);
-  return !!code && !isExcludedAddProductCode(code) && !!name && !!receiveDate && qty !== '' && !isNaN(qtyNum) && qtyNum > 0 && !!unit;
+  return !!code && !!name && !!receiveDate && qty !== '' && !isNaN(qtyNum) && qtyNum > 0 && !!unit;
 }
 function updateAddBtnState() {
-  const excluded = isExcludedAddProductCode(fseAddCode.value);
-  if (excluded) fseAddCode.setAttribute('aria-invalid','true');
-  else fseAddCode.removeAttribute('aria-invalid');
+  fseAddCode.removeAttribute('aria-invalid');
   fseAddBtn.disabled = !isAddFormValid();
 }
 
@@ -4833,7 +4830,7 @@ function getAddProductSuggestions(query) {
   const catalog = new Map();
   const add = item => {
     const code = String(item.code || '').trim(), key = normalizeSearchText(code);
-    if (!key || isExcludedAddProductCode(code)) return;
+    if (!key) return;
     const name = String(item.name || '').trim(), unit = String(item.unit || '').trim();
     const searchName = String(item.search_name || item.searchName || item.name_search || '').trim();
     const previous = catalog.get(key);
@@ -4896,7 +4893,7 @@ function renderAddProductSuggestions(query) {
   fseAddCode.setAttribute('aria-expanded','true');
 }
 function selectAddProductSuggestion(item) {
-  if (!item || isExcludedAddProductCode(item.code)) return;
+  if (!item) return;
   fseAddCode.value = item.code;
   hideAddProductSuggestions();
   autofillAddProductDetails();
@@ -4904,7 +4901,7 @@ function selectAddProductSuggestion(item) {
 }
 
 function autofillAddProductDetails() {
-  const product = isExcludedAddProductCode(fseAddCode.value) ? null : findKnownProduct(fseAddCode.value);
+  const product = findKnownProduct(fseAddCode.value);
   if (product) {
     fseAddName.value = product.name || '';
     fseAddName.dataset.autofilled = 'true';

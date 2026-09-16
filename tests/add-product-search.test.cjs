@@ -8,9 +8,9 @@ const stock = [
   {code:'314-4-2000-55',name:'ฝาปั๊ม PP สีขาว',unit:'ฝา',wh:'202'},
   {code:'314-4-2000-55',name:'ฝาปั๊ม PP สีขาว',unit:'ฝา',wh:'800'},
   {code:'PK-NEW',name:'ขวดพิเศษ',search_name:'บรรจุภัณฑ์เฉพาะ',unit:'ขวด',wh:'201'},
-  {code:'11-0001-10',name:'ฉลากต้องตัดออก',unit:'ใบ',wh:'202'},
-  {code:'21-0001-10',name:'ขวดต้องตัดออก',unit:'ขวด',wh:'202'},
-  {code:'51-0001-25',name:'ซองต้องตัดออก',unit:'ซอง',wh:'202'},
+  {code:'11-0001-10',name:'ฉลากใหม่',unit:'ใบ',wh:'202'},
+  {code:'21-0001-10',name:'ขวดใหม่',unit:'ขวด',wh:'202'},
+  {code:'51-0001-25',name:'ซองใหม่',unit:'ซอง',wh:'202'},
 ];
 const slots = {A:{'A-01':[{code:'314-4-2000-55',name:'ฝาปั๊มเดิม',unit:'ฝา'},
   {code:'ONLY-PALLET',name:'กล่องพิเศษ',unit:'ใบ',remainingQty:0},
@@ -18,35 +18,33 @@ const slots = {A:{'A-01':[{code:'314-4-2000-55',name:'ฝาปั๊มเด�
   {code:'21-PALLET',name:'สินค้าเดิมที่ตัด',unit:'ใบ',remainingQty:1}]}};
 const before = JSON.stringify({stock,slots});
 const ctx = vm.createContext({STOCK:{items:stock},SLOT_ITEMS:slots});
-vm.runInContext(['normalizeSearchText','isExcludedAddProductCode','getAddProductSuggestions'].map(extract).join('\n'),ctx);
+vm.runInContext(['normalizeSearchText','getAddProductSuggestions'].map(extract).join('\n'),ctx);
 assert.equal(ctx.getAddProductSuggestions('314-4')[0].code,'314-4-2000-55');
 assert.equal(ctx.getAddProductSuggestions('314-4').length,1,'Multiple warehouses and pallet copies share one suggestion');
 assert.equal(ctx.getAddProductSuggestions('ฝาปั๊ม')[0].unit,'ฝา');
-assert.equal(ctx.getAddProductSuggestions('2000')[0].code,'314-4-2000-55','Match a code fragment beginning with an excluded digit');
+assert.equal(ctx.getAddProductSuggestions('2000')[0].code,'314-4-2000-55','Match a code fragment beginning with 2');
 assert.equal(ctx.getAddProductSuggestions('สีขาว')[0].code,'314-4-2000-55','Match any product-name fragment');
 assert.equal(ctx.getAddProductSuggestions('ขวดพิเศษ')[0].code,'PK-NEW','Suggest updated stock catalog items absent from pallets');
 assert.equal(ctx.getAddProductSuggestions('เฉพาะ')[0].code,'PK-NEW','Match an optional stock search name');
 assert.equal(ctx.getAddProductSuggestions('กล่องพิเศษ').length,0,'Do not suggest old pallet-only codes');
 assert.equal(ctx.getAddProductSuggestions('ขวดพิเศษ')[0].source,'สต็อก');
 assert.equal(ctx.getAddProductSuggestions('ไม่พบ').length,0);
-assert.equal(ctx.getAddProductSuggestions('11').length,0);
-assert.equal(ctx.getAddProductSuggestions('21').length,0);
-assert.equal(ctx.getAddProductSuggestions('51').length,0);
-assert.equal(ctx.getAddProductSuggestions('ฉลากต้องตัดออก').length,0,'Name searches also omit code 1');
-assert.equal(ctx.getAddProductSuggestions('ขวดต้องตัดออก').length,0,'Name searches also omit excluded codes');
+assert.equal(ctx.getAddProductSuggestions('11')[0].code,'11-0001-10');
+assert.equal(ctx.getAddProductSuggestions('21')[0].code,'21-0001-10');
+assert.equal(ctx.getAddProductSuggestions('51')[0].code,'51-0001-25');
+assert.equal(ctx.getAddProductSuggestions('ฉลากใหม่')[0].code,'11-0001-10');
+assert.equal(ctx.getAddProductSuggestions('ขวดใหม่')[0].code,'21-0001-10');
 assert.equal(ctx.getAddProductSuggestions('ฉลากเดิมที่ตัด').length,0,'Pallet-only products are absent');
 assert.equal(ctx.getAddProductSuggestions('สินค้าเดิมที่ตัด').length,0,'Pallet-only products are absent');
-assert.equal(ctx.isExcludedAddProductCode(' 51-0001-25'),true);
-assert.equal(ctx.isExcludedAddProductCode('314-4-2000-55'),false);
 Object.assign(ctx,{fseAddCode:{value:'314-4-2000-55'},fseAddName:{value:'ฝาปั๊ม'},fseAddReceiveDate:{value:'2026-09-15'},fseAddQty:{value:'10'},fseAddUnit:{value:'ชิ้น'}});
 vm.runInContext(extract('isAddFormValid'),ctx);
 assert.equal(ctx.isAddFormValid(),true);
-for (const code of ['11-0001-10','21-0001-10','51-0001-25']) { ctx.fseAddCode.value=code; assert.equal(ctx.isAddFormValid(),false,'Manual entry cannot bypass exclusion'); }
+for (const code of ['11-0001-10','21-0001-10','51-0001-25']) { ctx.fseAddCode.value=code; assert.equal(ctx.isAddFormValid(),true,'All stock-code prefixes are accepted'); }
 assert.equal(JSON.stringify({stock,slots}),before,'Suggestions never alter source records');
 assert.match(html,/id="fseAddCode"[^>]*role="combobox"[^>]*aria-controls="fseAddSuggestions"/);
 assert.match(html,/fseAddCode\.addEventListener\('keydown'/);
 assert.match(html,/selectAddProductSuggestion\(addSuggestionItems\[Number\(option\.dataset\.index\)\]\)/);
-assert.doesNotMatch(html,/if \(!raw \|\| isExcludedAddProductCode\(raw\)\)/,'Search fragments must not be blocked by their first digit');
-assert.doesNotMatch(html,/id="fseAddCodeHelp"/,'Excluded-code note stays hidden from the form');
+assert.doesNotMatch(html,/isExcludedAddProductCode/,'The old prefix rule is fully removed');
+assert.doesNotMatch(html,/id="fseAddCodeHelp"/,'The old prefix note stays removed');
 assert.doesNotMatch(html,/id="fseAddNote"/,'Add-item note field is no longer displayed');
-console.log('PASS: updated-stock suggestions match partial code, product name and search name; excluded codes remain blocked');
+console.log('PASS: updated-stock suggestions match partial code, product name and search name; prefixes 1/2/5 are accepted');
