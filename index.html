@@ -2258,6 +2258,7 @@
         <button type="button" id="stockReconcileExport" class="excl-toggle-btn">ส่งออกผลเปรียบเทียบ Excel</button>
       </div>
       <p id="stockReconcileStatus" role="status" aria-live="polite">กำลังรอข้อมูลพาเลต…</p>
+      <p id="stockReconcileCutoff" class="stock-snapshot-notice" role="status" aria-live="polite"></p>
       <div id="stockReconcileSummary"></div>
       <div id="stockReconcileResult"></div>
     </div>
@@ -2368,6 +2369,7 @@
             <label class="fse-add-field"><span>ชื่อสินค้า *</span><input type="text" id="fseAddName" placeholder="ชื่อสินค้า" autocomplete="off" required aria-required="true"></label>
             <label class="fse-add-field"><span>Lot No.</span><input type="text" id="fseAddLotNo" placeholder="Lot No." autocomplete="off"></label>
             <label class="fse-add-field"><span>วันที่รับ *</span><input type="date" id="fseAddReceiveDate" title="วันที่รับสินค้า" required aria-required="true"></label>
+            <label class="fse-add-field"><span>เลขเอกสารรับ *</span><input type="text" id="fseAddReference" placeholder="เลขใบรับ / เลขอ้างอิง" required aria-required="true"></label>
             <label class="fse-add-field"><span>จำนวนรับ *</span><input type="number" id="fseAddQty" placeholder="0" min="0" step="any" inputmode="decimal" required aria-required="true"></label>
             <label class="fse-add-field"><span>หน่วย *</span><input type="text" id="fseAddUnit" list="fseUnitOptions" placeholder="ขวด/กระปุก" autocomplete="off" required aria-required="true"></label>
             <datalist id="fseUnitOptions">
@@ -2391,6 +2393,7 @@
             <label>ตำแหน่งปลายทาง<select id="fseMoveSlot"></select></label>
             <label>วันที่ย้าย<input type="date" id="fseMoveDate" required></label>
             <label>ผู้ย้าย<input type="text" id="fseMoveBy" placeholder="ชื่อผู้ย้าย" required></label>
+            <label>เลขเอกสารย้าย<input type="text" id="fseMoveReference" placeholder="เลขใบย้าย / เลขอ้างอิง" required></label>
           </div>
           <div class="fse-move-hint" id="fseMoveDestinationHint"></div>
           <label class="fse-move-select-all"><input type="checkbox" id="fseMoveSelectAll"> เลือกทุกสินค้าและย้ายทั้งหมด</label>
@@ -4151,7 +4154,7 @@ function refreshSearchDatalist() {
   }
 }
 
-function addSlotItem(zoneCode, slotCode, code, name, lotNo, receiveDate, qty, unit, note) {
+function addSlotItem(zoneCode, slotCode, code, name, lotNo, receiveDate, qty, unit, note, reference) {
   if (!SLOT_ITEMS[zoneCode]) SLOT_ITEMS[zoneCode] = {};
   if (!SLOT_ITEMS[zoneCode][slotCode]) SLOT_ITEMS[zoneCode][slotCode] = [];
   // remainingQty tracks the running balance as withdrawals (see withdrawSlotItem() below) are
@@ -4159,7 +4162,7 @@ function addSlotItem(zoneCode, slotCode, code, name, lotNo, receiveDate, qty, un
   // per-item audit trail (date/qty/unit/by) shown under the item in the panel. lotNo (added 20
   // Aug 2026, right after ชื่อสินค้า per Pornchai's request) is plain optional metadata -- not
   // required to save, not used in any calculation, just displayed in its own column.
-  SLOT_ITEMS[zoneCode][slotCode].push({ code, name, lotNo, receiveDate, qty, unit, note: note || '', remainingQty: qty, withdrawals: [] });
+  SLOT_ITEMS[zoneCode][slotCode].push({ code, name, lotNo, receiveDate, receivedAt: new Date().toISOString(), receiveReference: reference, qty, unit, note: note || '', remainingQty: qty, withdrawals: [] });
   setOccupied(zoneCode, slotCode, true);
 }
 function removeSlotItem(zoneCode, slotCode, index) {
@@ -4208,14 +4211,14 @@ function getRemainingQty(item) {
 // item.remainingQty. Does NOT touch pallet occupied/empty status -- a slot with its book
 // quantity drawn down to zero is still physically occupied until someone explicitly clears it
 // via "ล้างรายการ / ทำเป็นว่าง" or removes the item outright.
-function withdrawSlotItem(zoneCode, slotCode, index, { date, qty, unit, by }) {
+function withdrawSlotItem(zoneCode, slotCode, index, { date, qty, unit, by, reference }) {
   const list = SLOT_ITEMS[zoneCode] && SLOT_ITEMS[zoneCode][slotCode];
   const item = list && list[index];
   if (!item) return;
   const before = getRemainingQty(item);
   if (before != null) item.remainingQty = Math.max(0, before - qty);
   if (!item.withdrawals) item.withdrawals = [];
-  item.withdrawals.push({ date, qty, unit, by });
+  item.withdrawals.push({ date, qty, unit, by, reference, recordedAt: new Date().toISOString() });
 }
 
 function getReturnableQty(item) {
@@ -4224,14 +4227,14 @@ function getReturnableQty(item) {
   return Math.max(0, withdrawn - returned);
 }
 
-function returnSlotItem(zoneCode, slotCode, index, { date, qty, unit, by }) {
+function returnSlotItem(zoneCode, slotCode, index, { date, qty, unit, by, reference }) {
   const list = SLOT_ITEMS[zoneCode] && SLOT_ITEMS[zoneCode][slotCode];
   const item = list && list[index];
   if (!item) return;
   const before = getRemainingQty(item);
   if (before != null) item.remainingQty = before + qty;
   if (!item.returns) item.returns = [];
-  item.returns.push({ date, qty, unit, by });
+  item.returns.push({ date, qty, unit, by, reference, recordedAt: new Date().toISOString() });
 }
 
 let editingSlot = null; // { zone, slot } while the panel is open, else null
@@ -4352,17 +4355,17 @@ function movementDateKey(value) {
 function getStockMovement(item) {
   const rows = [];
   if (movementNumber(item.qty) !== 0 || !(item.transfersIn || []).length) rows.push({ type: 'receive', index: 0, label: 'รับเข้า', date: item.receiveDate || '',
-    qty: movementNumber(item.qty), lotNo: item.lotNo || '', by: item.receivedBy || '', unit: item.unit || '' });
+    qty: movementNumber(item.qty), lotNo: item.lotNo || '', by: item.receivedBy || '', unit: item.unit || '', reference: item.receiveReference || '', recordedAt: item.receivedAt || '' });
   for (const [key, type, label] of [['withdrawals', 'withdraw', 'เบิก'], ['returns', 'return', 'รับคืน']]) {
     (item[key] || []).forEach((row, index) => rows.push({ type, index, label, date: row.date || '',
-      qty: movementNumber(row.qty), lotNo: row.lotNo ?? item.lotNo ?? '', by: row.by || '', unit: row.unit || item.unit || '' }));
+      qty: movementNumber(row.qty), lotNo: row.lotNo ?? item.lotNo ?? '', by: row.by || '', unit: row.unit || item.unit || '', reference: row.reference || '', recordedAt: row.recordedAt || '' }));
   }
   for (const [key, type, prefix, other] of [['transfersOut','transfer_out','ย้ายไป','to'],['transfersIn','transfer_in','รับย้ายจาก','from']]) {
     (item[key] || []).forEach((row, index) => rows.push({ type, index, label: `${prefix} ${row[other] || 'พาเลตอื่น'}`, date: row.date || '',
-      qty: movementNumber(row.qty), lotNo: item.lotNo || '', by: row.by || '', unit: row.unit || item.unit || '' }));
+      qty: movementNumber(row.qty), lotNo: item.lotNo || '', by: row.by || '', unit: row.unit || item.unit || '', reference: row.reference || '', recordedAt: row.recordedAt || '' }));
   }
   (item.locationMoves || []).forEach((row, index) => rows.push({ type:'move', index, label:`ย้าย ${row.from || 'พาเลตอื่น'} → ${row.to || 'พาเลตอื่น'}`,
-    date:row.date || '', qty:0, lotNo:item.lotNo || '', by:row.by || '', unit:item.unit || '' }));
+    date:row.date || '', qty:0, lotNo:item.lotNo || '', by:row.by || '', unit:item.unit || '', reference: row.reference || '', recordedAt: row.recordedAt || '' }));
   rows.sort((a, b) => (movementDateKey(a.date) || (a.type === 'receive' ? '00000000' : '99999999'))
     .localeCompare(movementDateKey(b.date) || (b.type === 'receive' ? '00000000' : '99999999')));
   let balance = movementNumber(item.qty) == null ? null : 0;
@@ -4378,12 +4381,13 @@ function getStockMovement(item) {
 }
 
 // Build both slot values without changing the page. One version-checked RPC commits them together.
-function buildSlotMovePlan(sourceRow, destinationRow, selections, date, by) {
+function buildSlotMovePlan(sourceRow, destinationRow, selections, date, by, reference) {
   const from = `${sourceRow.zone}/${sourceRow.slot_code}`;
   const to = `${destinationRow.zone}/${destinationRow.slot_code}`;
   if (from === to) throw new Error('ต้นทางกับปลายทางต้องเป็นคนละตำแหน่ง');
   if (!movementDateKey(date)) throw new Error('กรุณาระบุวันที่ย้ายให้ถูกต้อง');
   if (!String(by || '').trim()) throw new Error('กรุณาระบุผู้ย้าย');
+  if (!String(reference || '').trim()) throw new Error('กรุณาระบุเลขเอกสารย้าย');
   if (!Array.isArray(selections) || !selections.length) throw new Error('กรุณาเลือกสินค้าอย่างน้อยหนึ่งรายการ');
   const sourceItems = JSON.parse(JSON.stringify(sourceRow.items || []));
   const destinationItems = JSON.parse(JSON.stringify(destinationRow.items || []));
@@ -4408,18 +4412,18 @@ function buildSlotMovePlan(sourceRow, destinationRow, selections, date, by) {
       throw new Error(`จำนวนย้ายของ ${item.code || item.name} ไม่ถูกต้องหรือเกินยอดคงเหลือ`);
     const whole = selection.whole || (available != null && Math.abs(quantity - available) <= 1e-8);
     if (whole) {
-      item.locationMoves = [...(item.locationMoves || []), { date, from, to, by: String(by).trim() }];
+      item.locationMoves = [...(item.locationMoves || []), { date, from, to, by: String(by).trim(), reference: String(reference).trim(), recordedAt: new Date().toISOString() }];
       destinationItems.push(item);
     } else {
       const ledger = getStockMovement(item);
       if (ledger.computed == null || ledger.mismatch)
         throw new Error(`ยอดประวัติของ ${item.code || item.name} ไม่ตรงยอดคงเหลือ กรุณาตรวจสอบก่อนแบ่งย้าย`);
       item.remainingQty = Number((available - quantity).toFixed(8));
-      item.transfersOut = [...(item.transfersOut || []), { date, qty: quantity, to, unit: item.unit || '', by: String(by).trim() }];
+      item.transfersOut = [...(item.transfersOut || []), { date, qty: quantity, to, unit: item.unit || '', by: String(by).trim(), reference: String(reference).trim(), recordedAt: new Date().toISOString() }];
       remaining.push(item);
       destinationItems.push({ code:item.code, name:item.name, lotNo:item.lotNo || '', receiveDate:item.receiveDate || '',
         unit:item.unit || '', note:item.note || '', qty:0, remainingQty:quantity, withdrawals:[], returns:[],
-        transfersIn:[{ date, qty:quantity, from, unit:item.unit || '', by:String(by).trim() }] });
+        transfersIn:[{ date, qty:quantity, from, unit:item.unit || '', by:String(by).trim(), reference:String(reference).trim(), recordedAt:new Date().toISOString() }] });
     }
     movedCount++;
   }
@@ -4475,6 +4479,7 @@ function filterStockReconciliation(rows,filter) {
 
 function stockReconciliationTables(rows,meta) {
   return [{name:'ข้อมูลเปรียบเทียบ',rows:[['รายการ','ค่า'],['ส่งออกเมื่อ',meta.exportedAt],['วันที่สต็อกที่อัปเดต',meta.stockDate],
+    ['เวลาบันทึกสต็อก (ISO)',meta.stockSavedAt],['เวลาแก้พาเลตล่าสุด (ISO)',meta.palletLastUpdated],['สถานะเวลาตัดยอด',meta.cutoffStatus],
     ['สถานะสต็อก',meta.stockStatus],['ขอบเขตสต็อกที่อัปเดต','ไม่นับคลัง 200, 800, 900 และ 300-S'],['ขอบเขตพาเลต','ทุกโซนและทุกตำแหน่ง'],
     ['หลักการจับคู่','รหัสสินค้า + หน่วยมาตรฐานเดียวกัน'],['ส่วนต่าง','สต็อกในพาเลต - สต็อกที่อัปเดต'],
     ['ข้อควรระวัง','คนละหน่วยจะเป็นคนละแถว ช่องว่างคือไม่ทราบค่า ไม่ใช่ศูนย์']]},
@@ -4484,11 +4489,26 @@ function stockReconciliationTables(rows,meta) {
 }
 
 let stockReconciliationRows=[];
+function reconciliationCutoff() {
+  const stockSavedAt = STOCK.snapshot_saved_at || '';
+  const savedTime = Date.parse(stockSavedAt);
+  const palletTimes = [...palletRemoteRows.values()].map(row => Date.parse(row.updated_at)).filter(Number.isFinite);
+  const palletLastUpdated = palletTimes.length ? new Date(Math.max(...palletTimes)).toISOString() : '';
+  let cutoffStatus = 'ยังยืนยันเวลาตัดยอดร่วมกันไม่ได้';
+  if (stockSnapshotState !== 'latest') cutoffStatus = 'สต็อกสำรอง · ยังเทียบเวลาไม่ได้';
+  else if (!Number.isFinite(savedTime)) cutoffStatus = 'ไม่มีเวลาบันทึกสต็อก · ยังเทียบเวลาไม่ได้';
+  else if (!palletTimes.length) cutoffStatus = 'ไม่มีเวลาแก้พาเลต · ยังเทียบเวลาไม่ได้';
+  else if (palletTimes.some(time => time > savedTime)) cutoffStatus = `พาเลตแก้หลังบันทึกสต็อก ${palletTimes.filter(time => time > savedTime).length} ตำแหน่ง · ยอดอาจมาจากคนละเวลา`;
+  return {stockSavedAt,palletLastUpdated,cutoffStatus};
+}
 function renderStockReconciliation() {
   const status=document.getElementById('stockReconcileStatus');
   if (!status) return;
   if (!palletDataReady) { status.textContent='กำลังรอข้อมูลพาเลต…'; return; }
   stockReconciliationRows=buildStockReconciliation(STOCK.items||[],[...palletRemoteRows.values()]);
+  const cutoff=reconciliationCutoff();
+  document.getElementById('stockReconcileCutoff').textContent=`วันที่รายงานสต็อก: ${String(STOCK.report_date||'ไม่ระบุ')} · เวลาบันทึกสต็อก: ${cutoff.stockSavedAt ? new Date(cutoff.stockSavedAt).toLocaleString('th-TH') : 'ไม่ระบุ'} · พาเลตแก้ล่าสุด: ${cutoff.palletLastUpdated ? new Date(cutoff.palletLastUpdated).toLocaleString('th-TH') : 'ไม่ระบุ'} · ${cutoff.cutoffStatus}`;
+  document.getElementById('stockReconcileCutoff').classList.add('snapshot-warning');
   const shown=filterStockReconciliation(stockReconciliationRows,document.getElementById('stockReconcileFilter').value);
   const counts={}; stockReconciliationRows.forEach(row=>counts[row.status]=(counts[row.status]||0)+1);
   status.textContent=`คำนวณแล้ว ${stockReconciliationRows.length.toLocaleString()} รหัส/หน่วย · แสดง ${shown.length.toLocaleString()} รายการ`;
@@ -4503,7 +4523,7 @@ document.getElementById('stockReconcileExport').addEventListener('click',()=>{
   try {
     if (!window.XLSX || !palletDataReady) throw new Error('ข้อมูลยังไม่พร้อม กรุณารอสักครู่');
     renderStockReconciliation();
-    const tables=stockReconciliationTables(stockReconciliationRows,{exportedAt:new Date().toISOString(),stockDate:STOCK.report_date||'',stockStatus:stockSnapshotState==='latest'?'โหลดจากระบบสำเร็จ':'ข้อมูลสำรอง/ยังไม่ยืนยันล่าสุด'});
+    const tables=stockReconciliationTables(stockReconciliationRows,{exportedAt:new Date().toISOString(),stockDate:STOCK.report_date||'',stockStatus:stockSnapshotState==='latest'?'โหลดจากระบบสำเร็จ':'ข้อมูลสำรอง/ยังไม่ยืนยันล่าสุด',...reconciliationCutoff()});
     const book=XLSX.utils.book_new();
     tables.forEach(table=>{const sheet=XLSX.utils.aoa_to_sheet(table.rows);sheet['!cols']=table.rows[0].map((_,i)=>({wch:i===1?48:22}));if(table.name==='ผลเปรียบเทียบ')sheet['!autofilter']={ref:sheet['!ref']};XLSX.utils.book_append_sheet(book,sheet,table.name);});
     XLSX.writeFile(book,`Stock-Reconcile-${new Date().toISOString().slice(0,10)}.xlsx`);
@@ -4518,14 +4538,14 @@ function prepareMovementEdit(item, type, index, values) {
   if (qty == null || qty < 0 || (type !== 'receive' && qty === 0)) throw new Error('กรุณาระบุจำนวนที่ถูกต้อง');
   const next = JSON.parse(JSON.stringify(item));
   const key = type === 'withdraw' ? 'withdrawals' : 'returns';
-  const original = type === 'receive' ? { date: item.receiveDate, qty: item.qty, lotNo: item.lotNo, by: item.receivedBy } : item[key]?.[index];
+  const original = type === 'receive' ? { date: item.receiveDate, qty: item.qty, lotNo: item.lotNo, by: item.receivedBy, reference: item.receiveReference } : item[key]?.[index];
   if (!original) throw new Error('ไม่พบรายการที่ต้องการแก้ไข');
   if (type !== 'receive' && movementNumber(item.qty) == null && qty !== movementNumber(original.qty)) {
     throw new Error('กรุณาระบุยอดรับเข้าก่อนแก้จำนวนเบิกหรือรับคืน');
   }
-  const updated = { date: values.date, qty, lotNo: String(values.lotNo || '').trim(), by: String(values.by || '').trim() };
+  const updated = { date: values.date, qty, lotNo: String(values.lotNo || '').trim(), by: String(values.by || '').trim(), reference: String(values.reference || '').trim() };
   if (type === 'receive') {
-    Object.assign(next, { receiveDate: updated.date, qty, lotNo: updated.lotNo, receivedBy: updated.by });
+    Object.assign(next, { receiveDate: updated.date, qty, lotNo: updated.lotNo, receivedBy: updated.by, receiveReference: updated.reference });
   } else Object.assign(next[key][index], updated);
   const ledger = getStockMovement(next);
   const withdrawn = (next.withdrawals || []).reduce((sum, row) => sum + (movementNumber(row.qty) || 0), 0);
@@ -4556,13 +4576,13 @@ function renderStockMovement(item, itemIndex) {
   return `<section class="stock-movement" aria-label="STOCK CARD ${escapeHtml(item.code)}">
     <div class="stock-movement-title">STOCK CARD</div>
     <div class="stock-movement-scroll" tabindex="0" role="region" aria-label="ตารางความเคลื่อนไหวสินค้า">
-      <table><thead><tr><th>วันที่</th><th>Lot / PK No.</th><th>รายการ</th><th class="num sm-in">รับเข้า</th><th class="num sm-out">จ่ายออก</th><th class="num sm-balance">คงเหลือ</th><th>ผู้ทำรายการ</th><th>จัดการ</th></tr></thead>
+      <table><thead><tr><th>วันที่</th><th>Lot / PK No.</th><th>รายการ</th><th class="num sm-in">รับเข้า</th><th class="num sm-out">จ่ายออก</th><th class="num sm-balance">คงเหลือ</th><th>ผู้ทำรายการ</th><th>เลขเอกสาร</th><th>บันทึกเมื่อ</th><th>จัดการ</th></tr></thead>
       <tbody>${ledger.rows.map(row => `<tr>
         <td class="sm-date">${formatMovementDate(row.date)}</td><td>${escapeHtml(row.lotNo || '—')}</td>
          <td class="sm-${row.type}">${escapeHtml(row.label)}</td>
          <td class="num sm-in">${row.type === 'withdraw' || row.type === 'transfer_out' || row.type === 'move' ? '—' : number(row.qty)}</td>
          <td class="num sm-out">${row.type === 'withdraw' || row.type === 'transfer_out' ? number(row.qty) : '—'}</td>
-         <td class="num sm-balance">${number(row.balance)}</td><td>${escapeHtml(row.by || '—')}</td>
+         <td class="num sm-balance">${number(row.balance)}</td><td>${escapeHtml(row.by || '—')}</td><td>${escapeHtml(row.reference || '—')}</td><td>${row.recordedAt ? escapeHtml(new Date(row.recordedAt).toLocaleString('th-TH')) : '—'}</td>
          <td>${['receive','withdraw','return'].includes(row.type) ? `<button type="button" class="sm-edit" data-item="${itemIndex}" data-type="${row.type}" data-index="${row.index}" aria-label="แก้ไข${row.label} ${formatMovementDate(row.date)}" ${busy ? 'disabled' : ''}>แก้ไข</button>` : '—'}</td>
       </tr>`).join('')}</tbody></table>
     </div>
@@ -4579,7 +4599,7 @@ function renderMovementEditForm(item, index) {
   if (!row) return '';
   const date = formatMovementDate(row.date);
   const iso = date === '—' ? '' : date.slice(6) + '-' + date.slice(3,5) + '-' + date.slice(0,2);
-  const draft = movementEdit.draft ||= { date: iso, qty: row.qty ?? '', lotNo: row.lotNo, by: row.by, reconcile: false };
+  const draft = movementEdit.draft ||= { date: iso, qty: row.qty ?? '', lotNo: row.lotNo, by: row.by, reference: row.reference || '', reconcile: false };
   const conflict = !movementMatchesSnapshot(item, movementEdit.snapshot);
   const error = conflict ? 'รายการถูกแก้ไขแล้ว กรุณายกเลิกและเปิดรายการใหม่' : movementEdit.error || '';
   return `<div class="sm-form"><div class="stock-movement-title">แก้ไข${row.label}</div>
@@ -4588,6 +4608,7 @@ function renderMovementEditForm(item, index) {
       <label>Lot / PK No.<input class="sm-input-lot" value="${escapeHtml(draft.lotNo)}"></label>
       <label>จำนวน (${escapeHtml(original.unit || 'ไม่ระบุหน่วย')}) *<input type="number" class="sm-input-qty" min="0" step="any" value="${escapeHtml(draft.qty)}" required></label>
       <label>ผู้ทำรายการ<input class="sm-input-by" value="${escapeHtml(draft.by)}"></label>
+      <label>เลขเอกสาร<input class="sm-input-reference" value="${escapeHtml(draft.reference)}" placeholder="เลขอ้างอิง"></label>
     </div>
     <div class="sm-note">บันทึกแล้วจะคำนวณยอดคงเหลือใหม่จากยอดรับ − ยอดเบิก + ยอดรับคืน</div>
     ${getStockMovement(original).mismatch ? `<label class="sm-warning"><input type="checkbox" class="sm-reconcile" ${draft.reconcile ? 'checked' : ''}> ยืนยันใช้ยอดตามประวัติแทนยอดคงเหลือเดิมที่ไม่ตรงกัน</label>` : ''}
@@ -4763,6 +4784,7 @@ function renderWithdrawForm(i, item, remaining) {
           </tr>
         </tbody>
       </table>
+      <label>เลขเอกสารเบิก * <input type="text" class="fw-reference" placeholder="เลขใบเบิก / เลขอ้างอิง" required></label>
       <div class="fw-hint">${hint}</div>
     </div>`;
 }
@@ -4782,6 +4804,7 @@ function renderReturnForm(i, item, returnable) {
           <td class="fw-actions"><button type="button" class="fr-save-btn" data-idx="${i}" disabled>ยืนยันรับคืน</button><button type="button" class="fr-cancel-btn" data-idx="${i}">ยกเลิก</button></td>
         </tr></tbody>
       </table>
+      <label>เลขเอกสารรับคืน * <input type="text" class="fr-reference" placeholder="เลขใบรับคืน / เลขอ้างอิง" required></label>
       <div class="fr-hint">รับคืนได้ไม่เกิน ${escapeHtml(String(returnable))}${item.unit ? ' ' + escapeHtml(item.unit) : ''}</div>
     </div>`;
 }
@@ -4793,11 +4816,12 @@ function returnFieldValidity(formEl, returnable) {
     qty: Number.isFinite(qty) && qty > 0 && qty <= returnable,
     unit: !!formEl.querySelector('.fr-unit').value.trim(),
     by: !!formEl.querySelector('.fr-by').value.trim(),
+    reference: !!formEl.querySelector('.fr-reference').value.trim(),
   };
 }
 function isReturnFormValid(formEl, returnable) {
   const v = returnFieldValidity(formEl, returnable);
-  return v.date && v.qty && v.unit && v.by;
+  return v.date && v.qty && v.unit && v.by && v.reference;
 }
 function updateReturnBtnState() {
   const formEl = fseItemsList.querySelector('.fse-return-form');
@@ -4805,10 +4829,10 @@ function updateReturnBtnState() {
   const item = slotItemsFor(editingSlot.zone, editingSlot.slot)[returnOpenIndex];
   if (!item) return;
   const v = returnFieldValidity(formEl, getReturnableQty(item));
-  [['.fr-date',v.date],['.fr-qty',v.qty],['.fr-unit',v.unit],['.fr-by',v.by]].forEach(([sel, ok]) => {
+  [['.fr-date',v.date],['.fr-qty',v.qty],['.fr-unit',v.unit],['.fr-by',v.by],['.fr-reference',v.reference]].forEach(([sel, ok]) => {
     const el = formEl.querySelector(sel); el.classList.toggle('fr-field-valid', ok); el.classList.toggle('fr-field-invalid', !ok);
   });
-  formEl.querySelector('.fr-save-btn').disabled = !(v.date && v.qty && v.unit && v.by);
+  formEl.querySelector('.fr-save-btn').disabled = !(v.date && v.qty && v.unit && v.by && v.reference);
 }
 
 // Per-field validity for the withdrawal mini-form, shared by isWithdrawFormValid() (whole-form
@@ -4829,11 +4853,12 @@ function withdrawFieldValidity(formEl, remaining) {
     qty: !isNaN(qty) && qty > 0 && withinBalance,
     unit: !!unit,
     by: !!by,
+    reference: !!formEl.querySelector('.fw-reference').value.trim(),
   };
 }
 function isWithdrawFormValid(formEl, remaining) {
   const v = withdrawFieldValidity(formEl, remaining);
-  return v.date && v.qty && v.unit && v.by;
+  return v.date && v.qty && v.unit && v.by && v.reference;
 }
 function updateWithdrawBtnState() {
   const formEl = fseItemsList.querySelector('.fse-withdraw-form');
@@ -4843,7 +4868,7 @@ function updateWithdrawBtnState() {
   if (!item) return;
   const remaining = getRemainingQty(item);
   const v = withdrawFieldValidity(formEl, remaining);
-  const fieldSelectors = { date: '.fw-date', qty: '.fw-qty', unit: '.fw-unit', by: '.fw-by' };
+  const fieldSelectors = { date: '.fw-date', qty: '.fw-qty', unit: '.fw-unit', by: '.fw-by', reference: '.fw-reference' };
   Object.keys(fieldSelectors).forEach((key) => {
     const el = formEl.querySelector(fieldSelectors[key]);
     if (!el) return;
@@ -4851,7 +4876,7 @@ function updateWithdrawBtnState() {
     el.classList.toggle('fw-field-invalid', !v[key]);
   });
   const saveBtn = formEl.querySelector('.fw-save-btn');
-  if (saveBtn) saveBtn.disabled = !(v.date && v.qty && v.unit && v.by);
+  if (saveBtn) saveBtn.disabled = !(v.date && v.qty && v.unit && v.by && v.reference);
 }
 
 // The "บันทึก" button (fseAddBtn) is only enabled once every field in the add-item form is
@@ -4864,8 +4889,9 @@ function isAddFormValid() {
   const receiveDate = fseAddReceiveDate.value;
   const qty = fseAddQty.value;
   const unit = fseAddUnit.value.trim();
+  const reference = document.getElementById('fseAddReference').value.trim();
   const qtyNum = parseFloat(qty);
-  return !!code && !!name && !!receiveDate && qty !== '' && !isNaN(qtyNum) && qtyNum > 0 && !!unit;
+  return !!code && !!name && !!receiveDate && !!reference && qty !== '' && !isNaN(qtyNum) && qtyNum > 0 && !!unit;
 }
 function updateAddBtnState() {
   fseAddCode.removeAttribute('aria-invalid');
@@ -5087,7 +5113,7 @@ function updateSlotMoveState(preserveError = false) {
     if (editingSlot.version !== moveSourceVersion || (palletVersions.get(moveDestinationKey()) || 0) !== moveDestinationVersion)
       throw new Error('ต้นทางหรือปลายทางมีข้อมูลใหม่ กรุณาปิดแล้วเปิดคำสั่งย้ายอีกครั้ง');
     buildSlotMovePlan(buildSlotRow(editingSlot.zone,editingSlot.slot),buildSlotRow(fseMoveZone.value,fseMoveSlot.value),
-      collectSlotMoveSelections(),fseMoveDate.value,fseMoveBy.value);
+      collectSlotMoveSelections(),fseMoveDate.value,fseMoveBy.value,document.getElementById('fseMoveReference').value);
     fseMoveConfirm.disabled = palletWriteBusy;
     if (preserveError !== true) { fseMoveStatus.textContent = ''; fseMoveStatus.className = ''; }
   } catch(error) {
@@ -5108,13 +5134,14 @@ fseMoveToggle.addEventListener('click', () => {
   const now = new Date();
   fseMoveDate.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
   fseMoveBy.value = '';
+  document.getElementById('fseMoveReference').value = '';
   renderSlotMoveItems();
   populateMoveDestinationSlots();
   fseMoveForm.scrollIntoView({ block:'nearest' });
 });
 fseMoveZone.addEventListener('change',populateMoveDestinationSlots);
 fseMoveSlot.addEventListener('change',() => { moveDestinationVersion = palletVersions.get(moveDestinationKey()) || 0; updateSlotMoveState(); });
-for (const control of [fseMoveDate,fseMoveBy]) control.addEventListener('input',updateSlotMoveState);
+for (const control of [fseMoveDate,fseMoveBy,document.getElementById('fseMoveReference')]) control.addEventListener('input',updateSlotMoveState);
 fseMoveItems.addEventListener('change',event => {
   if (event.target.matches('.fse-move-check')) {
     const input = fseMoveItems.querySelector(`.fse-move-qty[data-index="${event.target.dataset.index}"]`);
@@ -5139,7 +5166,7 @@ fseMoveConfirm.addEventListener('click', async () => {
   const destination = buildSlotRow(fseMoveZone.value,fseMoveSlot.value);
   let plan;
   try {
-    plan = buildSlotMovePlan(source,destination,collectSlotMoveSelections(),fseMoveDate.value,fseMoveBy.value);
+    plan = buildSlotMovePlan(source,destination,collectSlotMoveSelections(),fseMoveDate.value,fseMoveBy.value,document.getElementById('fseMoveReference').value);
     if (editingSlot.version !== moveSourceVersion || (palletVersions.get(moveDestinationKey()) || 0) !== moveDestinationVersion)
       throw new Error('ข้อมูลเปลี่ยนระหว่างเตรียมย้าย กรุณาเปิดคำสั่งย้ายอีกครั้ง');
     palletWriteBusy = true;
@@ -5174,8 +5201,9 @@ fseAddForm.addEventListener('submit', async (e) => {
   const receiveDate = fseAddReceiveDate.value;
   const qty = parseFloat(fseAddQty.value);
   const unit = fseAddUnit.value.trim();
-  if (!await runSlotMutation(editingSlot.zone, editingSlot.slot, () => addSlotItem(editingSlot.zone, editingSlot.slot, code, name, lotNo, receiveDate, qty, unit, ''))) return;
-  fseAddCode.value = ''; fseAddName.value = ''; fseAddLotNo.value = ''; fseAddReceiveDate.value = ''; fseAddQty.value = ''; fseAddUnit.value = '';
+  const reference = document.getElementById('fseAddReference').value.trim();
+  if (!await runSlotMutation(editingSlot.zone, editingSlot.slot, () => addSlotItem(editingSlot.zone, editingSlot.slot, code, name, lotNo, receiveDate, qty, unit, '', reference))) return;
+  fseAddCode.value = ''; fseAddName.value = ''; fseAddLotNo.value = ''; fseAddReceiveDate.value = ''; fseAddQty.value = ''; fseAddUnit.value = ''; document.getElementById('fseAddReference').value = '';
   hideAddProductSuggestions();
   fseAddName.dataset.autofilled = ''; fseAddName.classList.remove('is-autofilled');
   fseAddUnit.dataset.autofilled = ''; fseAddUnit.classList.remove('is-autofilled');
@@ -5184,7 +5212,7 @@ fseAddForm.addEventListener('submit', async (e) => {
   fseAddCode.focus();
 });
 
-[fseAddCode, fseAddName, fseAddLotNo, fseAddReceiveDate, fseAddQty, fseAddUnit].forEach(el => {
+[fseAddCode, fseAddName, fseAddLotNo, fseAddReceiveDate, fseAddQty, fseAddUnit, document.getElementById('fseAddReference')].forEach(el => {
   el.addEventListener('input', updateAddBtnState);
   el.addEventListener('change', updateAddBtnState);
 });
@@ -5217,6 +5245,7 @@ function captureMovementDraft(e) {
     qty: form.querySelector('.sm-input-qty').value,
     lotNo: form.querySelector('.sm-input-lot').value,
     by: form.querySelector('.sm-input-by').value,
+    reference: form.querySelector('.sm-input-reference').value,
     reconcile: !!form.querySelector('.sm-reconcile')?.checked,
   };
 }
@@ -5257,6 +5286,7 @@ fseItemsList.addEventListener('click', async (e) => {
         qty: form.querySelector('.sm-input-qty').value,
         lotNo: form.querySelector('.sm-input-lot').value,
         by: form.querySelector('.sm-input-by').value,
+        reference: form.querySelector('.sm-input-reference').value,
       });
       movementSaving = true;
       slotEditPanel.inert = true;
@@ -5400,6 +5430,7 @@ fseItemsList.addEventListener('click', async (e) => {
       qty: parseFloat(formEl.querySelector('.fr-qty').value),
       unit: formEl.querySelector('.fr-unit').value.trim(),
       by: formEl.querySelector('.fr-by').value.trim(),
+      reference: formEl.querySelector('.fr-reference').value.trim(),
     }))) return;
     returnOpenIndex = null;
     syncAfterSlotEdit();
@@ -5432,7 +5463,8 @@ fseItemsList.addEventListener('click', async (e) => {
     const qty = parseFloat(formEl.querySelector('.fw-qty').value);
     const unit = formEl.querySelector('.fw-unit').value.trim();
     const by = formEl.querySelector('.fw-by').value.trim();
-    if (!await runSlotMutation(editingSlot.zone, editingSlot.slot, () => withdrawSlotItem(editingSlot.zone, editingSlot.slot, idx, { date, qty, unit, by }))) return;
+    const reference = formEl.querySelector('.fw-reference').value.trim();
+    if (!await runSlotMutation(editingSlot.zone, editingSlot.slot, () => withdrawSlotItem(editingSlot.zone, editingSlot.slot, idx, { date, qty, unit, by, reference }))) return;
     withdrawOpenIndex = null;
   returnOpenIndex = null;
     syncAfterSlotEdit();
@@ -5567,7 +5599,7 @@ function buildPalletExcelTables(rows, dates, geometry, buildings, meta) {
   };
   const positions=[['อาคาร','โซน','ตำแหน่งพาเลต','สถานะตำแหน่ง','จำนวนรายการสินค้า','เวอร์ชัน','แก้ไขล่าสุด (ISO)','ข้อสังเกต']];
   const items=[['อาคาร','โซน','ตำแหน่งพาเลต','ลำดับในพาเลต','รหัสสินค้า','ชื่อสินค้า','Lot / PK No.','วันที่รับ','แหล่งวันที่รับ','จำนวนรับ','คงเหลือที่บันทึก','หน่วย','สถานะข้อมูล','หมายเหตุ','เวอร์ชันพาเลต']];
-  const movements=[['อาคาร','โซน','ตำแหน่งพาเลต','ลำดับในพาเลต','รหัสสินค้า','ชื่อสินค้า','Lot / PK No.','วันที่','รายการ','รับเข้า','เบิกออก','รับคืน','คงเหลือคำนวณ','หน่วย','ผู้ทำรายการ','ข้อสังเกต']];
+  const movements=[['อาคาร','โซน','ตำแหน่งพาเลต','ลำดับในพาเลต','รหัสสินค้า','ชื่อสินค้า','Lot / PK No.','วันที่','รายการ','รับเข้า','เบิกออก','รับคืน','คงเหลือคำนวณ','หน่วย','ผู้ทำรายการ','เลขเอกสาร','บันทึกเมื่อ (ISO)','ข้อสังเกต']];
   for (const row of [...slots.values()].sort((a,b)=>a.zone.localeCompare(b.zone)||a.slot_code.localeCompare(b.slot_code,undefined,{numeric:true}))) {
     const list=Array.isArray(row.items)?row.items:[];
     const base=[buildingFor(row.zone),row.zone,row.slot_code];
@@ -5581,6 +5613,7 @@ function buildPalletExcelTables(rows, dates, geometry, buildings, meta) {
         movementNumber(item.qty),quantity,String(item.unit||''),issues||'ข้อมูลครบ',String(item.note||''),row.version??null]);
       ledger.rows.forEach(m=>movements.push([...base,index+1,String(item.code||''),String(item.name||''),String(m.lotNo||''),dateCell(m.date),m.label,
         ['receive','transfer_in'].includes(m.type)?m.qty:null,['withdraw','transfer_out'].includes(m.type)?m.qty:null,m.type==='return'?m.qty:null,m.balance,String(m.unit||''),String(m.by||''),
+        String(m.reference||''),String(m.recordedAt||''),
         [!movementDateKey(m.date)?'วันที่ไม่ครบ: '+String(m.date||'ไม่ระบุ'):'',m.qty==null?'ไม่ทราบจำนวน':'',issues].filter(Boolean).join(' · ')]));
     });
   }
@@ -6071,6 +6104,7 @@ stockExcelInput.addEventListener('change', async () => {
     if (!updated || !updated.items) throw new Error('ไม่ได้รับผลคำนวณจากระบบ กรุณาลองใหม่');
     stockSnapshotState = 'latest';
     STOCK = updated; DATA.stock = updated; rebuildStockControls(); renderStockSnapshotNotice();
+    await loadLatestStockFromSupabase();
     stockUpdateStatus.textContent = `อัปเดตสำเร็จ ${fmt0(updated.kpis.total_rows)} รายการ · ${updated.report_date}`;
     stockUpdateStatus.className = 'stock-update-status success';
   } catch (err) {

@@ -41,7 +41,7 @@ assert.match(ctx.floorplanSearchDatalist.innerHTML,/&quot;&gt;|&quot;>/);
 console.log('PASS: JSONB key ordering, genuine conflicts, draft retention, visible errors, numeric validation and HTML escaping');
 let renders = 0;
 Object.assign(ctx,{rebuildItemToSlots(){},refreshSearchDatalist(){},renderOverviewSlotStatus(){},
-  currentZoomZone:null,renderSlotEdit(){renders++},document:{querySelector(){return null}}});
+  currentZoomZone:null,renderSlotEdit(){renders++},document:{querySelector(){return null}},window:{}});
 vm.runInContext(extract('refreshAfterRemoteChange'),ctx);
 ctx.refreshAfterRemoteChange();
 assert.equal(renders,1,'Initial full sync must refresh an already-open slot panel');

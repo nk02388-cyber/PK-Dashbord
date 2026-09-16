@@ -4,14 +4,15 @@
   function collectDailyMovements(source, selectedDate, kind, toDateKey, toNumber) {
     const rows = [];
     const selectedKey = String(selectedDate || '').replace(/-/g,'');
-    const add = (item, zone, slot, type, movement, fallbackDate, fallbackLot, fallbackUnit, fallbackBy) => {
+    const add = (item, zone, slot, type, movement, fallbackDate, fallbackLot, fallbackUnit, fallbackBy, fallbackReference, fallbackRecordedAt) => {
       const date = movement?.date || fallbackDate || '';
       if (toDateKey(date) !== selectedKey) return;
       const qty = toNumber(movement?.qty ?? item.qty);
       if (qty == null || qty <= 0) return;
       rows.push({date:selectedDate, zone, slot, code:String(item.code || ''), name:String(item.name || ''),
         lotNo:String(movement?.lotNo ?? fallbackLot ?? ''), type, qty,
-        unit:String(movement?.unit || fallbackUnit || ''), by:String(movement?.by || fallbackBy || '')});
+        unit:String(movement?.unit || fallbackUnit || ''), by:String(movement?.by || fallbackBy || ''),
+        reference:String(movement?.reference || fallbackReference || ''), recordedAt:String(movement?.recordedAt || fallbackRecordedAt || '')});
     };
     for (const [zone, slots] of Object.entries(source || {})) {
       for (const [slot, items] of Object.entries(slots || {})) {
@@ -19,7 +20,7 @@
           if (kind === 'receive') {
             // A stock-card receipt follows an item after a whole-pallet move. Transfer rows
             // are internal movements and must not create a second daily receipt.
-            add(item, zone, slot, 'รับเข้า', null, item.receiveDate, item.lotNo, item.unit, item.receivedBy);
+            add(item, zone, slot, 'รับเข้า', null, item.receiveDate, item.lotNo, item.unit, item.receivedBy, item.receiveReference, item.receivedAt);
             for (const movement of item.returns || [])
               add(item, zone, slot, 'รับคืน', movement, '', item.lotNo, item.unit, '');
           } else if (kind === 'issue') {
@@ -66,7 +67,7 @@
     const summary = summarizeDailyMovements(allRows);
     const query = normalizeSearchText(panel.querySelector('.daily-query').value);
     const visible = query ? allRows.filter(row =>
-      [row.code,row.name,row.lotNo,row.zone,row.slot,row.by].some(value => normalizeSearchText(value).includes(query))) : allRows;
+      [row.code,row.name,row.lotNo,row.zone,row.slot,row.by,row.reference].some(value => normalizeSearchText(value).includes(query))) : allRows;
     panel.querySelector('.daily-status').textContent = `${palletDataReady ? 'ข้อมูลพาเลตล่าสุดจากระบบ' : 'กำลังโหลดข้อมูลพาเลต · ผลชั่วคราว'} · ${formatMovementDate(selectedDate)} · ${allRows.length} รายการ${query ? ` · แสดง ${visible.length} รายการ` : ''}`;
     panel.querySelector('.daily-kpis').innerHTML = [
       ['รายการ',summary.transactions],['รหัสสินค้า',summary.codes],['ตำแหน่งพาเลต',summary.slots],['โซน',summary.zones]
@@ -80,8 +81,8 @@
       ? summary.units.map(([unit,qty]) => `<span>${number(qty)} ${escape(unit)}</span>`).join('')
       : '<span>ไม่มียอดในวันที่เลือก</span>';
     panel.querySelector('.daily-result').innerHTML = visible.length ? `<div class="daily-table-wrap"><table class="daily-table">
-      <thead><tr><th>ประเภท</th><th>โซน / พาเลต</th><th>รหัสสินค้า</th><th>ชื่อสินค้า</th><th>Lot / PK No.</th><th class="num">จำนวน</th><th>หน่วย</th><th>ผู้ทำรายการ</th></tr></thead>
-      <tbody>${visible.map(row => `<tr><td>${escape(row.type)}</td><td>${escape(row.zone)} / ${escape(row.slot)}</td><td>${escape(row.code)}</td><td>${escape(row.name)}</td><td>${escape(row.lotNo || '—')}</td><td class="num">${number(row.qty)}</td><td>${escape(row.unit || '—')}</td><td>${escape(row.by || '—')}</td></tr>`).join('')}</tbody></table></div>`
+      <thead><tr><th>ประเภท</th><th>โซน / พาเลต</th><th>รหัสสินค้า</th><th>ชื่อสินค้า</th><th>Lot / PK No.</th><th class="num">จำนวน</th><th>หน่วย</th><th>ผู้ทำรายการ</th><th>เลขเอกสาร</th><th>บันทึกเมื่อ</th></tr></thead>
+      <tbody>${visible.map(row => `<tr><td>${escape(row.type)}</td><td>${escape(row.zone)} / ${escape(row.slot)}</td><td>${escape(row.code)}</td><td>${escape(row.name)}</td><td>${escape(row.lotNo || '—')}</td><td class="num">${number(row.qty)}</td><td>${escape(row.unit || '—')}</td><td>${escape(row.by || '—')}</td><td>${escape(row.reference || '—')}</td><td>${row.recordedAt ? escape(new Date(row.recordedAt).toLocaleString('th-TH')) : '—'}</td></tr>`).join('')}</tbody></table></div>`
       : `<div class="daily-empty">${query ? 'ไม่พบรายการที่ตรงกับคำค้นในวันที่เลือก' : 'ไม่มีรายการในวันที่เลือก'}</div>`;
     const badge = document.getElementById(kind === 'receive' ? 'tabBadgeDailyReceive' : 'tabBadgeDailyIssue');
     badge.textContent = selectedDate === localToday() ? `${summary.transactions} วันนี้` : `${summary.transactions} รายการ`;

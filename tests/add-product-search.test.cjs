@@ -36,9 +36,13 @@ assert.equal(ctx.getAddProductSuggestions('ฉลากใหม่')[0].code,'1
 assert.equal(ctx.getAddProductSuggestions('ขวดใหม่')[0].code,'21-0001-10');
 assert.equal(ctx.getAddProductSuggestions('ฉลากเดิมที่ตัด').length,0,'Pallet-only products are absent');
 assert.equal(ctx.getAddProductSuggestions('สินค้าเดิมที่ตัด').length,0,'Pallet-only products are absent');
-Object.assign(ctx,{fseAddCode:{value:'314-4-2000-55'},fseAddName:{value:'ฝาปั๊ม'},fseAddReceiveDate:{value:'2026-09-15'},fseAddQty:{value:'10'},fseAddUnit:{value:'ชิ้น'}});
+Object.assign(ctx,{fseAddCode:{value:'314-4-2000-55'},fseAddName:{value:'ฝาปั๊ม'},fseAddReceiveDate:{value:'2026-09-15'},fseAddQty:{value:'10'},fseAddUnit:{value:'ชิ้น'},
+  document:{getElementById(){return {value:'REC-001'}}}});
 vm.runInContext(extract('isAddFormValid'),ctx);
 assert.equal(ctx.isAddFormValid(),true);
+ctx.document.getElementById=()=>({value:''});
+assert.equal(ctx.isAddFormValid(),false,'New receipts require a document reference');
+ctx.document.getElementById=()=>({value:'REC-001'});
 for (const code of ['11-0001-10','21-0001-10','51-0001-25']) { ctx.fseAddCode.value=code; assert.equal(ctx.isAddFormValid(),true,'All stock-code prefixes are accepted'); }
 assert.equal(JSON.stringify({stock,slots}),before,'Suggestions never alter source records');
 assert.match(html,/id="fseAddCode"[^>]*role="combobox"[^>]*aria-controls="fseAddSuggestions"/);
