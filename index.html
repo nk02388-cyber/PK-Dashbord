@@ -4831,27 +4831,30 @@ function getAddProductSuggestions(query) {
   const q = normalizeSearchText(query);
   if (!q) return [];
   const catalog = new Map();
-  const add = (item, source) => {
+  const add = item => {
     const code = String(item.code || '').trim(), key = normalizeSearchText(code);
     if (!key || isExcludedAddProductCode(code)) return;
     const name = String(item.name || '').trim(), unit = String(item.unit || '').trim();
+    const searchName = String(item.search_name || item.searchName || item.name_search || '').trim();
     const previous = catalog.get(key);
-    if (!previous) catalog.set(key, {code, name, unit, source});
-    else { if (!previous.name && name) previous.name = name; if (!previous.unit && unit) previous.unit = unit; }
+    if (!previous) catalog.set(key, {code, name, searchName, unit, source:'สต็อก'});
+    else { if (!previous.name && name) previous.name = name; if (!previous.searchName && searchName) previous.searchName = searchName; if (!previous.unit && unit) previous.unit = unit; }
   };
-  (STOCK.items || []).forEach(item => add(item, 'สต็อก'));
-  for (const zone of Object.keys(SLOT_ITEMS)) for (const slot of Object.keys(SLOT_ITEMS[zone] || {}))
-    (SLOT_ITEMS[zone][slot] || []).forEach(item => add(item, 'พาเลต'));
+  (STOCK.items || []).forEach(add);
   return [...catalog.values()].map(item => {
-    const code = normalizeSearchText(item.code), name = normalizeSearchText(item.name);
+    const code = normalizeSearchText(item.code), name = normalizeSearchText(item.name), searchName = normalizeSearchText(item.searchName);
     let rank = Number.POSITIVE_INFINITY;
     if (code === q) rank = 0;
     else if (name === q) rank = 1;
+    else if (searchName === q) rank = 1;
     else if (code.startsWith(q)) rank = 2;
     else if (name.startsWith(q)) rank = 3;
+    else if (searchName.startsWith(q)) rank = 3;
     else if (name.split(' ').some(word => word.startsWith(q))) rank = 4;
+    else if (searchName.split(' ').some(word => word.startsWith(q))) rank = 4;
     else if (code.includes(q)) rank = 5;
     else if (name.includes(q)) rank = 6;
+    else if (searchName.includes(q)) rank = 6;
     return {...item, rank};
   }).filter(item => Number.isFinite(item.rank)).sort((a,b) =>
     a.rank - b.rank || a.code.localeCompare(b.code, 'th', {numeric:true, sensitivity:'base'}));
@@ -4878,17 +4881,17 @@ function setActiveAddSuggestion(index) {
 }
 function renderAddProductSuggestions(query) {
   const raw = String(query || '').trim();
-  if (!raw || isExcludedAddProductCode(raw)) { hideAddProductSuggestions(); return; }
+  if (!raw) { hideAddProductSuggestions(); return; }
   const results = getAddProductSuggestions(raw);
   addSuggestionItems = results.slice(0,8); activeAddSuggestion = -1;
   fseAddSuggestions.innerHTML = results.length ? addSuggestionItems.map((item,i) => `
     <button type="button" class="fse-add-suggestion" id="fseAddOption${i}" role="option" data-index="${i}" aria-selected="false">
       <span class="fs-code">${highlightSearchMatch(item.code,raw)}</span>
       <span class="fs-name">${highlightSearchMatch(item.name || 'ไม่ระบุชื่อสินค้า',raw)}</span>
-      <span class="fs-count">${escapeHtml(item.source)}${item.unit ? ' · ' + escapeHtml(item.unit) : ''}</span>
+      <span class="fs-count">${escapeHtml(item.source)}${item.unit ? ' · ' + escapeHtml(item.unit) : ''}${item.searchName && item.searchName !== item.name ? ' · ชื่อค้นหา: ' + highlightSearchMatch(item.searchName,raw) : ''}</span>
     </button>`).join('') + (results.length > addSuggestionItems.length
       ? `<div class="floorplan-search-more">อีก ${results.length - addSuggestionItems.length} รายการ · พิมพ์เพิ่มเพื่อจำกัดผลลัพธ์</div>` : '')
-    : '<div class="floorplan-search-empty">ไม่พบในข้อมูลเดิม · กรอกรหัสและชื่อสินค้าใหม่ได้</div>';
+    : '<div class="floorplan-search-empty">ไม่พบในสต็อกที่อัปเดต · กรอกรหัสและชื่อสินค้าใหม่ได้</div>';
   fseAddSuggestions.hidden = false;
   fseAddCode.setAttribute('aria-expanded','true');
 }
@@ -5953,6 +5956,7 @@ function rebuildStockControls() {
   // embedded Stock render before the BOM UI is initialized, while every later Supabase load or
   // manual update recalculates BOM immediately.
   if (window.__bomUiReady) recalculateBomFromStock();
+  if (fseAddCode.value.trim() && editingSlot) renderAddProductSuggestions(fseAddCode.value);
 }
 
 let stockSnapshotState = 'loading';

@@ -7,7 +7,7 @@ const extract = name => html.match(new RegExp(`function ${name}\\([^]*?\\n\\}`))
 const stock = [
   {code:'314-4-2000-55',name:'ฝาปั๊ม PP สีขาว',unit:'ฝา',wh:'202'},
   {code:'314-4-2000-55',name:'ฝาปั๊ม PP สีขาว',unit:'ฝา',wh:'800'},
-  {code:'PK-NEW',name:'ขวดพิเศษ',unit:'ขวด',wh:'201'},
+  {code:'PK-NEW',name:'ขวดพิเศษ',search_name:'บรรจุภัณฑ์เฉพาะ',unit:'ขวด',wh:'201'},
   {code:'11-0001-10',name:'ฉลากต้องตัดออก',unit:'ใบ',wh:'202'},
   {code:'21-0001-10',name:'ขวดต้องตัดออก',unit:'ขวด',wh:'202'},
   {code:'51-0001-25',name:'ซองต้องตัดออก',unit:'ซอง',wh:'202'},
@@ -22,8 +22,11 @@ vm.runInContext(['normalizeSearchText','isExcludedAddProductCode','getAddProduct
 assert.equal(ctx.getAddProductSuggestions('314-4')[0].code,'314-4-2000-55');
 assert.equal(ctx.getAddProductSuggestions('314-4').length,1,'Multiple warehouses and pallet copies share one suggestion');
 assert.equal(ctx.getAddProductSuggestions('ฝาปั๊ม')[0].unit,'ฝา');
-assert.equal(ctx.getAddProductSuggestions('ขวดพิเศษ')[0].code,'PK-NEW','Suggest stock catalog items absent from pallets');
-assert.equal(ctx.getAddProductSuggestions('กล่องพิเศษ')[0].code,'ONLY-PALLET','Suggest pallet items with no active balance');
+assert.equal(ctx.getAddProductSuggestions('2000')[0].code,'314-4-2000-55','Match a code fragment beginning with an excluded digit');
+assert.equal(ctx.getAddProductSuggestions('สีขาว')[0].code,'314-4-2000-55','Match any product-name fragment');
+assert.equal(ctx.getAddProductSuggestions('ขวดพิเศษ')[0].code,'PK-NEW','Suggest updated stock catalog items absent from pallets');
+assert.equal(ctx.getAddProductSuggestions('เฉพาะ')[0].code,'PK-NEW','Match an optional stock search name');
+assert.equal(ctx.getAddProductSuggestions('กล่องพิเศษ').length,0,'Do not suggest old pallet-only codes');
 assert.equal(ctx.getAddProductSuggestions('ขวดพิเศษ')[0].source,'สต็อก');
 assert.equal(ctx.getAddProductSuggestions('ไม่พบ').length,0);
 assert.equal(ctx.getAddProductSuggestions('11').length,0);
@@ -31,8 +34,8 @@ assert.equal(ctx.getAddProductSuggestions('21').length,0);
 assert.equal(ctx.getAddProductSuggestions('51').length,0);
 assert.equal(ctx.getAddProductSuggestions('ฉลากต้องตัดออก').length,0,'Name searches also omit code 1');
 assert.equal(ctx.getAddProductSuggestions('ขวดต้องตัดออก').length,0,'Name searches also omit excluded codes');
-assert.equal(ctx.getAddProductSuggestions('ฉลากเดิมที่ตัด').length,0,'Pallet catalog also excludes code 1');
-assert.equal(ctx.getAddProductSuggestions('สินค้าเดิมที่ตัด').length,0,'Pallet catalog also excludes code 2');
+assert.equal(ctx.getAddProductSuggestions('ฉลากเดิมที่ตัด').length,0,'Pallet-only products are absent');
+assert.equal(ctx.getAddProductSuggestions('สินค้าเดิมที่ตัด').length,0,'Pallet-only products are absent');
 assert.equal(ctx.isExcludedAddProductCode(' 51-0001-25'),true);
 assert.equal(ctx.isExcludedAddProductCode('314-4-2000-55'),false);
 Object.assign(ctx,{fseAddCode:{value:'314-4-2000-55'},fseAddName:{value:'ฝาปั๊ม'},fseAddReceiveDate:{value:'2026-09-15'},fseAddQty:{value:'10'},fseAddUnit:{value:'ชิ้น'}});
@@ -43,6 +46,7 @@ assert.equal(JSON.stringify({stock,slots}),before,'Suggestions never alter sourc
 assert.match(html,/id="fseAddCode"[^>]*role="combobox"[^>]*aria-controls="fseAddSuggestions"/);
 assert.match(html,/fseAddCode\.addEventListener\('keydown'/);
 assert.match(html,/selectAddProductSuggestion\(addSuggestionItems\[Number\(option\.dataset\.index\)\]\)/);
+assert.doesNotMatch(html,/if \(!raw \|\| isExcludedAddProductCode\(raw\)\)/,'Search fragments must not be blocked by their first digit');
 assert.doesNotMatch(html,/id="fseAddCodeHelp"/,'Excluded-code note stays hidden from the form');
 assert.doesNotMatch(html,/id="fseAddNote"/,'Add-item note field is no longer displayed');
-console.log('PASS: add-product suggestions omit 1/2/5 codes in stock and pallet catalogs; manual add blocks them');
+console.log('PASS: updated-stock suggestions match partial code, product name and search name; excluded codes remain blocked');
