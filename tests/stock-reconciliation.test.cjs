@@ -21,9 +21,14 @@ assert.equal(by('D',pcs).status,'ไม่มีในพาเลต');assert.e
 assert.equal(ctx.filterStockReconciliation(rows,'different').length,rows.length);
 assert.equal(ctx.filterStockReconciliation(rows,'mismatch').length,1);
 assert.equal(ctx.filterStockReconciliation(rows,'missing_pallet').length,2);
+assert.deepEqual(Array.from(ctx.filterStockReconciliation(rows,'all','updated')).map(r=>r.code),['A']);
+assert.deepEqual(Array.from(ctx.filterStockReconciliation(rows,'all','F-01 updated')).map(r=>r.code),['A']);
+assert.deepEqual(Array.from(ctx.filterStockReconciliation(rows,'mismatch','202')).map(r=>r.code),['A']);
+assert.equal(ctx.filterStockReconciliation(rows,'mismatch','ไม่พบ').length,0);
 const tables=ctx.stockReconciliationTables(rows,{exportedAt:'now',stockDate:'date',stockStatus:'latest'});
 assert.equal(tables.length,2);assert.equal(tables[1].rows.length,rows.length+1);assert.match(tables[0].rows.find(r=>r[0]==='ส่วนต่าง')[1],/พาเลต/);
 assert.match(tables[0].rows.find(r=>r[0]==='ขอบเขตสต็อกที่อัปเดต')[1],/200, 800, 900 และ 300-S/);
 assert.match(html,/สต็อกที่อัปเดตไม่นับคลัง 200, 800, 900 และ 300-S/);
+assert.match(html,/id="stockReconcileSearch"[^>]*type="search"|type="search"[^>]*id="stockReconcileSearch"/);
 assert.equal(stock[0].qty,10);assert.equal(pallets[0].items[0].remainingQty,12);
 console.log('PASS: stock/pallet reconciliation excludes 200, 800, 900 and 300-S; grain, aliases, statuses, filters and export');

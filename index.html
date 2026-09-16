@@ -2288,6 +2288,7 @@
       <div class="stock-snapshot-notice" role="status"></div>
       <p class="panel-sub">รวมยอดตามรหัสสินค้าและหน่วยเดียวกัน · สต็อกพาเลตใช้ยอดคงเหลือจาก STOCK CARD ทุกตำแหน่ง · สต็อกที่อัปเดตไม่นับคลัง 200, 800, 900 และ 300-S</p>
       <div class="bom-plan-form">
+        <label for="stockReconcileSearch">ค้นหารายการ<input type="search" id="stockReconcileSearch" placeholder="ค้นหารหัส ชื่อสินค้า หน่วย พาเลต หรือคลัง" autocomplete="off"></label>
         <label for="stockReconcileFilter">แสดงรายการ<select id="stockReconcileFilter">
           <option value="mismatch">เฉพาะยอดไม่ตรง</option><option value="different">รายการต้องดำเนินการทั้งหมด</option><option value="all">ทั้งหมด</option>
           <option value="missing_pallet">ไม่มีในพาเลต</option><option value="missing_stock">ไม่มีในสต็อกที่อัปเดต</option><option value="unknown">ต้องตรวจสอบ</option>
@@ -4507,12 +4508,18 @@ function buildStockReconciliation(stockItems, palletRows) {
   }).sort((a,b)=>a.code.localeCompare(b.code)||a.unit.localeCompare(b.unit));
 }
 
-function filterStockReconciliation(rows,filter) {
-  if (filter==='all') return rows;
-  if (filter==='mismatch') return rows.filter(row=>row.status==='ยอดไม่ตรง');
-  if (filter==='different') return rows.filter(row=>row.status!=='ตรงกัน');
+function filterStockReconciliation(rows,filter,query='') {
+  let filtered=rows;
+  if (filter==='mismatch') filtered=rows.filter(row=>row.status==='ยอดไม่ตรง');
+  else if (filter==='different') filtered=rows.filter(row=>row.status!=='ตรงกัน');
   const labels={missing_pallet:'ไม่มีในพาเลต',missing_stock:'ไม่มีในสต็อกที่อัปเดต',unknown:'ต้องตรวจสอบ'};
-  return rows.filter(row=>row.status===labels[filter]);
+  if (labels[filter]) filtered=rows.filter(row=>row.status===labels[filter]);
+  const tokens=String(query||'').normalize('NFKC').toLocaleLowerCase('th').trim().split(/\s+/).filter(Boolean);
+  if (!tokens.length) return filtered;
+  return filtered.filter(row=>{
+    const text=[row.code,row.name,row.unit,row.status,...(row.slots||[]),...(row.warehouses||[])].join(' ').normalize('NFKC').toLocaleLowerCase('th');
+    return tokens.every(token=>text.includes(token));
+  });
 }
 
 function stockReconciliationTables(rows,meta) {
@@ -4547,25 +4554,29 @@ function renderStockReconciliation() {
   const cutoff=reconciliationCutoff();
   document.getElementById('stockReconcileCutoff').textContent=`วันที่รายงานสต็อก: ${String(STOCK.report_date||'ไม่ระบุ')} · เวลาบันทึกสต็อก: ${cutoff.stockSavedAt ? new Date(cutoff.stockSavedAt).toLocaleString('th-TH') : 'ไม่ระบุ'} · พาเลตแก้ล่าสุด: ${cutoff.palletLastUpdated ? new Date(cutoff.palletLastUpdated).toLocaleString('th-TH') : 'ไม่ระบุ'} · ${cutoff.cutoffStatus}`;
   document.getElementById('stockReconcileCutoff').classList.add('snapshot-warning');
-  const shown=filterStockReconciliation(stockReconciliationRows,document.getElementById('stockReconcileFilter').value);
+  const search=document.getElementById('stockReconcileSearch').value;
+  const shown=filterStockReconciliation(stockReconciliationRows,document.getElementById('stockReconcileFilter').value,search);
   const counts={}; stockReconciliationRows.forEach(row=>counts[row.status]=(counts[row.status]||0)+1);
-  status.textContent=`คำนวณแล้ว ${stockReconciliationRows.length.toLocaleString()} รหัส/หน่วย · แสดง ${shown.length.toLocaleString()} รายการ`;
+  status.textContent=`คำนวณแล้ว ${stockReconciliationRows.length.toLocaleString()} รหัส/หน่วย · แสดง ${shown.length.toLocaleString()} รายการ${search.trim()?` · ค้นหา “${search.trim()}”`:''}`;
   document.getElementById('stockReconcileSummary').innerHTML=`<div class="fg-bom-head"><b>ยอดตรงกัน ${counts['ตรงกัน']||0}</b><span>ยอดไม่ตรง ${counts['ยอดไม่ตรง']||0} · ไม่มีในพาเลต ${counts['ไม่มีในพาเลต']||0} · ไม่มีในสต็อกที่อัปเดต ${counts['ไม่มีในสต็อกที่อัปเดต']||0} · ต้องตรวจสอบ ${counts['ต้องตรวจสอบ']||0}</span></div>`;
   const amount=value=>value==null?'ไม่ทราบ':escapeHtml(formatBomQuantity(value));
   document.getElementById('stockReconcileResult').innerHTML=!shown.length?'<p>ไม่มีรายการที่ตรงกับตัวกรอง</p>':`<div class="table-scroll" tabindex="0" role="region" aria-label="ผลเปรียบเทียบสต็อก"><table><thead><tr><th>รหัส / ชื่อสินค้า</th><th>หน่วย</th><th class="num">ในพาเลต</th><th class="num">สต็อกที่อัปเดต</th><th class="num">ส่วนต่าง</th><th>สถานะ</th><th>ตำแหน่ง / คลัง</th></tr></thead><tbody>${shown.map(row=>`<tr><td>${escapeHtml(row.code)}<span class="code" style="display:block;white-space:normal">${escapeHtml(row.name)}</span></td><td>${escapeHtml(row.unit||'ไม่ระบุ')}</td><td class="num">${amount(row.pallet)}</td><td class="num">${amount(row.stock)}</td><td class="num">${amount(row.difference)}</td><td><span class="badge ${row.status==='ตรงกัน'?'good':row.status==='ยอดไม่ตรง'?'critical':'warn'}">${escapeHtml(row.status)}</span></td><td><span class="code" style="white-space:normal">พาเลต: ${escapeHtml(row.slots.join(', ')||'—')}<br>คลัง: ${escapeHtml(row.warehouses.join(', ')||'—')}</span></td></tr>`).join('')}</tbody></table></div>`;
 }
 
 document.getElementById('stockReconcileFilter').addEventListener('change',renderStockReconciliation);
+document.getElementById('stockReconcileSearch').addEventListener('input',renderStockReconciliation);
 document.getElementById('stockReconcileRefresh').addEventListener('click',renderStockReconciliation);
 document.getElementById('stockReconcileExport').addEventListener('click',()=>{
   try {
     if (!window.XLSX || !palletDataReady) throw new Error('ข้อมูลยังไม่พร้อม กรุณารอสักครู่');
     renderStockReconciliation();
-    const tables=stockReconciliationTables(stockReconciliationRows,{exportedAt:new Date().toISOString(),stockDate:STOCK.report_date||'',stockStatus:stockSnapshotState==='latest'?'โหลดจากระบบสำเร็จ':'ข้อมูลสำรอง/ยังไม่ยืนยันล่าสุด',...reconciliationCutoff()});
+    const search=document.getElementById('stockReconcileSearch').value;
+    const exportedRows=filterStockReconciliation(stockReconciliationRows,document.getElementById('stockReconcileFilter').value,search);
+    const tables=stockReconciliationTables(exportedRows,{exportedAt:new Date().toISOString(),stockDate:STOCK.report_date||'',stockStatus:stockSnapshotState==='latest'?'โหลดจากระบบสำเร็จ':'ข้อมูลสำรอง/ยังไม่ยืนยันล่าสุด',...reconciliationCutoff()});
     const book=XLSX.utils.book_new();
     tables.forEach(table=>{const sheet=XLSX.utils.aoa_to_sheet(table.rows);sheet['!cols']=table.rows[0].map((_,i)=>({wch:i===1?48:22}));if(table.name==='ผลเปรียบเทียบ')sheet['!autofilter']={ref:sheet['!ref']};XLSX.utils.book_append_sheet(book,sheet,table.name);});
     XLSX.writeFile(book,`Stock-Reconcile-${new Date().toISOString().slice(0,10)}.xlsx`);
-    document.getElementById('stockReconcileStatus').textContent=`ส่งออกผลเปรียบเทียบแล้ว ${stockReconciliationRows.length.toLocaleString()} รายการ`;
+    document.getElementById('stockReconcileStatus').textContent=`ส่งออกผลเปรียบเทียบตามตัวกรองแล้ว ${exportedRows.length.toLocaleString()} รายการ`;
   } catch(error) { document.getElementById('stockReconcileStatus').textContent='ส่งออกไม่สำเร็จ · '+error.message; }
 });
 
