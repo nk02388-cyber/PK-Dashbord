@@ -131,6 +131,10 @@
   }
   .tab-btn.active .tab-badge { background: var(--series-1); color: #fff; }
   .tab-pane[hidden] { display: none; }
+  .receipt-plan-source { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:12px 0; color:var(--text-secondary); font-size:12px; }
+  .receipt-plan-source a { color:var(--series-1); }
+  .receipt-plan-status { margin:12px 0; padding:10px 12px; border:1px solid var(--border); border-radius:8px; background:var(--surface-1); color:var(--text-secondary); }
+  .receipt-plan-status.error { color:var(--status-critical); border-color:var(--status-critical); }
 
   .kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 22px; }
   .kpi { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 16px 16px 14px; }
@@ -1665,6 +1669,7 @@
     <button class="tab-btn active" id="tab-floorplan" data-tab="floorplan" type="button" role="tab" aria-selected="true" aria-controls="pane-floorplan"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z" stroke-width="1.8"/><path d="M9 3v15m6-12v15" stroke-width="1.8"/></svg><span>ผังพื้นที่ชั้น 2</span><span class="tab-badge" id="tabBadgeFloorplan">46 โซน</span></button>
     <button class="tab-btn" id="tab-daily-receive" data-tab="daily-receive" type="button" role="tab" aria-selected="false" aria-controls="pane-daily-receive" tabindex="-1"><span>รายการรับเข้าประจำวัน</span><span class="tab-badge" id="tabBadgeDailyReceive">วันนี้</span></button>
     <button class="tab-btn" id="tab-daily-issue" data-tab="daily-issue" type="button" role="tab" aria-selected="false" aria-controls="pane-daily-issue" tabindex="-1"><span>รายการเบิกประจำวัน</span><span class="tab-badge" id="tabBadgeDailyIssue">วันนี้</span></button>
+    <button class="tab-btn" id="tab-receipt-plan" data-tab="receipt-plan" type="button" role="tab" aria-selected="false" aria-controls="pane-receipt-plan" tabindex="-1"><span>แผนรับเข้าประจำวัน</span><span class="tab-badge" id="tabBadgeReceiptPlan">—</span></button>
   </div>
 
   <!-- ============ TAB: STOCK ============ -->
@@ -2517,6 +2522,23 @@
       <h3>จำนวนรายการตามโซน</h3><div class="daily-chart"></div>
       <h3>ยอดเบิกแยกตามหน่วย</h3><div class="daily-unit-list"></div>
       <h3>รายละเอียดรายการ</h3><div class="daily-result"></div>
+    </div>
+  </div>
+
+  <div class="tab-pane" id="pane-receipt-plan" role="tabpanel" aria-labelledby="tab-receipt-plan" hidden>
+    <div class="panel" id="receiptPlanPanel">
+      <h2>แผนรับเข้าประจำวัน</h2>
+      <p class="panel-sub">แผนจากไฟล์ Excel บน Google Drive · รายการในแผนยังไม่ใช่รายการรับเข้าจริง</p>
+      <div class="daily-controls">
+        <label>วันที่ <input type="date" id="receiptPlanDate" aria-label="วันที่แผนรับเข้า"></label>
+        <button type="button" id="receiptPlanToday">วันนี้</button>
+        <label class="daily-search">ค้นหา PO รหัส ชื่อสินค้า หรือบริษัท <input type="search" id="receiptPlanQuery" placeholder="ค้นหาในวันที่เลือก"></label>
+        <button type="button" id="receiptPlanRefresh">รีเฟรชข้อมูล</button>
+      </div>
+      <div class="receipt-plan-source"><a href="https://docs.google.com/spreadsheets/d/1qoDuHL4kAT4SFKv2nmpy8CBRRSut_dXm/edit" target="_blank" rel="noopener noreferrer">เปิดไฟล์ต้นทางใน Google Drive</a><span>รีเฟรชอัตโนมัติทุก 5 นาทีขณะเปิดแท็บ</span></div>
+      <p id="receiptPlanStatus" class="receipt-plan-status" role="status" aria-live="polite">กำลังรอโหลดแผนรับเข้า…</p>
+      <div id="receiptPlanSummary" class="daily-kpis"></div>
+      <div id="receiptPlanResult" class="daily-result"></div>
     </div>
   </div>
 
@@ -9291,6 +9313,7 @@ window.addEventListener('pageshow', () => {
 });
 </script>
 <script src="daily-movements.js"></script>
+<script src="receipt-plan.js"></script>
 
 
 </body></html>
