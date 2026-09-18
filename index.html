@@ -1103,8 +1103,6 @@
     background: var(--page-plane); color: var(--text-primary); font-size: 11.5px; cursor: pointer;
   }
   .fse-quick-btn:hover { filter: brightness(0.94); }
-  #fseMarkEmptyBtn { border-color: rgba(192,57,43,.45); color: #c0392b; }
-  #fseMarkEmptyBtn.confirming { background: #c0392b; border-color: #c0392b; color: #fff; font-weight: 700; }
   .fse-feedback { min-height: 18px; margin-left: auto; font-size: 11px; font-weight: 700; }
   .fse-feedback.success { color: var(--status-good, #2e7d32); }
   .fse-feedback.error { color: #c0392b; }
@@ -2451,8 +2449,6 @@
         </div>
         <div class="fse-quick-actions">
           <button type="button" class="fse-quick-btn" id="fseMoveToggle" aria-expanded="false" aria-controls="fseMoveForm">↗ ย้ายสินค้าไปพาเลตอื่น</button>
-          <button type="button" class="fse-quick-btn" id="fseMarkEmptyBtn">ล้างรายการและระบุว่าว่าง</button>
-          <button type="button" class="fse-quick-btn" id="fseMarkOccupiedBtn">ระบุว่ามีสินค้า (ไม่ระบุรายการ)</button>
           <span class="fse-feedback" id="fseFeedback" role="status" aria-live="polite"></span>
         </div>
         <div class="fse-move-form" id="fseMoveForm" role="region" aria-label="ย้ายสินค้าไปตำแหน่งพาเลตอื่น" hidden>
@@ -3500,7 +3496,7 @@ if (supabaseClient) initSupabaseSync();
 
 // Capture phase prevents read-only UI from changing local data, including Enter/file inputs.
 function guardPalletWrite(e) {
-  const target = e.target.closest('#fseAddForm, #fseMarkEmptyBtn, #fseMarkOccupiedBtn, #fseMoveToggle, #fseMoveConfirm, .fse-item-edit-btn, .fse-item-withdraw-btn, .fse-item-return-btn, .fse-item-remove, .sm-edit, .fz-receive-date, #floorplanZoomImportInput, label[for="floorplanZoomImportInput"]');
+  const target = e.target.closest('#fseAddForm, #fseMoveToggle, #fseMoveConfirm, .fse-item-edit-btn, .fse-item-withdraw-btn, .fse-item-return-btn, .fse-item-remove, .sm-edit, .fz-receive-date, #floorplanZoomImportInput, label[for="floorplanZoomImportInput"]');
   if (!target) return;
   if (!supabaseClient || !palletDataReady || palletWriteBusy) {
     e.preventDefault(); e.stopImmediatePropagation();
@@ -4350,8 +4346,6 @@ const fseAddReceiveDate = document.getElementById('fseAddReceiveDate');
 const fseAddQty = document.getElementById('fseAddQty');
 const fseAddUnit = document.getElementById('fseAddUnit');
 const fseAddBtn = document.getElementById('fseAddBtn');
-const fseMarkEmptyBtn = document.getElementById('fseMarkEmptyBtn');
-const fseMarkOccupiedBtn = document.getElementById('fseMarkOccupiedBtn');
 const fseCloseBtn = document.getElementById('fseCloseBtn');
 const fseFeedback = document.getElementById('fseFeedback');
 const fseMoveToggle = document.getElementById('fseMoveToggle');
@@ -4366,15 +4360,6 @@ const fseMoveConfirm = document.getElementById('fseMoveConfirm');
 let moveSourceVersion = 0;
 let moveDestinationVersion = 0;
 let fseFeedbackTimer = null;
-let clearSlotConfirmTimer = null;
-
-function resetClearSlotConfirm() {
-  clearTimeout(clearSlotConfirmTimer);
-  if (!fseMarkEmptyBtn) return;
-  fseMarkEmptyBtn.classList.remove('confirming');
-  fseMarkEmptyBtn.textContent = 'ล้างรายการทั้งหมด / ทำเป็นว่าง';
-  fseMarkEmptyBtn.dataset.confirming = '';
-}
 
 function showFseFeedback(message, tone = 'success') {
   if (!fseFeedback) return;
@@ -5129,7 +5114,6 @@ function openSlotEdit(zoneCode, slotCode) {
   hideAddProductSuggestions();
   closeSlotMoveForm();
   movementEdit = null;
-  resetClearSlotConfirm();
   const latest = palletRemoteRows.get(JSON.stringify([zoneCode,slotCode]));
   if (latest) restoreLocalSlot(JSON.parse(JSON.stringify(latest)));
   editingSlot = { zone: zoneCode, slot: slotCode, version: palletVersions.get(JSON.stringify([zoneCode,slotCode])) || 0 };
@@ -5149,7 +5133,6 @@ function closeSlotEdit() {
   closeSlotMoveForm();
   movementEdit = null;
   if (!editingSlot) return;
-  resetClearSlotConfirm();
   const latest = palletRemoteRows.get(JSON.stringify([editingSlot.zone,editingSlot.slot]));
   if (latest) restoreLocalSlot(JSON.parse(JSON.stringify(latest)));
   editingSlot = null;
@@ -5283,7 +5266,6 @@ fseCloseBtn.addEventListener('click', closeSlotEdit);
 
 fseAddForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-  resetClearSlotConfirm();
   if (!editingSlot) return;
   // Defense in depth: the "บันทึก" button is already disabled unless isAddFormValid() -- this
   // guard just makes sure nothing gets added to SLOT_ITEMS (and therefore shown on the Layout)
@@ -5348,7 +5330,6 @@ fseItemsList.addEventListener('change', captureMovementDraft);
 fseItemsList.addEventListener('click', async (e) => {
   if (!editingSlot) return;
   if (movementSaving) return;
-  resetClearSlotConfirm();
 
   const movementBtn = e.target.closest('.sm-edit');
   if (movementBtn && !movementBtn.disabled) {
@@ -5583,38 +5564,6 @@ fseItemsList.addEventListener('change', (e) => {
   if (editForm) updateItemEditBtnState(editForm);
 });
 
-fseMarkEmptyBtn.addEventListener('click', async () => {
-  if (!editingSlot) return;
-  if (fseMarkEmptyBtn.dataset.confirming !== 'true') {
-    fseMarkEmptyBtn.dataset.confirming = 'true';
-    fseMarkEmptyBtn.classList.add('confirming');
-    fseMarkEmptyBtn.textContent = 'ยืนยันล้างรายการทั้งหมด';
-    showFseFeedback('กด “ยืนยันล้างรายการทั้งหมด” เพื่อลบสินค้าทุกรายการในตำแหน่งนี้', 'error');
-    clearSlotConfirmTimer = setTimeout(resetClearSlotConfirm, 4500);
-    return;
-  }
-  resetClearSlotConfirm();
-  if (!await runSlotMutation(editingSlot.zone,editingSlot.slot, () => {
-    if (SLOT_ITEMS[editingSlot.zone]) SLOT_ITEMS[editingSlot.zone][editingSlot.slot] = [];
-    setOccupied(editingSlot.zone,editingSlot.slot,false);
-  })) return;
-  removeConfirmIndex = null; // the whole list is gone -- any armed confirmation is now stale
-  withdrawOpenIndex = null;
-  returnOpenIndex = null;
-  editItemIndex = null;
-
-  syncAfterSlotEdit();
-  showFseFeedback('ล้างรายการและระบุว่าว่างแล้ว');
-});
-
-fseMarkOccupiedBtn.addEventListener('click', async () => {
-  if (!editingSlot) return;
-  resetClearSlotConfirm();
-  if (!await runSlotMutation(editingSlot.zone,editingSlot.slot, () => setOccupied(editingSlot.zone, editingSlot.slot, true))) return;
-  syncAfterSlotEdit();
-  showFseFeedback('ระบุว่ามีสินค้าแล้ว');
-});
-
 floorZoneDetail.addEventListener('click', (e) => {
   const btn = e.target.closest('.fz-zoom-btn');
   if (btn) openZoomModal(btn.dataset.zone);
@@ -5656,7 +5605,6 @@ document.addEventListener('keydown', (e) => {
   if (withdrawOpenIndex != null) { withdrawOpenIndex = null;
   returnOpenIndex = null; renderSlotEdit(); return; }
   if (removeConfirmIndex != null) { removeConfirmIndex = null; renderSlotEdit(); return; }
-  if (fseMarkEmptyBtn.dataset.confirming === 'true') { resetClearSlotConfirm(); return; }
   if (editingSlot) { closeSlotEdit(); return; }
   if (!zoomModal.hidden) closeZoomModal();
 });
