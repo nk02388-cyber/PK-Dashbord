@@ -807,10 +807,12 @@
   .floorplan-zoom-status .fz-legend i.age-red { background: rgba(214,40,40,0.62); border-color: #a11212; }
   .fz-status-actions { display: flex; align-items: center; gap: 8px; }
   .fz-status-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     padding: 6px 12px; border-radius: 7px; border: 1px solid var(--border);
     background: var(--page-plane); color: var(--text-primary); font-size: 11.5px; font-weight: 600;
-    cursor: pointer;
+    cursor: pointer; text-align: center; white-space: nowrap;
   }
+  .fz-status-btn .action-icon { font-size: 16px; line-height: 1; }
   .fz-status-btn:hover { filter: brightness(0.94); }
   /* Slot add/remove editing panel: opens inside the zoom-viewer box (between the viewport and
      the status bar) when a position/slot button is clicked, letting the user add or remove the
@@ -2477,9 +2479,9 @@
           <span><i class="age-red"></i>อายุ &gt; 5 เดือน</span>
         </div>
         <div class="fz-status-actions">
-          <label class="fz-status-btn" for="floorplanZoomImportInput" style="cursor:pointer;">นำเข้าข้อมูลพาเลต</label>
+          <label class="fz-status-btn" for="floorplanZoomImportInput"><span class="action-icon" aria-hidden="true">⬇</span>Import JSON</label>
           <input type="file" id="floorplanZoomImportInput" accept="application/json" style="display:none;">
-          <button type="button" class="fz-status-btn" id="floorplanZoomExportBtn">ส่งออกข้อมูลพาเลต</button>
+          <button type="button" class="fz-status-btn" id="floorplanZoomExportBtn"><span class="action-icon" aria-hidden="true">⬆</span>Export JSON</button>
         </div>
       </div>
     </div>
