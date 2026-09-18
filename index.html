@@ -7860,6 +7860,7 @@ function selectFgSuggestion(item) {
   if (!item) return;
   fgBomSearch.value = item.fg;
   renderFgBom(item.fg);
+  fgBomResult.scrollIntoView({ behavior: 'instant', block: 'start' });
 }
 
 function performFgSearch() {
