@@ -677,7 +677,13 @@
     position: absolute; left: 0; top: 0; transform-origin: 0 0;
     background-repeat: no-repeat;
   }
-  .floorplan-zoom-slots { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+  .floorplan-zoom-slots { position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 2; }
+  .zoom-cad-labels { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+  .zoom-cad-label {
+    position: absolute; display: none; transform: translate(-50%, -50%);
+    padding: 0 .14em; border-radius: .12em; background: #fff; color: #172033;
+    font-weight: 900; line-height: 1.05; white-space: nowrap; letter-spacing: -.04em;
+  }
   /* Outline drawn around the currently-open zone's own rack, added 20 Aug 2026 per Pornchai's
      request -- the zoom viewport is a crop of the full drawing and often shows parts of
      neighboring zones' racks in the same frame (e.g. opening "O-1" also shows edges of
@@ -717,7 +723,7 @@
     background: #d9730d; color: #fff; font-weight: 800; font-size: 17px; letter-spacing: 0.02em;
     padding: 5px 14px; border-radius: 6px; white-space: nowrap;
     box-shadow: 0 2px 5px rgba(0,0,0,0.35);
-    pointer-events: none; z-index: 2;
+    pointer-events: none; z-index: 4;
   }
   /* 20 Aug 2026: per Pornchai's request that the slot code text and cell borders read more
      clearly, three changes together: (1) the default "no data yet" gray fill's opacity was
@@ -3148,8 +3154,18 @@ const zoomStage = document.createElement('div');
 zoomStage.id = 'floorplanZoomStage';
 zoomStage.className = 'floorplan-zoom-stage';
 zoomStage.style.backgroundImage = `url(${zoomSourceUrl})`;
+const zoomCadLabels = document.createElement('div');
+zoomCadLabels.className = 'zoom-cad-labels';
+Object.entries(ZONE_PINS).forEach(([code, pin]) => {
+  const label = document.createElement('span');
+  label.className = 'zoom-cad-label';
+  label.textContent = code;
+  label.dataset.leftPct = pin.leftPct;
+  label.dataset.topPct = pin.topPct;
+  zoomCadLabels.appendChild(label);
+});
 zoomViewport.style.backgroundImage = 'none';
-zoomStage.append(zoomZoneBox, zoomZoneLabel, zoomSlotsLayer);
+zoomStage.append(zoomZoneBox, zoomSlotsLayer, zoomCadLabels, zoomZoneLabel);
 zoomViewport.append(zoomStage);
 
 let zoomScale = 3.2;
@@ -3810,6 +3826,12 @@ function updateZoomView() {
   const posY = rect.height / 2 - (zoomCenterPct.topPct / 100 * bgH) + rect.panY;
   zoomStage.style.backgroundSize = `${bgW}px ${bgH}px`;
   zoomStage.style.backgroundPosition = `${posX}px ${posY}px`;
+  zoomCadLabels.querySelectorAll('.zoom-cad-label').forEach(label => {
+    label.style.display = zoomScale >= 2 ? 'block' : 'none';
+    label.style.left = (posX + Number(label.dataset.leftPct) / 100 * bgW) + 'px';
+    label.style.top = (posY + Number(label.dataset.topPct) / 100 * bgH) + 'px';
+    label.style.fontSize = Math.min(84, Math.max(16, 14 * zoomScale)) + 'px';
+  });
 
   const cellW = (0.65 / 100) * bgW;
   const cellH = (0.95 / 100) * bgH;
