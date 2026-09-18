@@ -12,7 +12,7 @@ const ctx = vm.createContext({
     { pk_code: '31-LABEL', unit:'ใบ', pk_name: 'Label', qty_per_unit: 2, stock_avail: 20,
       stock_unit_value: 1, producible: 10, in_stock: true },
   ] } } },
-  fgBomResult: {}, fgBomSearchMsg: {}, fgBomSearchBtn: {},
+  fgBomResult: { classList: { add() {}, remove() {} } }, fgBomSearchMsg: {}, fgBomSearchBtn: {},
   fgLineExclusions: { FG: excluded }, hideFgSuggestions() {},
   fmt0: n => String(Math.round(n)), fmt3: n => String(n), formatBomQuantity:n=>String(n),
   escapeHtml: s => String(s),

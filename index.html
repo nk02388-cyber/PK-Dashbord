@@ -391,6 +391,10 @@
     font-size: 15px !important; padding: 10px 20px 10px 10px !important; gap: 10px !important;
     border-radius: 10px;
   }
+  #bomBrands button[id$="QuickBtn"]::after { content: '▾'; margin-left: auto; font-size: 16px; line-height: 1; transition: transform .15s; }
+  #bomBrands button[id$="QuickBtn"].is-open { background: var(--series-1); border-color: var(--series-1); color: #fff; }
+  #bomBrands button[id$="QuickBtn"].is-open::after { transform: rotate(180deg); }
+  #bomBrands button[id$="QuickBtn"]:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; }
   .quick-access-row .icon-upload-wrap img,
   .quick-access-row > div > button > img {
     height: 36px !important; width: 36px !important;
@@ -1238,6 +1242,12 @@
   .badge.blue { background: #ffffff; color: #000000; border: 1px solid var(--border); }
   .badge.warn { background: var(--status-warning); color: #000000; }
   .fg-bom-empty { font-size: 12.5px; color: var(--text-muted); margin-top: 8px; }
+  #fgBomResult.has-result { margin-top: 16px; padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-1); }
+  .fg-bom-result-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+  .fg-bom-result-bar h3 { margin: 0; font-size: 15px; }
+  .fg-bom-close { min-height: 40px; padding: 7px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--page-plane); color: var(--text-primary); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+  .fg-bom-close:hover { border-color: var(--series-1); color: var(--series-1); }
+  .fg-bom-close:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; }
 
   .fg-bom-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin:14px 0 14px; flex-wrap:wrap; }
   .fg-bom-head > div { min-width: 0; max-width: 100%; }
@@ -8235,6 +8245,7 @@ function recalculateBomFromStock() {
 
 function renderFgBom(rawCode) {
   const q = (rawCode || '').trim();
+  fgBomResult.classList.remove('has-result');
   if (!q) {
     fgBomResult.innerHTML = '<div class="fg-bom-empty">พิมพ์ชื่อหรือรหัส FG แล้วเลือกสินค้าเพื่อดู BOM</div>';
     return;
@@ -8244,6 +8255,7 @@ function renderFgBom(rawCode) {
     fgBomResult.innerHTML = `<div class="fg-bom-empty" style="color:var(--status-critical);">ไม่พบรหัส FG "${escapeHtml(q)}" · ตรวจสอบรหัสหรือเลือกจากรายการแนะนำ</div>`;
     return;
   }
+  fgBomResult.classList.add('has-result');
   hideFgSuggestions();
   fgBomSearchMsg.hidden = true;
   fgBomSearchBtn.disabled = false;
@@ -8345,6 +8357,7 @@ function renderFgBom(rawCode) {
   }
 
   fgBomResult.innerHTML = `
+    <div class="fg-bom-result-bar"><h3>ผลการตรวจ BOM</h3><button type="button" class="fg-bom-close" data-close-bom>✕ ปิดรายการ</button></div>
     <div class="fg-bom-head">
       <div style="background:#166534; color:#ffffff; padding:10px 16px; border-radius:10px;">
         <b style="font-size:14px;">${escapeHtml(detail.fg_name)}</b>
@@ -8456,6 +8469,13 @@ document.addEventListener('click', (e) => {
 // re-rendered on every renderFgBom() call, so a single listener on the stable container
 // is used instead of re-attaching a handler to each button every time.
 fgBomResult.addEventListener('click', (e) => {
+  if (e.target.closest('[data-close-bom]')) {
+    fgBomSearch.value = '';
+    renderFgBom('');
+    document.querySelectorAll('#bomBrands .kota-chip.selected').forEach(chip => chip.classList.remove('selected'));
+    fgBomSearch.focus();
+    return;
+  }
   const btn = e.target.closest('.excl-toggle-btn');
   if (!btn) return;
   const q = fgBomSearch.value.trim();
@@ -9198,6 +9218,21 @@ magicmvcolorcreamQuickList.querySelectorAll('.kota-chip').forEach(btn => {
     fgBomResult.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   });
 });
+
+function syncBrandButtonStates() {
+  bomBrands.querySelectorAll('button[id$="QuickBtn"]').forEach(button => {
+    const list = document.getElementById(button.id.replace(/QuickBtn$/, 'QuickList'));
+    if (!list) return;
+    const open = !list.hidden;
+    button.classList.toggle('is-open', open);
+    button.setAttribute('aria-expanded', String(open));
+    button.setAttribute('aria-controls', list.id);
+  });
+}
+bomBrands.addEventListener('click', event => {
+  if (event.target.closest('button[id$="QuickBtn"]')) syncBrandButtonStates();
+});
+syncBrandButtonStates();
 
 // ---------- Save-with-icons export ----------
 // This file has no server or database, so an icon picked via "เปลี่ยนไอคอน" only lives in the
