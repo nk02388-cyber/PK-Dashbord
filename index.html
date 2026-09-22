@@ -1730,6 +1730,7 @@
     <button class="tab-btn" id="tab-stock" data-tab="stock" type="button" role="tab" aria-selected="false" aria-controls="pane-stock" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m4 7 8-4 8 4-8 4-8-4Z" stroke-width="1.8"/><path d="m4 7v10l8 4 8-4V7M12 11v10" stroke-width="1.8"/></svg><span>สต็อกบรรจุภัณฑ์</span><span class="tab-badge" id="tabBadgeStock">฿32.41M</span></button>
     <button class="tab-btn" id="tab-bompk" data-tab="bompk" type="button" role="tab" aria-selected="false" aria-controls="pane-bompk" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 21V9l6 3V8l6 4V5h6v16H3Z" stroke-width="1.8"/><path d="M7 17h2m3 0h2m3 0h2" stroke-width="1.8"/></svg><span>ความพร้อมบรรจุภัณฑ์ (BOM PK)</span><span class="tab-badge critical" id="tabBadgeBompk">612 ติดขัด</span></button>
     <button class="tab-btn active" id="tab-floorplan" data-tab="floorplan" type="button" role="tab" aria-selected="true" aria-controls="pane-floorplan"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z" stroke-width="1.8"/><path d="M9 3v15m6-12v15" stroke-width="1.8"/></svg><span>ผังพื้นที่ชั้น 2</span><span class="tab-badge" id="tabBadgeFloorplan">46 โซน</span></button>
+    <button class="tab-btn" id="tab-barcode" data-tab="barcode" type="button" role="tab" aria-selected="false" aria-controls="pane-barcode" tabindex="-1"><span>สแกน Barcode / QR</span></button>
     <button class="tab-btn" id="tab-daily-receive" data-tab="daily-receive" type="button" role="tab" aria-selected="false" aria-controls="pane-daily-receive" tabindex="-1"><span>รายการรับเข้าประจำวัน</span><span class="tab-badge" id="tabBadgeDailyReceive">วันนี้</span></button>
     <button class="tab-btn" id="tab-daily-issue" data-tab="daily-issue" type="button" role="tab" aria-selected="false" aria-controls="pane-daily-issue" tabindex="-1"><span>รายการเบิกประจำวัน</span><span class="tab-badge" id="tabBadgeDailyIssue">วันนี้</span></button>
     <button class="tab-btn" id="tab-receipt-plan" data-tab="receipt-plan" type="button" role="tab" aria-selected="false" aria-controls="pane-receipt-plan" tabindex="-1"><span>แผนรับเข้าประจำวัน</span><span class="tab-badge" id="tabBadgeReceiptPlan">—</span></button>
@@ -2425,17 +2426,6 @@
         <label>เลขเอกสารอ้างอิงสำหรับการแก้ไข / นำเข้า *<input id="palletAuditDocument" type="text" maxlength="200" placeholder="เลขเอกสาร"></label>
       </div>
       <p class="panel-sub">ชื่อผู้ทำรายการเป็นข้อมูลที่ผู้ใช้กรอกเอง เนื่องจากระบบนี้ไม่มีการยืนยันตัวตน</p>
-      <section class="barcode-panel" aria-labelledby="barcodeTitle">
-        <h3 id="barcodeTitle">สแกนสินค้าและตำแหน่งพาเลต</h3>
-        <p>สแกนป้ายตำแหน่ง แล้วสแกนรหัสสินค้าเพื่อเปิดรายการในพาเลตนั้น · ตรวจสอบจำนวนก่อนกดบันทึก</p>
-        <div class="barcode-controls"><input id="barcodeScanInput" type="text" autocomplete="off" placeholder="สแกนด้วยเครื่องอ่าน หรือพิมพ์รหัสแล้วกด Enter" aria-label="รหัส QR หรือบาร์โค้ด"><button type="button" id="barcodeScanApply">ตรวจรหัส</button><button type="button" id="barcodeCameraStart">เปิดกล้องสแกน</button><button type="button" id="barcodeCameraStop" hidden>ปิดกล้อง</button></div>
-        <div id="barcodeCameraView" class="barcode-camera" hidden></div>
-        <label class="barcode-file">หรือเลือกรูป QR/บาร์โค้ด <input id="barcodeImageInput" type="file" accept="image/*" capture="environment"></label>
-        <div id="barcodeScanSelection" class="barcode-selection">ยังไม่ได้เลือกตำแหน่งหรือสินค้า</div>
-        <p id="barcodeScanStatus" role="status" aria-live="polite"></p>
-        <div class="barcode-controls"><label>โซนสำหรับพิมพ์ป้าย <select id="barcodePrintZone"></select></label><button type="button" id="barcodePrintLocations">พิมพ์ป้าย QR ตำแหน่ง</button></div>
-        <div class="barcode-controls"><input id="barcodePrintProductCode" type="text" placeholder="รหัสสินค้าที่ต้องการพิมพ์ QR" aria-label="รหัสสินค้าสำหรับพิมพ์ QR"><button type="button" id="barcodePrintProduct">พิมพ์ป้าย QR สินค้า</button></div>
-      </section>
       <div class="bom-plan-form" style="margin-top:12px">
         <button type="button" id="floorplanExcelExport" class="excl-toggle-btn" style="min-height:44px">ส่งออกข้อมูลทุกโซน Excel</button>
         <span id="floorplanExcelStatus" role="status"></span>
@@ -2567,6 +2557,20 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <div class="tab-pane" id="pane-barcode" role="tabpanel" aria-labelledby="tab-barcode" hidden>
+    <section class="barcode-panel" aria-labelledby="barcodeTitle">
+      <h2 id="barcodeTitle">สแกน Barcode / QR</h2>
+      <p>สแกนป้ายตำแหน่ง แล้วสแกนรหัสสินค้าเพื่อเปิดรายการในพาเลตนั้น · ตรวจสอบจำนวนก่อนกดบันทึก</p>
+      <div class="barcode-controls"><input id="barcodeScanInput" type="text" autocomplete="off" placeholder="สแกนด้วยเครื่องอ่าน หรือพิมพ์รหัสแล้วกด Enter" aria-label="รหัส QR หรือบาร์โค้ด"><button type="button" id="barcodeScanApply">ตรวจรหัส</button><button type="button" id="barcodeCameraStart">เปิดกล้องสแกน</button><button type="button" id="barcodeCameraStop" hidden>ปิดกล้อง</button></div>
+      <div id="barcodeCameraView" class="barcode-camera" hidden></div>
+      <label class="barcode-file">หรือเลือกรูป QR/บาร์โค้ด <input id="barcodeImageInput" type="file" accept="image/*" capture="environment"></label>
+      <div id="barcodeScanSelection" class="barcode-selection">ยังไม่ได้เลือกตำแหน่งหรือสินค้า</div>
+      <p id="barcodeScanStatus" role="status" aria-live="polite"></p>
+      <div class="barcode-controls"><label>โซนสำหรับพิมพ์ป้าย <select id="barcodePrintZone"></select></label><button type="button" id="barcodePrintLocations">พิมพ์ป้าย QR ตำแหน่ง</button></div>
+      <div class="barcode-controls"><input id="barcodePrintProductCode" type="text" placeholder="รหัสสินค้าที่ต้องการพิมพ์ QR" aria-label="รหัสสินค้าสำหรับพิมพ์ QR"><button type="button" id="barcodePrintProduct">พิมพ์ป้าย QR สินค้า</button></div>
+    </section>
   </div>
 
   <div class="tab-pane" id="pane-daily-receive" role="tabpanel" aria-labelledby="tab-daily-receive" hidden>

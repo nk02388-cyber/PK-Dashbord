@@ -25,6 +25,7 @@
   function openMatch() {
     if (!chosenLocation || !chosenProduct) return;
     const {zone,slot} = chosenLocation;
+    $('tab-floorplan').click();
     openZoomModal(zone);
     openSlotEdit(zone,slot);
     const index = slotItemsFor(zone,slot).findIndex(item => String(item.code).trim().toUpperCase() === String(chosenProduct.code).trim().toUpperCase());
@@ -72,7 +73,7 @@
     finally { try { reader.clear(); } catch (_) {} view.hidden = true; event.target.value = ''; }
   });
   document.addEventListener('visibilitychange', () => { if (document.hidden) stopCamera(); });
-  $('tabs').addEventListener('click',event => { if (event.target.closest('.tab-btn')?.dataset.tab !== 'floorplan') stopCamera(); });
+  $('tabs').addEventListener('click',event => { if (event.target.closest('.tab-btn')?.dataset.tab !== 'barcode') stopCamera(); });
   function qrMarkup(payload) { const qr = qrcode(0,'M'); qr.addData(payload); qr.make(); return qr.createSvgTag(3,2); }
   function printLabels(title,labels) {
     const page = window.open('','_blank');
