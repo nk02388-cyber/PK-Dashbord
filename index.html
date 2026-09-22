@@ -1440,7 +1440,9 @@
     font-family: "Noto Sans Thai", Leelawadee UI, Tahoma, system-ui, -apple-system, "Segoe UI", sans-serif;
     line-height: 1.5;
   }
-  .wrap { max-width: 1360px; }
+  .wrap { max-width: none; width: 100%; }
+  .dashboard-layout { min-width: 0; }
+  .dashboard-content { min-width: 0; }
   .skip-link {
     position: fixed; z-index: 10000; top: 8px; left: 8px; transform: translateY(-160%);
     padding: 10px 14px; border-radius: 10px; background: var(--series-1); color: #fff;
@@ -1661,6 +1663,22 @@
   .daily-table .num { text-align:right; white-space:nowrap; }
   .daily-empty { padding:16px; color:var(--text-secondary); }
   @media (max-width:700px) { .daily-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); } .daily-kpi strong { font-size:21px; } }
+  @media (min-width: 1024px) {
+    body.viz-root { padding: 12px 16px; }
+    .dashboard-layout { display: grid; grid-template-columns: 224px minmax(0, 1fr); align-items: start; gap: 16px; }
+    .tabs {
+      position: sticky; top: calc(var(--sticky-header-h, 0px) + 10px);
+      display: flex; flex-direction: column; align-items: stretch; gap: 5px;
+      max-height: calc(100vh - var(--sticky-header-h, 0px) - 24px);
+      overflow-x: hidden; overflow-y: auto; margin: 0; padding: 8px;
+    }
+    .tabs::before { content: 'เมนู'; padding: 5px 10px; font-size: 12px; font-weight: 800; color: var(--text-secondary); }
+    .tabs .tab-btn { width: 100%; min-width: 0; justify-content: flex-start; text-align: left; white-space: normal; }
+    .tabs .tab-btn > span:first-of-type { min-width: 0; }
+    .tabs .tab-badge { margin-left: auto; flex: none; }
+    .dashboard-content .tab-pane { min-width: 0; }
+    .dashboard-content .filter-bar { top: calc(var(--sticky-header-h, 0px) + 8px); }
+  }
 </style>
 </head>
 <body class="viz-root">
@@ -1681,14 +1699,16 @@
     </div>
   </header>
 
-  <div class="tabs" id="tabs" role="tablist" aria-label="ส่วนข้อมูลแดชบอร์ด">
+  <div class="dashboard-layout">
+  <nav class="tabs" id="tabs" role="tablist" aria-label="ส่วนข้อมูลแดชบอร์ด">
     <button class="tab-btn" id="tab-stock" data-tab="stock" type="button" role="tab" aria-selected="false" aria-controls="pane-stock" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m4 7 8-4 8 4-8 4-8-4Z" stroke-width="1.8"/><path d="m4 7v10l8 4 8-4V7M12 11v10" stroke-width="1.8"/></svg><span>สต็อกบรรจุภัณฑ์</span><span class="tab-badge" id="tabBadgeStock">฿32.41M</span></button>
     <button class="tab-btn" id="tab-bompk" data-tab="bompk" type="button" role="tab" aria-selected="false" aria-controls="pane-bompk" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 21V9l6 3V8l6 4V5h6v16H3Z" stroke-width="1.8"/><path d="M7 17h2m3 0h2m3 0h2" stroke-width="1.8"/></svg><span>ความพร้อมบรรจุภัณฑ์ (BOM PK)</span><span class="tab-badge critical" id="tabBadgeBompk">612 ติดขัด</span></button>
     <button class="tab-btn active" id="tab-floorplan" data-tab="floorplan" type="button" role="tab" aria-selected="true" aria-controls="pane-floorplan"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z" stroke-width="1.8"/><path d="M9 3v15m6-12v15" stroke-width="1.8"/></svg><span>ผังพื้นที่ชั้น 2</span><span class="tab-badge" id="tabBadgeFloorplan">46 โซน</span></button>
     <button class="tab-btn" id="tab-daily-receive" data-tab="daily-receive" type="button" role="tab" aria-selected="false" aria-controls="pane-daily-receive" tabindex="-1"><span>รายการรับเข้าประจำวัน</span><span class="tab-badge" id="tabBadgeDailyReceive">วันนี้</span></button>
     <button class="tab-btn" id="tab-daily-issue" data-tab="daily-issue" type="button" role="tab" aria-selected="false" aria-controls="pane-daily-issue" tabindex="-1"><span>รายการเบิกประจำวัน</span><span class="tab-badge" id="tabBadgeDailyIssue">วันนี้</span></button>
     <button class="tab-btn" id="tab-receipt-plan" data-tab="receipt-plan" type="button" role="tab" aria-selected="false" aria-controls="pane-receipt-plan" tabindex="-1"><span>แผนรับเข้าประจำวัน</span><span class="tab-badge" id="tabBadgeReceiptPlan">—</span></button>
-  </div>
+  </nav>
+  <main class="dashboard-content" id="dashboardContent">
 
   <!-- ============ TAB: STOCK ============ -->
   <div class="tab-pane" id="pane-stock" role="tabpanel" aria-labelledby="tab-stock" hidden="">
@@ -2557,6 +2577,8 @@
       <div id="receiptPlanResult" class="daily-result"></div>
     </div>
   </div>
+  </main>
+  </div>
 
   <footer>
     <span>ข้อมูลสต็อก ความพร้อมผลิต และพื้นที่จัดเก็บ · สำหรับใช้ภายในบริษัท</span>
@@ -2635,7 +2657,7 @@ function updateStickyOffsets() {
   const headerH = header.getBoundingClientRect().height;
   const tabsH = tabsEl.getBoundingClientRect().height;
   document.documentElement.style.setProperty('--sticky-header-h', headerH + 'px');
-  document.documentElement.style.setProperty('--sticky-stack-h', (headerH + tabsH) + 'px');
+  document.documentElement.style.setProperty('--sticky-stack-h', (headerH + (window.matchMedia('(min-width: 1024px)').matches ? 0 : tabsH)) + 'px');
 }
 updateStickyOffsets();
 window.addEventListener('resize', updateStickyOffsets);
