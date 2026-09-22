@@ -50,7 +50,7 @@ assert.throws(()=>ctx.buildSlotMovePlan(source,destination,[{index:0,whole:true}
 const mixedUnit = {zone:'A',slot_code:'A-09',occupied:true,items:[{...original,returns:[{date:'2026-09-04',qty:5,unit:'ลัง'}],remainingQty:75}]};
 assert.throws(()=>ctx.buildSlotMovePlan(mixedUnit,destination,[{index:0,qty:5}], '2026-09-15','สมชาย','MOVE-1'),/ยอดประวัติ/);
 assert.throws(()=>ctx.buildSlotMovePlan(source,destination,[{index:0,whole:true}], '2026-09-15',''),/ผู้ย้าย/);
-assert.match(html,/savePalletBatch\(\[\{\.\.\.plan\.source,expected_version:moveSourceVersion\},\{\.\.\.plan\.destination,expected_version:moveDestinationVersion\}\]\)/);
+assert.match(html,/savePalletBatch\(\[\{\.\.\.plan\.source,expected_version:moveSourceVersion\},\{\.\.\.plan\.destination,expected_version:moveDestinationVersion\}\], \[\], \{action:'transfer'/);
 assert.match(html,/finally \{ palletWriteBusy = false; updateSlotMoveState\(true\); \}/,'Save errors remain visible after the request finishes');
 assert.match(html,/id="fseMoveToggle"[^>]*aria-expanded="false"/);
 console.log('PASS: whole/partial pallet moves, destination merge, stock-card transfers, validation and atomic save proposal');

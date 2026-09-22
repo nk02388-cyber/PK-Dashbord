@@ -1686,6 +1686,7 @@
     .dashboard-content .tab-pane { min-width: 0; }
     .dashboard-content .filter-bar { top: calc(var(--sticky-header-h, 0px) + 8px); }
   }
+.audit-entry-fields,.audit-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin:12px 0}.audit-entry-fields label{display:flex;flex-direction:column;gap:4px;min-width:220px;flex:1}.audit-entry-fields input,.audit-toolbar input{min-height:42px;border:1px solid var(--border,#cbd5e1);border-radius:8px;padding:8px 10px;background:var(--surface,#fff);color:var(--text-primary,#172033)}.audit-toolbar input{flex:1;min-width:220px}.audit-scroll{overflow:auto;max-height:70vh}.audit-table{width:100%;border-collapse:collapse;min-width:700px}.audit-table th,.audit-table td{text-align:left;vertical-align:top;padding:10px;border-bottom:1px solid var(--border,#dbe3ef)}.audit-table th{position:sticky;top:0;background:var(--surface,#fff)}.audit-table td:last-child{min-width:220px}
 </style>
 </head>
 <body class="viz-root">
@@ -1714,6 +1715,7 @@
     <button class="tab-btn" id="tab-daily-receive" data-tab="daily-receive" type="button" role="tab" aria-selected="false" aria-controls="pane-daily-receive" tabindex="-1"><span>รายการรับเข้าประจำวัน</span><span class="tab-badge" id="tabBadgeDailyReceive">วันนี้</span></button>
     <button class="tab-btn" id="tab-daily-issue" data-tab="daily-issue" type="button" role="tab" aria-selected="false" aria-controls="pane-daily-issue" tabindex="-1"><span>รายการเบิกประจำวัน</span><span class="tab-badge" id="tabBadgeDailyIssue">วันนี้</span></button>
     <button class="tab-btn" id="tab-receipt-plan" data-tab="receipt-plan" type="button" role="tab" aria-selected="false" aria-controls="pane-receipt-plan" tabindex="-1"><span>แผนรับเข้าประจำวัน</span><span class="tab-badge" id="tabBadgeReceiptPlan">—</span></button>
+    <button class="tab-btn" id="tab-audit" data-tab="audit" type="button" role="tab" aria-selected="false" aria-controls="pane-audit" tabindex="-1"><span>ประวัติการแก้ไขพาเลต</span></button>
   </nav>
   <main class="dashboard-content" id="dashboardContent">
 
@@ -2400,6 +2402,11 @@
         <span class="sync-dot" id="syncStatusDot"></span>
         <span id="syncStatusText">เชื่อมต่อข้อมูลเรียลไทม์แล้ว</span>
       </div>
+      <div class="audit-entry-fields">
+        <label>ชื่อผู้ทำรายการ *<input id="palletAuditActor" type="text" maxlength="100" placeholder="ชื่อผู้ทำรายการ" autocomplete="name"></label>
+        <label>เลขเอกสารอ้างอิงสำหรับการแก้ไข / นำเข้า *<input id="palletAuditDocument" type="text" maxlength="200" placeholder="เลขเอกสาร"></label>
+      </div>
+      <p class="panel-sub">ชื่อผู้ทำรายการเป็นข้อมูลที่ผู้ใช้กรอกเอง เนื่องจากระบบนี้ไม่มีการยืนยันตัวตน</p>
       <div class="bom-plan-form" style="margin-top:12px">
         <button type="button" id="floorplanExcelExport" class="excl-toggle-btn" style="min-height:44px">ส่งออกข้อมูลทุกโซน Excel</button>
         <span id="floorplanExcelStatus" role="status"></span>
@@ -2583,6 +2590,16 @@
       <p id="receiptPlanStatus" class="receipt-plan-status" role="status" aria-live="polite">กำลังรอโหลดแผนรับเข้า…</p>
       <div id="receiptPlanSummary" class="daily-kpis"></div>
       <div id="receiptPlanResult" class="daily-result"></div>
+    </div>
+  </div>
+  <div class="tab-pane" id="pane-audit" role="tabpanel" aria-labelledby="tab-audit" hidden>
+    <div class="panel">
+      <h2>ประวัติการแก้ไขพาเลต</h2>
+      <p class="panel-sub">แสดงการเปลี่ยนแปลงที่บันทึกหลังเปิดใช้ระบบประวัติ · ชื่อผู้ทำรายการเป็นชื่อที่กรอกเอง ไม่ได้ยืนยันด้วยบัญชี</p>
+      <div class="audit-toolbar"><input id="palletAuditSearch" type="search" placeholder="ค้นหาโซน ตำแหน่ง ผู้ทำรายการ หรือเลขเอกสาร" aria-label="ค้นหาประวัติ"><button id="palletAuditRefresh" type="button" class="excl-toggle-btn">รีเฟรช</button></div>
+      <p id="palletAuditStatus" role="status" aria-live="polite"></p>
+      <div id="palletAuditResult" class="audit-results"></div>
+      <button id="palletAuditMore" type="button" class="excl-toggle-btn" hidden>โหลดเพิ่มเติม</button>
     </div>
   </div>
   </main>
@@ -3382,10 +3399,22 @@ function buildSlotRow(zoneCode, slotCode) {
     updated_at: new Date().toISOString(),
   };
 }
-async function savePalletBatch(slots, dates = []) {
+function palletAuditMetadata(action = 'adjust', documentNo = '') {
+  const actorInput = document.getElementById('palletAuditActor');
+  const documentInput = document.getElementById('palletAuditDocument');
+  const actor = actorInput?.value.trim() || '';
+  const documentNumber = documentNo.trim() || documentInput?.value.trim() || '';
+  if (!actor) throw new Error('กรุณาระบุชื่อผู้ทำรายการก่อนบันทึก');
+  if (!documentNumber) throw new Error('กรุณาระบุเลขเอกสารอ้างอิงก่อนบันทึก');
+  try { localStorage.setItem('palletAuditActor', actor); } catch (_) {}
+  return {actor, document_no:documentNumber, action};
+}
+async function savePalletBatch(slots, dates = [], audit = {}) {
   if (!supabaseClient) throw new Error('ยังไม่ได้เชื่อมต่อระบบบันทึกพาเลต');
   if (!palletDataReady) throw new Error('ยังโหลดข้อมูลพาเลตไม่ครบ กรุณารีเฟรชก่อนแก้ไข');
-  const { data, error } = await supabaseClient.rpc('save_pallet_changes', { p_slots: slots, p_dates: dates });
+  const metadata = slots.length ? palletAuditMetadata(audit.action, audit.document_no || '') : null;
+  const auditedSlots = slots.map(slot => ({...slot, _audit:metadata}));
+  const { data, error } = await supabaseClient.rpc('save_pallet_changes', { p_slots: auditedSlots, p_dates: dates });
   if (error) {
     if (error.code === '40001') throw new Error('มีคนแก้ข้อมูลนี้แล้ว · ยังไม่ได้บันทึก กรุณาคัดลอกค่าที่กรอกไว้ แล้วรีเฟรชเพื่อตรวจข้อมูลล่าสุด');
     if (error.code === '42501') throw new Error('ระบบยังไม่อนุญาตให้บันทึก กรุณาติดต่อผู้ดูแล');
@@ -3397,7 +3426,7 @@ async function savePalletBatch(slots, dates = []) {
   return data;
 }
 
-async function runSlotMutation(zone, slot, mutate) {
+async function runSlotMutation(zone, slot, mutate, audit = {}) {
   if (palletWriteBusy) return false;
   const before = JSON.parse(JSON.stringify(buildSlotRow(zone, slot)));
   const expected = editingSlot?.zone === zone && editingSlot?.slot === slot
@@ -3411,7 +3440,7 @@ async function runSlotMutation(zone, slot, mutate) {
     // Never display a successful local edit before the transaction is committed.
     restoreLocalSlot(before);
     if (valid === false) throw new Error('ข้อมูลไม่ถูกต้อง กรุณาตรวจยอดคงเหลือและรายการ');
-    await savePalletBatch([{...proposed, expected_version: expected}]);
+    await savePalletBatch([{...proposed, expected_version: expected}], [], audit);
     return true;
   } catch (error) {
     restoreLocalSlot(before);
@@ -3586,7 +3615,7 @@ for (const event of ['click','submit','change']) document.addEventListener(event
 // All imported proposals commit in one version-checked transaction.
 async function pushFullGeometryToRemote(slots, dates) {
   // One RPC transaction: any conflict rolls back the entire import.
-  return savePalletBatch(slots,dates);
+  return savePalletBatch(slots,dates,{action:'import'});
 }
 
 // ---------- Zone -> building-area grouping ("ZONE แสดงพื้นที่การจัดเก็บ" table, stock tab) ----------
@@ -4789,7 +4818,7 @@ async function persistMovementEdit(edit, next) {
   items[edit.itemIndex] = next;
   const expected = edit.version ?? editingSlot?.version ?? palletVersions.get(JSON.stringify([edit.zone,edit.slot])) ?? 0;
   palletWriteBusy = true;
-  try { await savePalletBatch([{...buildSlotRow(edit.zone,edit.slot),items,expected_version:expected}]); }
+  try { await savePalletBatch([{...buildSlotRow(edit.zone,edit.slot),items,expected_version:expected}], [], {action:'adjust'}); }
   finally { palletWriteBusy = false; }
   return true;
 }
@@ -5332,7 +5361,7 @@ fseMoveConfirm.addEventListener('click', async () => {
     fseMoveConfirm.disabled = true;
     fseMoveStatus.textContent = 'กำลังตรวจเวอร์ชันและบันทึกทั้งสองตำแหน่ง…';
     fseMoveStatus.className = '';
-    await savePalletBatch([{...plan.source,expected_version:moveSourceVersion},{...plan.destination,expected_version:moveDestinationVersion}]);
+    await savePalletBatch([{...plan.source,expected_version:moveSourceVersion},{...plan.destination,expected_version:moveDestinationVersion}], [], {action:'transfer', document_no:document.getElementById('fseMoveReference').value.trim()});
     closeSlotMoveForm();
     syncAfterSlotEdit();
     showFseFeedback(`ย้าย ${plan.movedCount} รายการไป ${destination.zone}/${destination.slot_code} แล้ว`);
@@ -5360,7 +5389,7 @@ fseAddForm.addEventListener('submit', async (e) => {
   const qty = parseFloat(fseAddQty.value);
   const unit = fseAddUnit.value.trim();
   const reference = document.getElementById('fseAddReference').value.trim();
-  if (!await runSlotMutation(editingSlot.zone, editingSlot.slot, () => addSlotItem(editingSlot.zone, editingSlot.slot, code, name, lotNo, receiveDate, qty, unit, '', reference))) return;
+  if (!await runSlotMutation(editingSlot.zone, editingSlot.slot, () => addSlotItem(editingSlot.zone, editingSlot.slot, code, name, lotNo, receiveDate, qty, unit, '', reference), {action:'receive',document_no:reference})) return;
   fseAddCode.value = ''; fseAddName.value = ''; fseAddLotNo.value = ''; fseAddReceiveDate.value = ''; fseAddQty.value = ''; fseAddUnit.value = ''; document.getElementById('fseAddReference').value = '';
   hideAddProductSuggestions();
   fseAddName.dataset.autofilled = ''; fseAddName.classList.remove('is-autofilled');
@@ -5588,7 +5617,7 @@ fseItemsList.addEventListener('click', async (e) => {
       unit: formEl.querySelector('.fr-unit').value.trim(),
       by: formEl.querySelector('.fr-by').value.trim(),
       reference: formEl.querySelector('.fr-reference').value.trim(),
-    }))) return;
+    }), {action:'return',document_no:formEl.querySelector('.fr-reference').value.trim()})) return;
     returnOpenIndex = null;
     syncAfterSlotEdit();
     showFseFeedback('บันทึกการรับคืนแล้ว');
@@ -5621,7 +5650,7 @@ fseItemsList.addEventListener('click', async (e) => {
     const unit = formEl.querySelector('.fw-unit').value.trim();
     const by = formEl.querySelector('.fw-by').value.trim();
     const reference = formEl.querySelector('.fw-reference').value.trim();
-    if (!await runSlotMutation(editingSlot.zone, editingSlot.slot, () => withdrawSlotItem(editingSlot.zone, editingSlot.slot, idx, { date, qty, unit, by, reference }))) return;
+    if (!await runSlotMutation(editingSlot.zone, editingSlot.slot, () => withdrawSlotItem(editingSlot.zone, editingSlot.slot, idx, { date, qty, unit, by, reference }), {action:'issue',document_no:reference})) return;
     withdrawOpenIndex = null;
   returnOpenIndex = null;
     syncAfterSlotEdit();
@@ -9369,6 +9398,7 @@ window.addEventListener('pageshow', () => {
   applyDashboardTheme(saved === 'dark' ? 'dark' : 'light');
 });
 </script>
+<script src="pallet-audit.js"></script>
 <script src="daily-movements.js"></script>
 <script src="receipt-plan.js"></script>
 

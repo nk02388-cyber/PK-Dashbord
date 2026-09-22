@@ -6,17 +6,19 @@ async function main(){
   const ctx=vm.createContext({SLOT_ITEMS:{F:{'F-18':[{code:'TEST',qty:10,remainingQty:10}]}},PALLET_STATUS:{F:{'F-18':'occupied'}},
     palletCanEdit:true,palletDataReady:true,palletWriteBusy:false,palletVersions:new Map(),receiveVersions:new Map(),palletRemoteRows:new Map(),
     editingSlot:{zone:'F',slot:'F-18',version:3},slotEditPanel:{},renderOverviewSlotStatus(){},refreshAfterRemoteChange(){},
-    showFseFeedback:m=>feedback=m,setSyncStatus(){},
+    showFseFeedback:m=>feedback=m,setSyncStatus(){},document:{getElementById(id){return {value:id==='palletAuditActor'?'tester':'DOC-1'}}},localStorage:{setItem(){}},
     supabaseClient:{async rpc(name,args){calls++;sent=args;
       if(mode==='conflict')return {error:{code:'40001'}};
       if(mode==='denied')return {error:{code:'42501'}};
       if(mode==='network')return {error:{message:'network'}};
       return {data:{slots:args.p_slots.map(r=>({...r,version:r.expected_version+1})),dates:args.p_dates.map(r=>({...r,version:r.expected_version+1}))}}}}});
-  for(const n of ['isOccupied','setOccupied','buildSlotRow','restoreLocalSlot','applyRemoteSlotRow','applyRemoteReceiveDateRow','savePalletBatch','runSlotMutation',
+  for(const n of ['isOccupied','setOccupied','buildSlotRow','restoreLocalSlot','applyRemoteSlotRow','applyRemoteReceiveDateRow','palletAuditMetadata','savePalletBatch','runSlotMutation',
     'getRemainingQty','addSlotItem','removeSlotItem','updateSlotItem','withdrawSlotItem','returnSlotItem','syncReceiveDateToRemote','setReceiveDate'])vm.runInContext(extract(n),ctx);
   ctx.RECEIVE_DATES={};
   assert.equal(await ctx.runSlotMutation('F','F-18',()=>ctx.withdrawSlotItem('F','F-18',0,{qty:2,date:'2026-09-05',unit:'pcs',by:'tester'})),true);
-  assert.equal(sent.p_slots[0].expected_version,3);assert.equal(ctx.editingSlot.version,4);assert.equal(ctx.SLOT_ITEMS.F['F-18'][0].remainingQty,8);
+  assert.equal(sent.p_slots[0].expected_version,3);assert.equal(sent.p_slots[0]._audit.actor,'tester');assert.equal(sent.p_slots[0]._audit.document_no,'DOC-1');assert.equal(ctx.editingSlot.version,4);assert.equal(ctx.SLOT_ITEMS.F['F-18'][0].remainingQty,8);
+  assert.equal(sent.p_slots[0]._audit.action,'adjust');
+  assert.match(fs.readFileSync(path.join(__dirname,'..','supabase-pallet-audit.sql'),'utf8'),/create trigger pallet_audit_after_write after insert or update on public\.pallet_slots/);
   const saved=JSON.stringify(ctx.SLOT_ITEMS);
   for(const fail of ['conflict','network','denied']){
     mode=fail;assert.equal(await ctx.runSlotMutation('F','F-18',()=>ctx.removeSlotItem('F','F-18',0)),false);
@@ -33,7 +35,7 @@ async function main(){
   await ctx.setReceiveDate('TEST','2026-09-05',0);assert.equal(ctx.RECEIVE_DATES.TEST,'2026-09-05');
   mode='conflict';await assert.rejects(ctx.setReceiveDate('TEST','2026-09-06',1),/คนแก้/);assert.equal(ctx.RECEIVE_DATES.TEST,'2026-09-05');
   assert.doesNotMatch(html,/\.from\('(?:pallet_slots|receive_dates)'\)\.(?:upsert|update|insert|delete)/);
-  assert.match(extract('pushFullGeometryToRemote'),/savePalletBatch\(slots,dates\)/);
+  assert.match(extract('pushFullGeometryToRemote'),/savePalletBatch\(slots,dates,\{action:'import'\}\)/);
   console.log('PASS: public versioned writes, server versions, all-or-nothing local changes, receive dates, stale events and editor baseline');
 }
 main().catch(e=>{console.error(e);process.exitCode=1});
