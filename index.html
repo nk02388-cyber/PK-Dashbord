@@ -518,6 +518,13 @@
     touch-action: none;
   }
   .floorplan-image-wrap.ov-dragging { cursor: grabbing; }
+  body.floorplan-fullscreen-open { overflow: hidden; }
+  .floorplan-image-wrap.is-fullscreen {
+    position: fixed; inset: 0; z-index: 180; width: 100vw; max-width: none;
+    height: 100dvh; aspect-ratio: auto !important; margin: 0; border: 0; border-radius: 0;
+    background: #fff;
+  }
+  .floorplan-image-wrap.is-fullscreen .floorplan-ov-controls { top: max(10px, env(safe-area-inset-top)); right: max(10px, env(safe-area-inset-right)); flex-wrap: wrap; justify-content: flex-end; }
   /* Image and all overlays share one view-only transform. The outer aspect-ratio
      reserves the cropped viewport; ovApply sets the original landscape stage size.
      Keeping source coordinates intact also preserves the separate per-zone detail viewer. */
@@ -2430,6 +2437,7 @@
           <button type="button" class="fz-zoom-ctrl-btn" id="floorplanOverviewZoomIn" title="ซูมเข้า">+</button>
           <button type="button" class="fz-zoom-ctrl-btn map-rotate-btn" id="floorplanOverviewRotate" title="หมุนผังตามเข็มนาฬิกา 90°" aria-label="หมุนผังหลัก 90 องศา">↻ หมุนผัง</button>
           <button type="button" class="fz-zoom-ctrl-btn" id="floorplanOverviewZoomReset" title="รีเซ็ต">รีเซ็ต</button>
+          <button type="button" class="fz-zoom-ctrl-btn map-rotate-btn" id="floorplanOverviewFullscreen" title="ขยายผังเต็มจอ" aria-label="ขยายผังเต็มจอ" aria-pressed="false">⛶ เต็มจอ</button>
         </div>
       </div>
     </div>
@@ -3148,6 +3156,22 @@ document.getElementById('floorplanOverviewZoomOut').addEventListener('click', ()
 });
 document.getElementById('floorplanOverviewZoomReset').addEventListener('click', ovReset);
 document.getElementById('floorplanOverviewRotate').addEventListener('click', rotateFloorplan);
+const overviewFullscreenBtn = document.getElementById('floorplanOverviewFullscreen');
+function setOverviewFullscreen(open) {
+  floorplanWrap.classList.toggle('is-fullscreen', open);
+  document.body.classList.toggle('floorplan-fullscreen-open', open);
+  overviewFullscreenBtn.setAttribute('aria-pressed', String(open));
+  overviewFullscreenBtn.setAttribute('aria-label', open ? 'ออกจากโหมดเต็มจอ' : 'ขยายผังเต็มจอ');
+  overviewFullscreenBtn.title = open ? 'ออกจากโหมดเต็มจอ' : 'ขยายผังเต็มจอ';
+  overviewFullscreenBtn.textContent = open ? '⛶ ออกจากเต็มจอ' : '⛶ เต็มจอ';
+  requestAnimationFrame(ovApply);
+}
+overviewFullscreenBtn.addEventListener('click', () => setOverviewFullscreen(!floorplanWrap.classList.contains('is-fullscreen')));
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && floorplanWrap.classList.contains('is-fullscreen') && zoomModal.hidden) {
+    event.preventDefault(); event.stopImmediatePropagation(); setOverviewFullscreen(false);
+  }
+}, true);
 // A window resize can change floorplanWrap's pixel size (e.g. rotating a tablet, or a
 // sidebar collapsing), which would otherwise leave ovPanX/Y clamped against a stale rect --
 // re-apply so an already-panned/zoomed view stays clamped correctly against the new size.
