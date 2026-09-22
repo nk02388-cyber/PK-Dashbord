@@ -1,0 +1,16 @@
+.pk-auth-screen{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;padding:20px;background:var(--page-plane,#f7f9fc);color:var(--text-primary,#172033)}
+.pk-auth-screen[hidden]{display:none}
+.stock-update-btn[hidden],#userManagerButton[hidden],#logoutButton[hidden]{display:none!important}
+.pk-auth-card{width:min(100%,430px);padding:28px;background:var(--surface-1,#fff);border:1px solid var(--border,#d8e2f0);border-radius:18px;box-shadow:0 16px 50px rgba(13,35,77,.12)}
+.pk-auth-card h2{margin:0 0 6px;font-size:22px}.pk-auth-card p{margin:0 0 22px;color:var(--text-secondary,#526174);font-size:14px}
+.pk-auth-card label,.pk-user-form label{display:block;font-size:13px;font-weight:700;margin:12px 0 5px}
+.pk-auth-card input,.pk-user-form input{width:100%;min-height:44px;padding:9px 12px;border:1px solid var(--border,#c7d4e8);border-radius:8px;background:var(--surface-1,#fff);color:var(--text-primary,#172033);font:inherit}
+.pk-auth-card button,.pk-user-form button,.pk-user-row button{min-height:42px;padding:9px 15px;border:0;border-radius:8px;background:#2145b4;color:#fff;font:inherit;font-weight:700;cursor:pointer}
+.pk-auth-card button{width:100%;margin-top:18px}.pk-auth-card button:disabled,.pk-user-form button:disabled{opacity:.6;cursor:wait}
+.pk-auth-message{min-height:22px;margin-top:12px;color:#b42318;font-size:13px}.pk-auth-message:empty{visibility:hidden}
+.pk-users-dialog{width:min(95vw,680px);max-height:90vh;padding:22px;border:1px solid var(--border,#d8e2f0);border-radius:14px;background:var(--surface-1,#fff);color:var(--text-primary,#172033)}
+.pk-users-dialog::backdrop{background:rgba(10,25,50,.55)}.pk-users-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.pk-users-head h2{margin:0;font-size:19px}
+.pk-users-head button{border:1px solid var(--border,#c7d4e8);border-radius:7px;padding:5px 10px;background:transparent;color:inherit;cursor:pointer}
+.pk-user-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid var(--border,#d8e2f0)}.pk-user-row small{display:block;color:var(--text-secondary,#526174)}
+.pk-user-row button{min-height:34px;background:#bd2e32}.pk-user-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px;margin-top:20px}.pk-user-form h3,.pk-user-form button,.pk-user-form .pk-auth-message{grid-column:1/-1}
+@media(max-width:560px){.pk-auth-card{padding:22px}.pk-user-form{grid-template-columns:1fr}.pk-users-dialog{padding:16px}}

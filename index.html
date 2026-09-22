@@ -2,6 +2,7 @@
 <html lang="th" style="--sticky-header-h: 69px; --sticky-stack-h: 112px;"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>.auth-locked #mainDashboard{display:none}</style>
 <title>PACKAGING STOCK INVENTORY DASHBORD</title>
 <script>
   // Apply the saved two-state theme before CSS paints to avoid a light/dark flash. The previous
@@ -1706,7 +1707,7 @@
 .barcode-panel{border:1px solid var(--border);background:var(--surface-1);border-radius:12px;padding:14px;margin:14px 0}.barcode-panel h3{margin:0 0 6px}.barcode-panel p{margin:6px 0 10px;color:var(--text-secondary)}.barcode-controls{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:9px 0}.barcode-controls input{flex:1 1 230px}.barcode-controls input,.barcode-controls select,.barcode-controls button{min-height:44px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;background:var(--surface-1);color:var(--text-primary)}.barcode-controls button{cursor:pointer;font-weight:600}.barcode-file{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}.barcode-file input{max-width:230px}.barcode-camera{max-width:460px;margin:10px auto}.barcode-selection{font-weight:600;padding:9px;border-radius:8px;background:var(--page-plane)}#barcodeScanStatus[data-error="true"]{color:var(--status-critical)}@media(max-width:600px){.barcode-controls input,.barcode-controls button,.barcode-controls label{width:100%}.barcode-controls label select{width:100%}}
 </style>
 </head>
-<body class="viz-root">
+<body class="viz-root auth-locked">
 <a class="skip-link" href="#mainDashboard">ข้ามไปยังเนื้อหาหลัก</a>
 <div class="wrap" id="mainDashboard" tabindex="-1">
 
@@ -1721,6 +1722,8 @@
     <div class="meta">
       <span id="reportDate">ข้อมูล ณ วันที่ 17 ส.ค. 69</span>
       <button class="theme-toggle" id="themeToggle" type="button" aria-pressed="false">โหมดมืด</button>
+      <button class="theme-toggle" id="userManagerButton" type="button" hidden>จัดการผู้ใช้</button>
+      <button class="theme-toggle" id="logoutButton" type="button" hidden>ออกจากระบบ</button>
     </div>
   </header>
 
@@ -3398,8 +3401,7 @@ function setOccupied(zoneCode, slotCode, occupied) {
 }
 
 // ---------- Authenticated pallet sync ----------
-// Apply supabase-pallet-security.sql after the original pallet schema.
-// All browser writes use save_pallet_changes with expected versions.
+// Browser writes use the app-only wrapper with expected versions.
 const SUPABASE_URL = 'https://zgsxbuckjrplkpvtlbmn.supabase.co';
 // 21 Aug 2026: Pornchai's project shows Supabase's newer "Publishable key" format
 // (sb_publishable_...) rather than the older JWT-format anon key -- both authenticate as the
@@ -3469,7 +3471,7 @@ async function savePalletBatch(slots, dates = [], audit = {}) {
   if (!palletDataReady) throw new Error('ยังโหลดข้อมูลพาเลตไม่ครบ กรุณารีเฟรชก่อนแก้ไข');
   const metadata = slots.length ? palletAuditMetadata(audit.action, audit.document_no || '') : null;
   const auditedSlots = slots.map(slot => ({...slot, _audit:metadata}));
-  const { data, error } = await supabaseClient.rpc('save_pallet_changes', { p_slots: auditedSlots, p_dates: dates });
+  const { data, error } = await supabaseClient.rpc('app_save_pallet_changes', { p_slots: auditedSlots, p_dates: dates });
   if (error) {
     if (error.code === '40001') throw new Error('มีคนแก้ข้อมูลนี้แล้ว · ยังไม่ได้บันทึก กรุณาคัดลอกค่าที่กรอกไว้ แล้วรีเฟรชเพื่อตรวจข้อมูลล่าสุด');
     if (error.code === '42501') throw new Error('ระบบยังไม่อนุญาตให้บันทึก กรุณาติดต่อผู้ดูแล');
@@ -3652,7 +3654,7 @@ async function initSupabaseSync() {
     setSyncStatus('error', 'เปิดการซิงค์แบบเรียลไทม์ไม่สำเร็จ · รีเฟรชเพื่อดูข้อมูลจากเครื่องอื่น');
   }
 }
-if (supabaseClient) initSupabaseSync();
+// Authentication bootstrap starts remote loading after a verified app session.
 
 // Capture phase prevents read-only UI from changing local data, including Enter/file inputs.
 function guardPalletWrite(e) {
@@ -6279,7 +6281,7 @@ async function loadLatestStockFromSupabase() {
     renderStockSnapshotNotice(); return;
   }
   try {
-    const { data, error } = await stockSupabaseClient.rpc('get_latest_stock_inventory');
+    const { data, error } = await stockSupabaseClient.rpc('app_get_latest_stock_inventory');
     if (error) throw error;
     if (data && data.items && data.items.length) {
       stockSnapshotState = 'latest';
@@ -6308,7 +6310,7 @@ stockExcelInput.addEventListener('change', async () => {
     const parsed = await parseStockFiles(files);
     const updatePin = window.prompt('กรอก PIN เพื่อยืนยันการอัปเดตสต็อก');
     if (updatePin === null) throw new Error('ยกเลิกการอัปเดต');
-    const { data:updated, error } = await stockSupabaseClient.rpc('replace_stock_inventory', { p_report_date:parsed.reportDate, p_source_name:files.map(f => f.name).join(', '), p_items:parsed.items, p_update_pin:updatePin });
+    const { data:updated, error } = await stockSupabaseClient.rpc('app_replace_stock_inventory', { p_report_date:parsed.reportDate, p_source_name:files.map(f => f.name).join(', '), p_items:parsed.items, p_update_pin:updatePin });
     if (error) throw error;
     if (!updated || !updated.items) throw new Error('ไม่ได้รับผลคำนวณจากระบบ กรุณาลองใหม่');
     stockSnapshotState = 'latest';
@@ -6322,7 +6324,7 @@ stockExcelInput.addEventListener('change', async () => {
   } finally { stockUpdateBtn.disabled = false; }
 });
 
-loadLatestStockFromSupabase();
+// Authentication bootstrap loads the latest stock after login.
 
 /* ======================================================================
    TAB 2: BOM PK AVAILABILITY
@@ -9460,6 +9462,8 @@ window.addEventListener('pageshow', () => {
 <script src="barcode-ui.js"></script>
 <script src="daily-movements.js"></script>
 <script src="receipt-plan.js"></script>
+<link rel="stylesheet" href="auth-ui.css">
+<script src="auth-ui.js"></script>
 
 
 </body></html>
