@@ -1729,6 +1729,7 @@
   <nav class="tabs" id="tabs" role="tablist" aria-label="ส่วนข้อมูลแดชบอร์ด" hidden>
     <button class="tab-btn" id="tab-stock" data-tab="stock" type="button" role="tab" aria-selected="false" aria-controls="pane-stock" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m4 7 8-4 8 4-8 4-8-4Z" stroke-width="1.8"/><path d="m4 7v10l8 4 8-4V7M12 11v10" stroke-width="1.8"/></svg><span>สต็อกบรรจุภัณฑ์</span><span class="tab-badge" id="tabBadgeStock">฿32.41M</span></button>
     <button class="tab-btn" id="tab-bompk" data-tab="bompk" type="button" role="tab" aria-selected="false" aria-controls="pane-bompk" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 21V9l6 3V8l6 4V5h6v16H3Z" stroke-width="1.8"/><path d="M7 17h2m3 0h2m3 0h2" stroke-width="1.8"/></svg><span>ความพร้อมบรรจุภัณฑ์ (BOM PK)</span><span class="tab-badge critical" id="tabBadgeBompk">612 ติดขัด</span></button>
+    <button class="tab-btn" id="tab-bom-plan" data-tab="bom-plan" type="button" role="tab" aria-selected="false" aria-controls="pane-bom-plan" tabindex="-1"><span>แผนบรรจุภัณฑ์หลาย FG</span></button>
     <button class="tab-btn" id="tab-reconcile" data-tab="reconcile" type="button" role="tab" aria-selected="false" aria-controls="pane-reconcile" tabindex="-1"><span>เปรียบเทียบสต็อกพาเลต</span></button>
     <button class="tab-btn active" id="tab-floorplan" data-tab="floorplan" type="button" role="tab" aria-selected="true" aria-controls="pane-floorplan"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z" stroke-width="1.8"/><path d="M9 3v15m6-12v15" stroke-width="1.8"/></svg><span>ผังพื้นที่ชั้น 2</span><span class="tab-badge" id="tabBadgeFloorplan">46 โซน</span></button>
     <button class="tab-btn" id="tab-barcode" data-tab="barcode" type="button" role="tab" aria-selected="false" aria-controls="pane-barcode" tabindex="-1"><span>สแกน Barcode / QR</span></button>
@@ -2359,6 +2360,9 @@
       <div id="fgBomResult"><div class="fg-bom-empty">พิมพ์ชื่อหรือรหัส FG แล้วเลือกสินค้าเพื่อดู BOM</div></div>
     </div>
 
+  </div>
+
+  <div class="tab-pane" id="pane-bom-plan" role="tabpanel" aria-labelledby="tab-bom-plan" hidden>
     <div class="panel" id="bomPlanPanel">
       <h2>แผนบรรจุภัณฑ์หลาย FG</h2>
       <div class="stock-snapshot-notice" role="status"></div>
