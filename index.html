@@ -1499,8 +1499,6 @@
   }
   .nav-toggle:hover, .nav-toggle:focus-visible { border-color: var(--series-1); }
   .nav-toggle-current { color: var(--text-secondary); font-weight: 500; }
-  .nav-toggle-chevron { margin-left: auto; transition: transform .18s ease; }
-  .nav-toggle[aria-expanded="true"] .nav-toggle-chevron { transform: rotate(180deg); }
   .tab-btn {
     min-height: 44px; margin: 0; padding: 8px 12px; border: 1px solid transparent;
     border-radius: 9px; font-size: 13px; white-space: nowrap;
@@ -1684,7 +1682,7 @@
   @media (min-width: 1024px) {
     body.viz-root { padding: 12px 16px; }
     .dashboard-layout { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 16px; }
-    .dashboard-layout.nav-expanded { grid-template-columns: 224px minmax(0, 1fr); }
+    .dashboard-layout.nav-expanded { grid-template-columns: 320px minmax(0, 1fr); }
     .tabs {
       position: sticky; top: calc(var(--sticky-header-h, 0px) + 10px);
       display: flex; flex-direction: column; align-items: stretch; gap: 5px;
@@ -1692,8 +1690,10 @@
       overflow-x: hidden; overflow-y: auto; margin: 0; padding: 8px;
     }
     .tabs::before { content: none; }
-    .tabs .tab-btn { width: 100%; min-width: 0; justify-content: flex-start; text-align: left; white-space: normal; }
-    .tabs .tab-btn > span:first-of-type { min-width: 0; }
+    .tabs .tab-btn { width: 100%; min-width: 0; justify-content: flex-start; text-align: left; white-space: nowrap; }
+    .tabs .tab-btn > span:first-of-type { min-width: 0; white-space: nowrap; }
+    .tabs #tab-bompk { flex-wrap: wrap; }
+    .tabs #tab-bompk .tab-badge { margin-left: 28px; }
     .tabs .tab-badge { margin-left: auto; flex: none; }
     .dashboard-content .tab-pane { min-width: 0; }
     .dashboard-content .filter-bar { top: calc(var(--sticky-header-h, 0px) + 8px); }
@@ -1724,7 +1724,7 @@
     </div>
   </header>
 
-  <button class="nav-toggle" id="navToggle" type="button" aria-controls="tabs" aria-expanded="false"><span aria-hidden="true">☰</span><span>เมนู</span><span class="nav-toggle-current" id="navCurrentLabel">ผังพื้นที่ชั้น 2</span><span class="nav-toggle-chevron" aria-hidden="true">⌄</span></button>
+  <button class="nav-toggle" id="navToggle" type="button" aria-controls="tabs" aria-expanded="false"><span aria-hidden="true">☰</span><span>เมนู</span><span class="nav-toggle-current" id="navCurrentLabel">ผังพื้นที่ชั้น 2</span></button>
   <div class="dashboard-layout" id="dashboardLayout">
   <nav class="tabs" id="tabs" role="tablist" aria-label="ส่วนข้อมูลแดชบอร์ด" hidden>
     <button class="tab-btn" id="tab-stock" data-tab="stock" type="button" role="tab" aria-selected="false" aria-controls="pane-stock" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m4 7 8-4 8 4-8 4-8-4Z" stroke-width="1.8"/><path d="m4 7v10l8 4 8-4V7M12 11v10" stroke-width="1.8"/></svg><span>สต็อกบรรจุภัณฑ์</span><span class="tab-badge" id="tabBadgeStock">฿32.41M</span></button>
