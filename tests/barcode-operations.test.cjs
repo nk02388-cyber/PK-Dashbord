@@ -1,0 +1,18 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const {resolveScan,locationPayload,productPayload} = require('../barcode-operations.js');
+const locations = [{zone:'G',slot:'G-06'},{zone:'G-1',slot:'G1-06'}];
+const products = [{code:'31-0001-01',name:'ขวด',barcode:'8851234567890'},{code:'31-0001-02',name:'ฝา'}];
+assert.deepEqual(resolveScan(locationPayload('G','G-06'),locations,products),{kind:'location',zone:'G',slot:'G-06'});
+assert.equal(resolveScan('G-06',locations,products).kind,'location');
+assert.equal(resolveScan(productPayload('31-0001-01'),locations,products).product.code,'31-0001-01');
+assert.equal(resolveScan('8851234567890',locations,products).product.code,'31-0001-01');
+assert.equal(resolveScan('31-0001',locations,products).kind,'invalid','partial SKU must not select a product');
+assert.equal(resolveScan('PKLOC|G|BAD',locations,products).kind,'invalid');
+assert.equal(resolveScan('PKITEM|31-0001-02',locations,products).product.code,'31-0001-02');
+assert.equal(resolveScan('G-06',[...locations,{zone:'X',slot:'G-06'}],products).kind,'invalid','ambiguous physical label must be rejected');
+const ui = fs.readFileSync(path.join(__dirname,'..','barcode-ui.js'),'utf8');
+assert.match(ui,/openSlotEdit\(zone,slot\)/);
+assert.doesNotMatch(ui,/savePalletBatch|runSlotMutation/,'scan must not change stock until the user reviews and saves');
+console.log('PASS: exact product/location scans, alias matching, ambiguity rejection and reviewed writes');

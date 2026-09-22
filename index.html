@@ -1687,6 +1687,7 @@
     .dashboard-content .filter-bar { top: calc(var(--sticky-header-h, 0px) + 8px); }
   }
 .audit-entry-fields,.audit-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin:12px 0}.audit-entry-fields label{display:flex;flex-direction:column;gap:4px;min-width:220px;flex:1}.audit-entry-fields input,.audit-toolbar input{min-height:42px;border:1px solid var(--border,#cbd5e1);border-radius:8px;padding:8px 10px;background:var(--surface,#fff);color:var(--text-primary,#172033)}.audit-toolbar input{flex:1;min-width:220px}.audit-scroll{overflow:auto;max-height:70vh}.audit-table{width:100%;border-collapse:collapse;min-width:700px}.audit-table th,.audit-table td{text-align:left;vertical-align:top;padding:10px;border-bottom:1px solid var(--border,#dbe3ef)}.audit-table th{position:sticky;top:0;background:var(--surface,#fff)}.audit-table td:last-child{min-width:220px}
+.barcode-panel{border:1px solid var(--border);background:var(--surface-1);border-radius:12px;padding:14px;margin:14px 0}.barcode-panel h3{margin:0 0 6px}.barcode-panel p{margin:6px 0 10px;color:var(--text-secondary)}.barcode-controls{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:9px 0}.barcode-controls input{flex:1 1 230px}.barcode-controls input,.barcode-controls select,.barcode-controls button{min-height:44px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;background:var(--surface-1);color:var(--text-primary)}.barcode-controls button{cursor:pointer;font-weight:600}.barcode-file{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}.barcode-file input{max-width:230px}.barcode-camera{max-width:460px;margin:10px auto}.barcode-selection{font-weight:600;padding:9px;border-radius:8px;background:var(--page-plane)}#barcodeScanStatus[data-error="true"]{color:var(--status-critical)}@media(max-width:600px){.barcode-controls input,.barcode-controls button,.barcode-controls label{width:100%}.barcode-controls label select{width:100%}}
 </style>
 </head>
 <body class="viz-root">
@@ -2407,6 +2408,17 @@
         <label>เลขเอกสารอ้างอิงสำหรับการแก้ไข / นำเข้า *<input id="palletAuditDocument" type="text" maxlength="200" placeholder="เลขเอกสาร"></label>
       </div>
       <p class="panel-sub">ชื่อผู้ทำรายการเป็นข้อมูลที่ผู้ใช้กรอกเอง เนื่องจากระบบนี้ไม่มีการยืนยันตัวตน</p>
+      <section class="barcode-panel" aria-labelledby="barcodeTitle">
+        <h3 id="barcodeTitle">สแกนสินค้าและตำแหน่งพาเลต</h3>
+        <p>สแกนป้ายตำแหน่ง แล้วสแกนรหัสสินค้าเพื่อเปิดรายการในพาเลตนั้น · ตรวจสอบจำนวนก่อนกดบันทึก</p>
+        <div class="barcode-controls"><input id="barcodeScanInput" type="text" inputmode="none" autocomplete="off" placeholder="สแกนด้วยเครื่องอ่าน หรือพิมพ์รหัสแล้วกด Enter" aria-label="รหัส QR หรือบาร์โค้ด"><button type="button" id="barcodeScanApply">ตรวจรหัส</button><button type="button" id="barcodeCameraStart">เปิดกล้องสแกน</button><button type="button" id="barcodeCameraStop" hidden>ปิดกล้อง</button></div>
+        <div id="barcodeCameraView" class="barcode-camera" hidden></div>
+        <label class="barcode-file">หรือเลือกรูป QR/บาร์โค้ด <input id="barcodeImageInput" type="file" accept="image/*" capture="environment"></label>
+        <div id="barcodeScanSelection" class="barcode-selection">ยังไม่ได้เลือกตำแหน่งหรือสินค้า</div>
+        <p id="barcodeScanStatus" role="status" aria-live="polite"></p>
+        <div class="barcode-controls"><label>โซนสำหรับพิมพ์ป้าย <select id="barcodePrintZone"></select></label><button type="button" id="barcodePrintLocations">พิมพ์ป้าย QR ตำแหน่ง</button></div>
+        <div class="barcode-controls"><input id="barcodePrintProductCode" type="text" placeholder="รหัสสินค้าที่ต้องการพิมพ์ QR" aria-label="รหัสสินค้าสำหรับพิมพ์ QR"><button type="button" id="barcodePrintProduct">พิมพ์ป้าย QR สินค้า</button></div>
+      </section>
       <div class="bom-plan-form" style="margin-top:12px">
         <button type="button" id="floorplanExcelExport" class="excl-toggle-btn" style="min-height:44px">ส่งออกข้อมูลทุกโซน Excel</button>
         <span id="floorplanExcelStatus" role="status"></span>
@@ -9399,6 +9411,10 @@ window.addEventListener('pageshow', () => {
 });
 </script>
 <script src="pallet-audit.js"></script>
+<script src="vendor/html5-qrcode.min.js"></script>
+<script src="vendor/qrcode-generator.js"></script>
+<script src="barcode-operations.js"></script>
+<script src="barcode-ui.js"></script>
 <script src="daily-movements.js"></script>
 <script src="receipt-plan.js"></script>
 
