@@ -1490,6 +1490,17 @@
     border-radius: 13px; background: color-mix(in srgb, var(--surface-1) 96%, transparent);
     box-shadow: var(--shadow-card); backdrop-filter: blur(12px);
   }
+  .tabs[hidden] { display: none !important; }
+  .nav-toggle {
+    display: inline-flex; align-items: center; gap: 9px; min-height: 44px;
+    margin: 12px 0; padding: 8px 14px; border: 1px solid var(--border);
+    border-radius: 10px; background: var(--surface-1); color: var(--text-primary);
+    box-shadow: var(--shadow-card); cursor: pointer; font: inherit; font-weight: 700;
+  }
+  .nav-toggle:hover, .nav-toggle:focus-visible { border-color: var(--series-1); }
+  .nav-toggle-current { color: var(--text-secondary); font-weight: 500; }
+  .nav-toggle-chevron { margin-left: auto; transition: transform .18s ease; }
+  .nav-toggle[aria-expanded="true"] .nav-toggle-chevron { transform: rotate(180deg); }
   .tab-btn {
     min-height: 44px; margin: 0; padding: 8px 12px; border: 1px solid transparent;
     border-radius: 9px; font-size: 13px; white-space: nowrap;
@@ -1672,19 +1683,24 @@
   @media (max-width:700px) { .daily-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); } .daily-kpi strong { font-size:21px; } }
   @media (min-width: 1024px) {
     body.viz-root { padding: 12px 16px; }
-    .dashboard-layout { display: grid; grid-template-columns: 224px minmax(0, 1fr); align-items: start; gap: 16px; }
+    .dashboard-layout { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 16px; }
+    .dashboard-layout.nav-expanded { grid-template-columns: 224px minmax(0, 1fr); }
     .tabs {
       position: sticky; top: calc(var(--sticky-header-h, 0px) + 10px);
       display: flex; flex-direction: column; align-items: stretch; gap: 5px;
       max-height: calc(100vh - var(--sticky-header-h, 0px) - 24px);
       overflow-x: hidden; overflow-y: auto; margin: 0; padding: 8px;
     }
-    .tabs::before { content: 'เมนู'; padding: 5px 10px; font-size: 12px; font-weight: 800; color: var(--text-secondary); }
+    .tabs::before { content: none; }
     .tabs .tab-btn { width: 100%; min-width: 0; justify-content: flex-start; text-align: left; white-space: normal; }
     .tabs .tab-btn > span:first-of-type { min-width: 0; }
     .tabs .tab-badge { margin-left: auto; flex: none; }
     .dashboard-content .tab-pane { min-width: 0; }
     .dashboard-content .filter-bar { top: calc(var(--sticky-header-h, 0px) + 8px); }
+  }
+  @media (max-width: 1023px) {
+    .nav-toggle { width: 100%; }
+    .tabs { position: relative; top: auto; }
   }
 .audit-entry-fields,.audit-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin:12px 0}.audit-entry-fields label{display:flex;flex-direction:column;gap:4px;min-width:220px;flex:1}.audit-entry-fields input,.audit-toolbar input{min-height:42px;border:1px solid var(--border,#cbd5e1);border-radius:8px;padding:8px 10px;background:var(--surface,#fff);color:var(--text-primary,#172033)}.audit-toolbar input{flex:1;min-width:220px}.audit-scroll{overflow:auto;max-height:70vh}.audit-table{width:100%;border-collapse:collapse;min-width:700px}.audit-table th,.audit-table td{text-align:left;vertical-align:top;padding:10px;border-bottom:1px solid var(--border,#dbe3ef)}.audit-table th{position:sticky;top:0;background:var(--surface,#fff)}.audit-table td:last-child{min-width:220px}
 .barcode-panel{border:1px solid var(--border);background:var(--surface-1);border-radius:12px;padding:14px;margin:14px 0}.barcode-panel h3{margin:0 0 6px}.barcode-panel p{margin:6px 0 10px;color:var(--text-secondary)}.barcode-controls{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:9px 0}.barcode-controls input{flex:1 1 230px}.barcode-controls input,.barcode-controls select,.barcode-controls button{min-height:44px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;background:var(--surface-1);color:var(--text-primary)}.barcode-controls button{cursor:pointer;font-weight:600}.barcode-file{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}.barcode-file input{max-width:230px}.barcode-camera{max-width:460px;margin:10px auto}.barcode-selection{font-weight:600;padding:9px;border-radius:8px;background:var(--page-plane)}#barcodeScanStatus[data-error="true"]{color:var(--status-critical)}@media(max-width:600px){.barcode-controls input,.barcode-controls button,.barcode-controls label{width:100%}.barcode-controls label select{width:100%}}
@@ -1708,8 +1724,9 @@
     </div>
   </header>
 
-  <div class="dashboard-layout">
-  <nav class="tabs" id="tabs" role="tablist" aria-label="ส่วนข้อมูลแดชบอร์ด">
+  <button class="nav-toggle" id="navToggle" type="button" aria-controls="tabs" aria-expanded="false"><span aria-hidden="true">☰</span><span>เมนู</span><span class="nav-toggle-current" id="navCurrentLabel">ผังพื้นที่ชั้น 2</span><span class="nav-toggle-chevron" aria-hidden="true">⌄</span></button>
+  <div class="dashboard-layout" id="dashboardLayout">
+  <nav class="tabs" id="tabs" role="tablist" aria-label="ส่วนข้อมูลแดชบอร์ด" hidden>
     <button class="tab-btn" id="tab-stock" data-tab="stock" type="button" role="tab" aria-selected="false" aria-controls="pane-stock" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m4 7 8-4 8 4-8 4-8-4Z" stroke-width="1.8"/><path d="m4 7v10l8 4 8-4V7M12 11v10" stroke-width="1.8"/></svg><span>สต็อกบรรจุภัณฑ์</span><span class="tab-badge" id="tabBadgeStock">฿32.41M</span></button>
     <button class="tab-btn" id="tab-bompk" data-tab="bompk" type="button" role="tab" aria-selected="false" aria-controls="pane-bompk" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 21V9l6 3V8l6 4V5h6v16H3Z" stroke-width="1.8"/><path d="M7 17h2m3 0h2m3 0h2" stroke-width="1.8"/></svg><span>ความพร้อมบรรจุภัณฑ์ (BOM PK)</span><span class="tab-badge critical" id="tabBadgeBompk">612 ติดขัด</span></button>
     <button class="tab-btn active" id="tab-floorplan" data-tab="floorplan" type="button" role="tab" aria-selected="true" aria-controls="pane-floorplan"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z" stroke-width="1.8"/><path d="M9 3v15m6-12v15" stroke-width="1.8"/></svg><span>ผังพื้นที่ชั้น 2</span><span class="tab-badge" id="tabBadgeFloorplan">46 โซน</span></button>
@@ -2654,6 +2671,15 @@ document.getElementById('reportDate').textContent = String(STOCK.report_date || 
 
 // ---------- Tabs ----------
 const tabButtons = document.querySelectorAll('.tab-btn');
+const tabsNav = document.getElementById('tabs');
+const navToggle = document.getElementById('navToggle');
+function setNavOpen(open) {
+  tabsNav.hidden = !open;
+  document.getElementById('dashboardLayout').classList.toggle('nav-expanded', open);
+  navToggle.setAttribute('aria-expanded', String(open));
+  if (typeof updateStickyOffsets === 'function') updateStickyOffsets();
+}
+navToggle.addEventListener('click', () => setNavOpen(tabsNav.hidden));
 function activateTab(b, moveFocus = false) {
   tabButtons.forEach(x => {
     const selected = x === b;
@@ -2664,7 +2690,9 @@ function activateTab(b, moveFocus = false) {
   b.classList.add('active');
   document.querySelectorAll('.tab-pane').forEach(p => p.hidden = true);
   document.getElementById('pane-' + b.dataset.tab).hidden = false;
-  if (moveFocus) b.focus();
+  document.getElementById('navCurrentLabel').textContent = b.querySelector('span:not(.tab-badge)')?.textContent || b.textContent.trim();
+  setNavOpen(false);
+  if (moveFocus || document.activeElement === b) navToggle.focus();
   // (The total-value card lives inside #pane-stock itself now, so it's hidden/shown
   // automatically along with the rest of that pane -- no separate toggle needed.)
 }
@@ -2680,6 +2708,12 @@ document.getElementById('tabs').addEventListener('keydown', (e) => {
   if (e.key === 'Home') next = 0;
   if (e.key === 'End') next = buttons.length - 1;
   activateTab(buttons[next], true);
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !tabsNav.hidden) {
+    setNavOpen(false);
+    navToggle.focus();
+  }
 });
 document.getElementById('tabBadgeStock').textContent = '฿' + fmtCompact(STOCK.kpis.total_value);
 document.getElementById('tabBadgeBompk').textContent = fmt0(BOMPK.kpis.fg_blocked) + ' ติดขัด';
