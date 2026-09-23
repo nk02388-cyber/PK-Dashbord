@@ -9,17 +9,17 @@
   [...new Set(locations.map(loc => loc.zone))].sort((a,b) => a.localeCompare(b,'th',{numeric:true})).forEach(zone => {
     const option = document.createElement('option'); option.value = zone; option.textContent = zone; printZone.append(option);
   });
-  let chosenLocation = null, chosenProduct = null, camera = null, cameraRunning = false, cameraStarting = false;
+  let chosenProduct = null, camera = null, cameraRunning = false, cameraStarting = false;
   let cameraGeneration = 0, scanBusy = false, lastScanValue = '', lastScanAt = 0;
   function products() {
     return [...(STOCK.items || []), ...Object.values(SLOT_ITEMS).flatMap(slots => Object.values(slots).flat())];
   }
   function message(text, error = false) { status.textContent = text; status.dataset.error = String(error); }
   function showSelection() {
-    selection.textContent = `ตำแหน่ง: ${chosenLocation ? chosenLocation.zone+'/'+chosenLocation.slot : 'ยังไม่สแกน'} · สินค้า: ${chosenProduct ? chosenProduct.code+' '+(chosenProduct.name || '') : 'ยังไม่สแกน'}`;
+    selection.textContent = chosenProduct ? `สินค้า: ${chosenProduct.code} ${chosenProduct.name || ''}` : 'ยังไม่ได้เลือกสินค้า';
   }
   function clearSelection(announce = true) {
-    chosenLocation = null; chosenProduct = null; lastScanValue = ''; lastScanAt = 0;
+    chosenProduct = null; lastScanValue = ''; lastScanAt = 0;
     input.value = ''; showSelection();
     if (announce) message('ล้างตำแหน่งและสินค้าที่สแกนแล้ว');
   }
@@ -45,7 +45,7 @@
   function openMatch(location, product) {
     if (!location || !product) return;
     const {zone,slot} = location;
-    openZoomModal(zone);
+    jumpToSlot(zone,slot);
     openSlotEdit(zone,slot);
     const index = slotItemsFor(zone,slot).findIndex(item => String(item.code).trim().toUpperCase() === String(product.code).trim().toUpperCase());
     if (index >= 0) {
@@ -59,6 +59,34 @@
       showFseFeedback(`ตำแหน่ง ${zone}/${slot} ยังไม่มี ${product.code} · กรอก Lot วันที่ จำนวน และเอกสารรับก่อนบันทึก`);
     }
   }
+  async function openStoredTag(id) {
+    if (!supabaseClient) { message('ยังไม่ได้เชื่อมต่อฐานข้อมูลรับเข้า',true); return; }
+    const {data:tag,error:tagError} = await supabaseClient.from('incoming_pallets')
+      .select('id,status,zone,slot_code,product_code,receiving_no,batch_index,batch_total').eq('id',id).single();
+    if (tagError || !tag) { message('ไม่พบป้ายพาเลตนี้ในทะเบียนรับเข้า',true); return; }
+    if (tag.status !== 'stored' || !tag.zone || !tag.slot_code) {
+      message('ป้ายพาเลตนี้ยังรอจัดเก็บ · ไปที่เมนูรับเข้าและจัดเก็บ',true); return;
+    }
+    const location = locations.find(loc => loc.zone === tag.zone && loc.slot === tag.slot_code);
+    if (!location) { message('ตำแหน่งของป้ายนี้ไม่อยู่ในผัง · กรุณาตรวจข้อมูลจัดเก็บ',true); return; }
+    const {data:slot,error:slotError} = await supabaseClient.from('pallet_slots').select('*')
+      .eq('zone',location.zone).eq('slot_code',location.slot).single();
+    if (slotError || !slot) { message('โหลดรายการสินค้าในตำแหน่งนี้ไม่ได้ · กรุณาลองใหม่',true); return; }
+    applyRemoteSlotRow(slot,{silent:true,force:true});
+    refreshAfterRemoteChange(location.zone,location.slot);
+    await stopCamera(); clearSelection(false);
+    jumpToSlot(location.zone,location.slot);
+    openSlotEdit(location.zone,location.slot);
+    const index = slotItemsFor(location.zone,location.slot).findIndex(item =>
+      String(item.inboundTagId || '').toLowerCase() === id);
+    if (index >= 0) {
+      const row = fseItemsList.querySelectorAll('.fse-item-row')[index];
+      row?.classList.add('barcode-match'); row?.scrollIntoView({block:'nearest'});
+      showFseFeedback(`พบป้าย ${tag.receiving_no} · ${tag.batch_index || 1}/${tag.batch_total || 1} ที่ ${location.zone}/${location.slot} · ตรวจยอดก่อนเบิก`);
+    } else {
+      showFseFeedback(`ป้ายนี้เคยจัดเก็บที่ ${location.zone}/${location.slot} แต่ไม่พบสินค้าปัจจุบัน · ตรวจประวัติการเบิกหรือย้าย`, 'error');
+    }
+  }
   async function apply(raw) {
     const scanValue = String(raw ?? '').trim().toUpperCase(), now = Date.now();
     if (scanBusy || (scanValue && scanValue === lastScanValue && now - lastScanAt < 1200)) return;
@@ -67,19 +95,27 @@
       const match = PKBarcode.resolveScan(raw,locations,products());
       input.value = '';
       if (match.kind === 'invalid') { message(match.reason,true); return; }
-      if (match.kind === 'location') { chosenLocation = {zone:match.zone,slot:match.slot}; message(`อ่านตำแหน่ง ${match.zone}/${match.slot} แล้ว · สแกนสินค้า`); }
+      if (match.kind === 'tag') { await openStoredTag(match.id); return; }
+      if (match.kind === 'location') {
+        const product = chosenProduct;
+        await stopCamera(); clearSelection(false);
+        if (product) openMatch({zone:match.zone,slot:match.slot},product);
+        else {
+          jumpToSlot(match.zone,match.slot); openSlotEdit(match.zone,match.slot);
+          showFseFeedback(`ตำแหน่ง ${match.zone}/${match.slot} · เลือกรายการสินค้าเพื่อเบิก`);
+        }
+        return;
+      }
       if (match.kind === 'product') {
         chosenProduct = match.product; $('barcodePrintProductCode').value = match.product.code;
-        const positionCount = chosenLocation ? 0 : showProductLocations(match.product);
+        const positionCount = showProductLocations(match.product);
         message(positionCount
           ? `พบสินค้า ${match.product.code} ใน ${positionCount} ตำแหน่ง · เลือกตำแหน่งด้านล่างหรือสแกนป้ายตำแหน่ง`
           : `อ่านสินค้า ${match.product.code} แล้ว · ยังไม่พบในพาเลต หรือสแกนป้ายตำแหน่งเพื่อเพิ่มรายการ`);
       }
       showSelection();
-      if (chosenLocation && chosenProduct) {
-        const completedLocation = chosenLocation, completedProduct = chosenProduct;
-        await stopCamera(); clearSelection(false); openMatch(completedLocation,completedProduct);
-      }
+    } catch (error) {
+      message('เปิดรายการจากรหัสนี้ไม่ได้: '+(error?.message || 'กรุณาลองใหม่'),true);
     } finally { scanBusy = false; }
   }
   $('barcodeScanApply').addEventListener('click', () => apply(input.value));

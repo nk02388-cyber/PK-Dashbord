@@ -2416,12 +2416,12 @@
       </div>
       <p class="panel-sub">ชื่อผู้ทำรายการเป็นชื่อที่กรอกเอง ไม่ได้ยืนยันบัญชี</p>
       <section class="barcode-panel" aria-labelledby="barcodeTitle">
-        <h3 id="barcodeTitle">สแกนสินค้าและตำแหน่งพาเลต</h3>
-        <p>สแกนสินค้าเพื่อหาตำแหน่ง หรือสแกนตำแหน่งเพื่อเปิดพาเลต</p>
+        <h3 id="barcodeTitle">สแกนป้ายพาเลต สินค้า หรือตำแหน่ง</h3>
+        <p>สแกนป้าย FM-ST-019 หรือตำแหน่งเพื่อเปิดรายการเบิก</p>
         <div class="barcode-controls"><input id="barcodeScanInput" type="text" autocomplete="off" placeholder="สแกนด้วยเครื่องอ่าน หรือพิมพ์รหัสแล้วกด Enter" aria-label="รหัส QR หรือบาร์โค้ด"><button type="button" id="barcodeScanApply">ตรวจรหัส</button><button type="button" id="barcodeScanClear">ล้างค่าที่สแกน</button><button type="button" id="barcodeCameraStart">เปิดกล้องสแกน</button><button type="button" id="barcodeCameraStop" hidden>ปิดกล้อง</button></div>
         <div id="barcodeCameraView" class="barcode-camera" hidden></div>
         <label class="barcode-file">หรือเลือกรูป QR/บาร์โค้ด <input id="barcodeImageInput" type="file" accept="image/*" capture="environment"></label>
-        <div id="barcodeScanSelection" class="barcode-selection">ยังไม่ได้เลือกตำแหน่งหรือสินค้า</div>
+        <div id="barcodeScanSelection" class="barcode-selection">ยังไม่ได้เลือกสินค้า</div>
         <p id="barcodeScanStatus" role="status" aria-live="polite"></p>
         <div class="barcode-controls"><label>โซนสำหรับพิมพ์ป้าย <select id="barcodePrintZone"></select></label><button type="button" id="barcodePrintLocations">พิมพ์ป้าย QR ตำแหน่ง</button></div>
         <div class="barcode-controls"><input id="barcodePrintProductCode" type="text" placeholder="รหัสสินค้าที่ต้องการพิมพ์ QR" aria-label="รหัสสินค้าสำหรับพิมพ์ QR"><button type="button" id="barcodePrintProduct">พิมพ์ป้าย QR สินค้า</button></div>
@@ -9492,8 +9492,8 @@ window.addEventListener('pageshow', () => {
 <script src="pallet-audit.js"></script>
 <script src="vendor/html5-qrcode.min.js"></script>
 <script src="vendor/qrcode-generator.js"></script>
-<script src="barcode-operations.js?v=20260923-2"></script>
-<script src="barcode-ui.js?v=20260923-2"></script>
+<script src="barcode-operations.js?v=20260923-3"></script>
+<script src="barcode-ui.js?v=20260923-3"></script>
 <script src="incoming-workflow.js?v=20260923-3"></script>
 <script src="incoming-ui.js?v=20260923-7"></script>
 <script src="daily-movements.js"></script>

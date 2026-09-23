@@ -7,6 +7,12 @@
     const value = normalize(raw);
     if (!value) return {kind:'invalid', reason:'ยังไม่มีรหัสให้ตรวจ'};
     const parts = String(raw).trim().split('|');
+    if (normalize(parts[0]) === 'PKTAG') {
+      const id = parts[1]?.trim();
+      return parts.length === 2 && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)
+        ? {kind:'tag', id:id.toLowerCase()}
+        : {kind:'invalid', reason:'รูปแบบ QR ป้ายพาเลตไม่ถูกต้อง'};
+    }
     const explicitLocation = normalize(parts[0]) === 'PKLOC';
     const explicitProduct = normalize(parts[0]) === 'PKITEM';
     if ((explicitLocation && parts.length !== 3) || (explicitProduct && parts.length !== 2))
