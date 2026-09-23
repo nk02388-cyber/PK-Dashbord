@@ -29,14 +29,15 @@
     if (key===lastScanSoundKey&&nowMs-lastScanSoundAt<600) return;
     try {
       const tone=audio.createOscillator(),volume=audio.createGain(),now=audio.currentTime;
-      tone.type='sine';
-      tone.frequency.setValueAtTime(880,now);
-      tone.frequency.setValueAtTime(1175,now+0.075);
+      // A short square-wave chirp is closer to a handheld barcode scanner than a soft sine tone.
+      tone.type='square';
+      tone.frequency.setValueAtTime(1900,now);
       volume.gain.setValueAtTime(0.0001,now);
-      volume.gain.exponentialRampToValueAtTime(0.12,now+0.012);
-      volume.gain.exponentialRampToValueAtTime(0.0001,now+0.17);
+      volume.gain.exponentialRampToValueAtTime(0.24,now+0.004);
+      volume.gain.setValueAtTime(0.24,now+0.09);
+      volume.gain.exponentialRampToValueAtTime(0.0001,now+0.125);
       tone.connect(volume);volume.connect(audio.destination);
-      tone.start(now);tone.stop(now+0.18);
+      tone.start(now);tone.stop(now+0.13);
       lastScanSoundKey=key;lastScanSoundAt=nowMs;
     } catch (_) {} // Scanning must continue if sound is unavailable.
   }
