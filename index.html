@@ -1388,41 +1388,47 @@
     .fse-withdraw-form .fw-history-row td:last-child, .fse-return-form .fw-history-row td:last-child { display: none; }
   }
 
-  /* =====================================================================
-     UI/UX Pro Max refresh — Data-Dense Enterprise Dashboard
-     Palette: navy/blue data surfaces + amber emphasis; dense but touch-safe.
-     ===================================================================== */
+  /* DESIGN.md is the source of truth for these shared visual tokens. */
   .viz-root {
+    --brand-blue: #1e40af;
+    --brand-blue-hover: #1b378f;
+    --radius-control: 8px;
+    --radius-panel: 16px;
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 12px;
+    --space-lg: 16px;
+    --space-xl: 24px;
     --surface-1: #ffffff;
-    --page-plane: #f4f7fb;
-    --text-primary: #0f172a;
-    --text-secondary: #334155;
-    --text-muted: #64748b;
-    --gridline: #e8eef7;
+    --page-plane: #f3f6fb;
+    --text-primary: #12233d;
+    --text-secondary: #425670;
+    --text-muted: #62748b;
+    --gridline: #eaf0f7;
     --baseline: #cbd5e1;
-    --border: #d7e2f0;
-    --series-1: #1e40af;
+    --border: #d7e1ee;
+    --series-1: var(--brand-blue);
     --series-1-wash: rgba(30,64,175,.09);
     --series-1-light: #dbeafe;
-    --status-critical: #dc2626;
+    --status-critical: #c62836;
     --status-critical-wash: rgba(220,38,38,.09);
     --status-warning: #f59e0b;
     --status-good: #15803d;
     --status-good-wash: rgba(21,128,61,.10);
-    --shadow-card: 0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(30,64,175,.055);
+    --shadow-card: 0 1px 2px rgba(18,35,61,.03), 0 8px 24px rgba(18,35,61,.045);
     --shadow-float: 0 24px 70px rgba(15,23,42,.24);
-    --radius-card: 14px;
+    --radius-card: var(--radius-panel);
   }
   @media (prefers-color-scheme: dark) {
     :root:where(:not([data-theme="light"])) .viz-root {
-      --surface-1: #111c2d;
-      --page-plane: #08111f;
-      --text-primary: #f8fafc;
-      --text-secondary: #cbd5e1;
+      --surface-1: #122238;
+      --page-plane: #081321;
+      --text-primary: #f4f7fc;
+      --text-secondary: #c5d2e4;
       --text-muted: #94a3b8;
       --gridline: #1e2d43;
       --baseline: #334155;
-      --border: #263a55;
+      --border: #31445f;
       --series-1: #60a5fa;
       --series-1-wash: rgba(96,165,250,.12);
       --series-1-light: #163a69;
@@ -1436,14 +1442,14 @@
     }
   }
   :root[data-theme="dark"] .viz-root {
-    --surface-1: #111c2d;
-    --page-plane: #08111f;
-    --text-primary: #f8fafc;
-    --text-secondary: #cbd5e1;
+    --surface-1: #122238;
+    --page-plane: #081321;
+    --text-primary: #f4f7fc;
+    --text-secondary: #c5d2e4;
     --text-muted: #94a3b8;
     --gridline: #1e2d43;
     --baseline: #334155;
-    --border: #263a55;
+    --border: #31445f;
     --series-1: #60a5fa;
     --series-1-wash: rgba(96,165,250,.12);
     --series-1-light: #163a69;
@@ -1723,6 +1729,97 @@
 @media(max-width:700px){#stockReconcilePanel .bom-plan-form>label{flex-basis:100%}#stockReconcilePanel .bom-plan-form>.excl-toggle-btn{flex:1 1 0;min-width:0}}
 .method-note{margin:0 0 14px;color:var(--text-secondary);font-size:13.5px;line-height:1.55}.method-note summary{display:list-item;width:max-content;max-width:100%;min-height:44px;padding:10px 4px;cursor:pointer;color:var(--series-1);font-weight:700}.method-note summary:focus-visible{outline:3px solid #f59e0b;outline-offset:2px}.method-note p{margin:2px 0 8px;max-width:75ch}.dashboard-content .panel button:focus-visible,.dashboard-content .panel a:focus-visible{outline:3px solid #f59e0b;outline-offset:2px}@media(max-width:700px){.dashboard-content .panel input:not([type="file"]),.dashboard-content .panel select,.dashboard-content .panel textarea{font-size:16px}}
 @media(max-width:700px){.tabs .tab-btn{font-size:14px}.tabs .tab-badge{font-size:11.5px}.theme-toggle{font-size:13px}#reportDate{font-size:12px}}
+
+/* Shared component rules from DESIGN.md. Keep workflow-specific dimensions intact. */
+.viz-root { accent-color: var(--brand-blue); }
+.viz-root :where(button, input, select, textarea) { font-family: inherit; }
+.viz-root :where(.panel, .incoming-step, .barcode-print-card, .incoming-record, .daily-kpi, .kpi, .speed-meter-card, .packaging-age-card) {
+  border-color: var(--border);
+  border-radius: var(--radius-panel);
+  background-color: var(--surface-1);
+  box-shadow: var(--shadow-card);
+}
+.viz-root :where(.panel, .incoming-step, .barcode-print-card) :where(h2, h3) {
+  color: var(--text-primary);
+  letter-spacing: -.01em;
+  line-height: 1.4;
+}
+.viz-root :where(.incoming-form-group, .barcode-print-card, .audit-entry-fields, .bom-plan-form) label {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.viz-root :where(.incoming-fields, .incoming-location-choice, .incoming-allocation-grid) { gap: var(--space-md); }
+.viz-root :where(.incoming-fields, .incoming-location-choice, .incoming-allocation-grid, .barcode-controls, .audit-entry-fields, .bom-plan-form) :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea),
+.viz-root :where(.barcode-print-card, .filter-bar) :where(input:not([type="checkbox"]):not([type="radio"]), select) {
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background-color: var(--surface-1);
+  color: var(--text-primary);
+  padding: 9px 12px;
+  box-shadow: none;
+}
+.viz-root :where(.incoming-fields, .incoming-scan, .incoming-location-choice, .barcode-controls, .barcode-print-card) :where(input, select, textarea):focus-visible {
+  border-color: var(--series-1);
+  outline: 3px solid color-mix(in srgb, var(--series-1) 28%, transparent);
+  outline-offset: 1px;
+}
+.viz-root :where(.incoming-step, .incoming-toolbar, .barcode-controls, .barcode-print-card, .incoming-record-actions) button {
+  border-radius: var(--radius-control);
+  font-weight: 700;
+}
+.viz-root :where(.incoming-step, .incoming-toolbar, .barcode-controls, .barcode-print-card, .incoming-record-actions) button:hover:not(:disabled) {
+  border-color: var(--series-1);
+  background-color: var(--series-1-wash);
+  color: var(--series-1);
+}
+.viz-root :where(.incoming-step, .incoming-record-actions) :where(.incoming-primary, [data-select-tag]):hover:not(:disabled) {
+  background-color: var(--brand-blue-hover);
+  border-color: var(--brand-blue-hover);
+  color: #fff;
+}
+.viz-root .incoming-view-nav button[aria-pressed="true"],
+.viz-root .incoming-step .incoming-primary,
+.viz-root .incoming-record-actions button[data-select-tag] {
+  background: var(--brand-blue);
+  border-color: var(--brand-blue);
+  color: #fff;
+}
+.viz-root .incoming-view-nav button[aria-pressed="true"] .incoming-nav-number { color: var(--brand-blue); }
+.viz-root :where(.table-scroll, .incoming-list, .audit-scroll) { scrollbar-color: var(--baseline) transparent; }
+.viz-root .two-col > * { min-width: 0; }
+.viz-root .bar-row { min-width: 0; }
+.viz-root :where(.table-scroll, .incoming-list, .audit-scroll) table { font-variant-numeric: tabular-nums; }
+.viz-root :where(.incoming-list, .audit-scroll, .daily-table, .table-scroll) th {
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--page-plane) 74%, var(--surface-1));
+  font-weight: 700;
+}
+.viz-root :where(.incoming-list, .audit-scroll, .daily-table, .table-scroll) td { border-color: var(--border); }
+.viz-root .barcode-selection,
+.viz-root .incoming-summary,
+.viz-root .incoming-scan-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: color-mix(in srgb, var(--page-plane) 70%, var(--surface-1));
+}
+.viz-root .tab-btn.active { background: var(--brand-blue); border-color: var(--brand-blue); }
+.viz-root .tab-btn:hover:not(.active) { border-color: color-mix(in srgb, var(--brand-blue) 25%, var(--border)); }
+.viz-root .tab-btn:focus-visible { outline-offset: -3px; }
+@media (min-width: 1024px) {
+  .dashboard-layout { grid-template-columns: 300px minmax(0,1fr); gap: var(--space-lg); }
+  .tabs { padding: var(--space-sm); }
+  .tabs .tab-btn { min-height: 48px; gap: var(--space-md); }
+}
+@media (max-width: 640px) {
+  .viz-root :where(.panel, .incoming-step, .barcode-print-card) { border-radius: var(--radius-md, 12px); }
+  .viz-root :where(.incoming-fields, .incoming-location-choice) { gap: var(--space-md); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .viz-root :where(button, input, select, textarea, .tab-btn, tbody tr) { transition: none; }
+}
 </style>
 </head>
 <body class="viz-root">

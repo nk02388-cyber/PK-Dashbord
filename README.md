@@ -1,5 +1,7 @@
 # PK Dashboard
 
+แนวทางสี ตัวอักษร ระยะห่าง และคอมโพเนนต์ของเว็บอยู่ใน [DESIGN.md](DESIGN.md) ตามรูปแบบ [google-labs-code/design.md](https://github.com/google-labs-code/design.md) การเปลี่ยนหน้าจอใหม่ควรใช้โทเคนและหลักการในไฟล์นี้ร่วมกับ CSS กลางใน `index.html`
+
 ## รับเข้าและจัดเก็บพาเลต
 
 เมนู **รับเข้าและจัดเก็บ** มี 3 มุมมอง:
