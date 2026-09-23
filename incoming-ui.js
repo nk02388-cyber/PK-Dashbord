@@ -9,6 +9,20 @@
   let selectedProduct=null, selectedTag=null, selectedLocation=null, lastCreated=[], pendingCreateRequestId=null;
   let camera=null, cameraStarting=false, cameraRunning=false, cameraGeneration=0, scanning=false, saving=false;
   let scanAudio=null,lastScanSoundKey='',lastScanSoundAt=0;
+  const incomingViews={receive:$('incomingReceiveTitle').closest('.incoming-step'),putaway:$('incomingPutawayTitle').closest('.incoming-step'),history:$('incomingHistoryPanel')};
+  function showIncomingView(view,scroll=false) {
+    if (!incomingViews[view]) return;
+    if (cameraRunning||cameraStarting) stopCamera();
+    for (const [name,panel] of Object.entries(incomingViews)) panel.hidden=name!==view;
+    for (const button of $('incomingWorkflowTabs').querySelectorAll('[data-incoming-view]'))
+      button.setAttribute('aria-pressed',String(button.dataset.incomingView===view));
+    if (scroll) $('incomingWorkflowTabs').scrollIntoView({block:'start',behavior:'smooth'});
+  }
+  $('incomingWorkflowTabs').addEventListener('click',event=>{
+    const button=event.target.closest('[data-incoming-view]');
+    if (button) showIncomingView(button.dataset.incomingView);
+  });
+  $('incomingGoPutaway').addEventListener('click',()=>showIncomingView('putaway',true));
   function armScanAudio() {
     try {
       const AudioContextClass=window.AudioContext||window.webkitAudioContext;
@@ -68,12 +82,12 @@
     }
     const existing=[...$('incomingAllocation').querySelectorAll('[data-pallet-qty]')];
     if (reset||existing.length!==count) {
-      $('incomingAllocation').innerHTML=`<b>จำนวนต่อป้าย · ปรับแต่ละพาเลตได้ก่อนบันทึก</b><div class="incoming-allocation-grid">${suggested.map((qty,i)=>`<label>พาเลต ${i+1}/${count}<input type="number" min="0.001" step="0.001" inputmode="decimal" data-pallet-qty="${i}" value="${qty}"></label>`).join('')}</div><p id="incomingAllocationStatus"></p>`;
+      $('incomingAllocation').innerHTML=`<b>ระบบแบ่งจำนวนให้ ${count} พาเลตแล้ว</b><p id="incomingAllocationStatus"></p><details class="incoming-allocation-details"><summary>ดูหรือปรับจำนวนของแต่ละพาเลต</summary><div class="incoming-allocation-grid">${suggested.map((qty,i)=>`<label>พาเลต ${i+1}/${count}<input type="number" min="0.001" step="0.001" inputmode="decimal" data-pallet-qty="${i}" value="${qty}"></label>`).join('')}</div></details>`;
     }
     const values=[...$('incomingAllocation').querySelectorAll('[data-pallet-qty]')].map(input=>input.value);
     const valid=PKIncoming.validAllocation(total,values);
     const sum=values.reduce((n,v)=>n+(Number(v)||0),0);
-    $('incomingAllocationStatus').textContent=`รวมจากป้าย ${sum.toLocaleString('th-TH',{maximumFractionDigits:3})} / ${total.toLocaleString('th-TH',{maximumFractionDigits:3})} ${$('incomingUnit').value.trim()}${valid?' · พร้อมบันทึก':' · ยอดรวมไม่ตรง'}`;
+    $('incomingAllocationStatus').textContent=`รวมจากป้าย ${sum.toLocaleString('th-TH',{maximumFractionDigits:3})} / ${total.toLocaleString('th-TH',{maximumFractionDigits:3})} ${$('incomingUnit').value.trim()}${valid?' · ยอดตรง พร้อมบันทึก':' · ยอดรวมไม่ตรง กรุณาปรับจำนวน'}`;
     $('incomingAllocationStatus').classList.toggle('incoming-allocation-error',!valid);
   }
   $('incomingQuantity').addEventListener('input',()=>updateAllocation(true));
@@ -86,8 +100,10 @@
     lastCreated=tags;
     const first=tags[0];
     $('incomingTagReady').hidden=false;
-    $('incomingTagReady').innerHTML=`<b>FM-ST-019 · ${esc(first.receiving_no)} · ${tags.length} ป้าย</b><br>${esc(first.product_code)} · ${esc(first.product_name)}<br>Running ${esc(labelSequence(first))} ถึง ${esc(labelSequence(tags.at(-1)))} · รวม ${esc(tags.reduce((sum,tag)=>sum+Number(tag.quantity),0))} ${esc(first.unit)}`;
+    $('incomingTagReady').dataset.ready='true';
+    $('incomingTagReady').innerHTML=`<b>บันทึกรับเข้าสำเร็จ · สร้างป้าย ${tags.length} ใบ</b><br>${esc(first.receiving_no)} · ${esc(first.product_code)} · ${esc(first.product_name)}<br>ป้าย ${esc(labelSequence(first))} ถึง ${esc(labelSequence(tags.at(-1)))} · รวม ${esc(tags.reduce((sum,tag)=>sum+Number(tag.quantity),0))} ${esc(first.unit)}`;
     $('incomingPrintTag').hidden=false;
+    $('incomingGoPutaway').hidden=false;
   }
   async function refreshList() {
     if (!supabaseClient) { status('incomingListStatus','ยังไม่ได้เชื่อมต่อฐานข้อมูล',true); return; }
@@ -101,13 +117,15 @@
     const rows=data||[];
     $('tabBadgeIncoming').textContent=`${rows.filter(row=>row.status==='pending').length} รอจัดเก็บ`;
     status('incomingListStatus',`แสดง ${rows.length} ป้ายล่าสุด · รอจัดเก็บ ${rows.filter(row=>row.status==='pending').length} ป้าย`);
-    $('incomingList').innerHTML=rows.length?`<table><thead><tr><th>FM-ST-011 / Running</th><th>สินค้า</th><th>จำนวนในป้าย</th><th>สถานะ / Location</th><th>ป้าย FM-ST-019</th></tr></thead><tbody>${rows.map(row=>`<tr><td>${esc(row.receiving_no)} / ${esc(labelSequence(row))}</td><td>${esc(row.product_code)}<br>${esc(row.product_name)}</td><td>${esc(row.quantity)} ${esc(row.unit)}</td><td>${row.status==='stored'?`จัดเก็บ ${esc(row.zone)}/${esc(row.slot_code)}`:'รอจัดเก็บ'}</td><td><button type="button" data-print-tag="${esc(row.id)}">พิมพ์ป้าย</button> ${row.batch_id?`<button type="button" data-print-batch="${esc(row.batch_id)}">พิมพ์ทั้งชุด</button>`:''} ${row.status==='pending'?`<button type="button" data-select-tag="${esc(row.id)}">เลือกจัดเก็บ</button>`:''}</td></tr>`).join('')}</tbody></table>`:'ยังไม่มีป้ายรับเข้า';
+    $('incomingList').innerHTML=rows.length?rows.map(row=>`<article class="incoming-record"><div class="incoming-record-head"><strong>${esc(row.receiving_no)} · ป้าย ${esc(labelSequence(row))}</strong><span class="incoming-record-status" data-stored="${row.status==='stored'}">${row.status==='stored'?'จัดเก็บแล้ว':'รอจัดเก็บ'}</span></div><div class="incoming-record-name">${esc(row.product_code)} · ${esc(row.product_name)}</div><div class="incoming-record-meta"><span>${esc(row.quantity)} ${esc(row.unit)}</span><span>${row.status==='stored'?`ตำแหน่ง ${esc(row.zone)}/${esc(row.slot_code)}`:'ยังไม่มีตำแหน่ง'}</span></div><div class="incoming-record-actions">${row.status==='pending'?`<button type="button" data-select-tag="${esc(row.id)}">เลือกจัดเก็บ</button>`:''}<button type="button" data-print-tag="${esc(row.id)}">พิมพ์ป้ายนี้</button>${row.batch_id?`<button type="button" data-print-batch="${esc(row.batch_id)}">พิมพ์ทั้งชุด</button>`:''}</div></article>`).join(''):'ยังไม่มีป้ายรับเข้า';
     $('incomingList')._rows=rows;
   }
   function updatePutaway() {
+    const ready=selectedTag?.status==='pending'&&selectedLocation;
+    $('incomingPutawaySummary').dataset.ready=String(!!ready);
     $('incomingPutawaySummary').innerHTML=selectedTag
-      ? `<b>FM-ST-019 · ${esc(selectedTag.receiving_no)} / ${esc(labelSequence(selectedTag))}</b><br>${esc(selectedTag.product_code)} · ${esc(selectedTag.product_name)} · ${esc(selectedTag.quantity)} ${esc(selectedTag.unit)}<br>Location: ${selectedLocation?`${esc(selectedLocation.zone)}/${esc(selectedLocation.slot)}`:'ยังไม่สแกน'}`
-      : 'ยังไม่ได้เลือกป้ายพาเลตและ Location';
+      ? `<b>${selectedTag.status==='pending'?'✓ พบป้ายพาเลต':'ป้ายนี้จัดเก็บแล้ว'} · ${esc(selectedTag.receiving_no)} / ${esc(labelSequence(selectedTag))}</b><br>${esc(selectedTag.product_code)} · ${esc(selectedTag.product_name)} · ${esc(selectedTag.quantity)} ${esc(selectedTag.unit)}<br><b>${selectedLocation?'✓ พบตำแหน่ง':'○ รอสแกนตำแหน่ง'}</b>${selectedLocation?` · ${esc(selectedLocation.zone)}/${esc(selectedLocation.slot)}`:''}`
+      : `<b>○ รอสแกนป้ายพาเลต</b><br>${selectedLocation?`✓ พบตำแหน่ง ${esc(selectedLocation.zone)}/${esc(selectedLocation.slot)}`:'○ รอสแกนตำแหน่ง'}`;
     $('incomingPutaway').disabled=!(selectedTag?.status==='pending'&&selectedLocation&&$('incomingStorer').value.trim()&&!saving);
   }
   async function selectTag(raw,rawScan=false) {
@@ -158,6 +176,7 @@
       $('incomingProductCode').value='';$('incomingProductName').value='';$('incomingLot').value='';$('incomingQuantity').value='';
       $('incomingPalletCount').value='1';updateAllocation(true);
       selectedProduct=null;
+      $('incomingTagReady').scrollIntoView({block:'center',behavior:'smooth'});
       await refreshList();
     } catch(error) { status('incomingReceiveStatus','ยังยืนยันการบันทึกไม่ได้ · ตรวจทะเบียนก่อนลองซ้ำ: '+error.message,true); }
     finally {saving=false;$('incomingCreate').disabled=false;}
@@ -174,6 +193,7 @@
       refreshAfterRemoteChange(data.slot.zone,data.slot.slot_code);
       status('incomingPutawayStatus',`จัดเก็บ ${data.tag.product_code} ที่ ${data.tag.zone}/${data.tag.slot_code} แล้ว · ${data.tag.quantity} ${data.tag.unit}`);
       selectedTag=null;selectedLocation=null;$('incomingTagScan').value='';$('incomingLocationScan').value='';
+      updatePutaway();
       await refreshList();
     } catch(error) {
       status('incomingPutawayStatus',error.message?.includes('INCOMING_ALREADY_STORED')?'ป้ายนี้ถูกจัดเก็บแล้ว · รีเฟรชรายการเพื่อตรวจ Location':'บันทึก Location ไม่สำเร็จ: '+error.message,true);
@@ -205,7 +225,7 @@
       if(error||!data?.length){page.close();status('incomingListStatus','โหลดป้ายทั้งชุดเพื่อพิมพ์ไม่ได้: '+(error?.message||'ไม่พบข้อมูล'),true);return;}
       printTags(data,page);
     }
-    if(select) {selectTag(PKIncoming.tagPayload(select.dataset.selectTag));$('incomingPutawayTitle').scrollIntoView({block:'start',behavior:'smooth'});}
+    if(select) {showIncomingView('putaway',true);selectTag(PKIncoming.tagPayload(select.dataset.selectTag));}
   });
   $('incomingRefresh').addEventListener('click',refreshList);
   async function stopCamera() {
@@ -256,5 +276,7 @@
     });
   document.addEventListener('visibilitychange',()=>{if(document.hidden)stopCamera();});
   $('tabs').addEventListener('click',event=>{if(event.target.closest('.tab-btn')?.dataset.tab!=='incoming')stopCamera();});
+  showIncomingView('receive');
+  updatePutaway();
   refreshList();
 })();

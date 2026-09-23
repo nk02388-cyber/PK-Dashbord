@@ -35,9 +35,11 @@ assert.match(batchSql,/for i in 1\.\.p_pallet_count loop[\s\S]*insert into publi
 assert.match(batchSql,/pg_catalog\.jsonb_agg\(to_jsonb\(tag\) order by tag\.batch_index\)/);
 const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
 assert.match(html,/id="incomingPalletCount"/);
-assert.match(html,/4 ป้าย\/หน้า/);
+assert.match(html,/4 ใบ\/หน้า/);
+assert.match(html,/id="incomingWorkflowTabs"[\s\S]*data-incoming-view="receive"[\s\S]*data-incoming-view="putaway"[\s\S]*data-incoming-view="history"/,'receive, putaway and recent tags must be distinct views');
 const ui=fs.readFileSync(path.join(__dirname,'..','incoming-ui.js'),'utf8');
 assert.match(ui,/rpc\('create_incoming_batch'/,'the receipt form must create all pallet tags as one batch');
 assert.match(ui,/i\+=4/,'print sheets must contain at most four labels');
+assert.match(ui,/showIncomingView\('putaway',true\);selectTag/,'choosing a pending tag should open the putaway view');
 assert.match(ui,/grid-template-columns:repeat\(2,1fr\).*grid-template-rows:repeat\(2,1fr\)/,'labels must print in a 2 by 2 A4 grid');
 console.log('PASS: FM-ST-011/019 exact scans, unique tags, single putaway and location catalog');
