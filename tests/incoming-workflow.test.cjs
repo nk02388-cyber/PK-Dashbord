@@ -39,11 +39,14 @@ assert.match(batchSql,/for i in 1\.\.p_pallet_count loop[\s\S]*insert into publi
 assert.match(batchSql,/pg_catalog\.jsonb_agg\(to_jsonb\(tag\) order by tag\.batch_index\)/);
 const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
 assert.match(html,/id="incomingPalletCount"/);
+assert.match(html,/id="incomingZoneSelect"[\s\S]*id="incomingSlotSelect"/,'putaway must offer zone and location selectors');
 assert.match(html,/4 ใบ\/พาเลต/);
 assert.match(html,/id="incomingWorkflowTabs"[\s\S]*data-incoming-view="receive"[\s\S]*data-incoming-view="putaway"[\s\S]*data-incoming-view="history"/,'receive, putaway and recent tags must be distinct views');
 const ui=fs.readFileSync(path.join(__dirname,'..','incoming-ui.js'),'utf8');
 assert.match(ui,/rpc\('create_incoming_batch'/,'the receipt form must create all pallet tags as one batch');
 assert.match(ui,/PKIncoming\.labelSheets\(tags\)/,'printing must group copies by pallet');
+assert.match(ui,/ZONE_SLOTS\[zone\]/,'the location selector must use mapped floor-plan slots');
+assert.match(ui,/selectLocation\(PKBarcode\.locationPayload\(zoneSelect\.value,slotSelect\.value\)\)/,'selected locations must use the same validation as scanned QR locations');
 assert.match(ui,/size:A4 landscape/,'pallet labels must print on landscape A4');
 assert.match(ui,/FM-ST-019 ใบกำกับสินค้าและวัตถุดิบ/,'the printout must use the requested document name');
 assert.match(ui,/showIncomingView\('putaway',true\);selectTag/,'choosing a pending tag should open the putaway view');

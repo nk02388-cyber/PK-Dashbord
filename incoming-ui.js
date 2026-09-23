@@ -2,6 +2,15 @@
 (() => {
   const $ = id => document.getElementById(id);
   const locations = Object.entries(ZONE_SLOTS).flatMap(([zone,slots]) => slots.map(slot => ({zone,slot:slot.code})));
+  const zoneSelect=$('incomingZoneSelect'),slotSelect=$('incomingSlotSelect');
+  for (const zone of Object.keys(ZONE_SLOTS).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})))
+    zoneSelect.add(new Option(zone,zone));
+  function populateSlotChoices(zone,selectedSlot='') {
+    slotSelect.replaceChildren(new Option(zone?'เลือกตำแหน่ง':'เลือกโซนก่อน',''));
+    for (const slot of ZONE_SLOTS[zone]||[]) slotSelect.add(new Option(slot.code,slot.code));
+    slotSelect.disabled=!zone;
+    slotSelect.value=selectedSlot;
+  }
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const status = (id,text,error=false) => { $(id).textContent=text; $(id).dataset.error=String(error); };
   const today = new Date();
@@ -124,8 +133,8 @@
     const ready=selectedTag?.status==='pending'&&selectedLocation;
     $('incomingPutawaySummary').dataset.ready=String(!!ready);
     $('incomingPutawaySummary').innerHTML=selectedTag
-      ? `<b>${selectedTag.status==='pending'?'✓ พบป้ายพาเลต':'ป้ายนี้จัดเก็บแล้ว'} · ${esc(selectedTag.receiving_no)} / ${esc(labelSequence(selectedTag))}</b><br>${esc(selectedTag.product_code)} · ${esc(selectedTag.product_name)} · ${esc(selectedTag.quantity)} ${esc(selectedTag.unit)}<br><b>${selectedLocation?'✓ พบตำแหน่ง':'○ รอสแกนตำแหน่ง'}</b>${selectedLocation?` · ${esc(selectedLocation.zone)}/${esc(selectedLocation.slot)}`:''}`
-      : `<b>○ รอสแกนป้ายพาเลต</b><br>${selectedLocation?`✓ พบตำแหน่ง ${esc(selectedLocation.zone)}/${esc(selectedLocation.slot)}`:'○ รอสแกนตำแหน่ง'}`;
+      ? `<b>${selectedTag.status==='pending'?'✓ พบป้ายพาเลต':'ป้ายนี้จัดเก็บแล้ว'} · ${esc(selectedTag.receiving_no)} / ${esc(labelSequence(selectedTag))}</b><br>${esc(selectedTag.product_code)} · ${esc(selectedTag.product_name)} · ${esc(selectedTag.quantity)} ${esc(selectedTag.unit)}<br><b>${selectedLocation?'✓ พบตำแหน่ง':'○ รอระบุตำแหน่ง'}</b>${selectedLocation?` · ${esc(selectedLocation.zone)}/${esc(selectedLocation.slot)}`:''}`
+      : `<b>○ รอสแกนป้ายพาเลต</b><br>${selectedLocation?`✓ พบตำแหน่ง ${esc(selectedLocation.zone)}/${esc(selectedLocation.slot)}`:'○ รอระบุตำแหน่ง'}`;
     $('incomingPutaway').disabled=!(selectedTag?.status==='pending'&&selectedLocation&&$('incomingStorer').value.trim()&&!saving);
   }
   async function selectTag(raw,rawScan=false) {
@@ -134,17 +143,31 @@
     if (!supabaseClient) {status('incomingPutawayStatus','ยังไม่ได้เชื่อมต่อฐานข้อมูล',true);return;}
     const {data,error}=await supabaseClient.from('incoming_pallets').select('*').eq('id',id).single();
     if (error||!data) {selectedTag=null;updatePutaway();status('incomingPutawayStatus','ไม่พบป้ายพาเลตนี้ในทะเบียนรับเข้า',true);return;}
+    if (selectedTag&&selectedTag.id!==data.id) {
+      selectedLocation=null;$('incomingLocationScan').value='';zoneSelect.value='';populateSlotChoices('');
+    }
     selectedTag=data; $('incomingTagScan').value=PKIncoming.tagPayload(id);
     if (rawScan&&data.status==='pending') playScanSuccess(`tag:${data.id}`);
     updatePutaway();
-    status('incomingPutawayStatus',data.status==='pending'?'อ่านป้ายแล้ว · สแกน Location เพื่อจัดเก็บ':`ป้ายนี้จัดเก็บแล้วที่ ${data.zone}/${data.slot_code}`,data.status!=='pending');
+    status('incomingPutawayStatus',data.status==='pending'?'อ่านป้ายแล้ว · สแกนหรือเลือกตำแหน่งจัดเก็บ':`ป้ายนี้จัดเก็บแล้วที่ ${data.zone}/${data.slot_code}`,data.status!=='pending');
   }
   function selectLocation(raw,rawScan=false) {
     selectedLocation=PKIncoming.exactLocation(raw,locations);
-    if (!selectedLocation) status('incomingPutawayStatus','ไม่พบ Location ตรงตัวในผัง · ตรวจ QR ตำแหน่ง',true);
-    else { if (rawScan) playScanSuccess(`location:${selectedLocation.zone}/${selectedLocation.slot}`); $('incomingLocationScan').value=PKBarcode.locationPayload(selectedLocation.zone,selectedLocation.slot);status('incomingPutawayStatus',`เลือก Location ${selectedLocation.zone}/${selectedLocation.slot} · ตรวจข้อมูลแล้วกดยืนยัน`); }
+    zoneSelect.value=selectedLocation?.zone||'';
+    populateSlotChoices(zoneSelect.value,selectedLocation?.slot||'');
+    if (!selectedLocation) status('incomingPutawayStatus','ไม่พบตำแหน่งนี้ในผัง · ตรวจ QR หรือเลือกโซนและตำแหน่งจากรายการ',true);
+    else { if (rawScan) playScanSuccess(`location:${selectedLocation.zone}/${selectedLocation.slot}`); $('incomingLocationScan').value=PKBarcode.locationPayload(selectedLocation.zone,selectedLocation.slot);status('incomingPutawayStatus',`เลือกตำแหน่ง ${selectedLocation.zone}/${selectedLocation.slot} · ตรวจข้อมูลแล้วกดยืนยัน`); }
     updatePutaway();
   }
+  zoneSelect.addEventListener('change',()=>{
+    selectedLocation=null;$('incomingLocationScan').value='';populateSlotChoices(zoneSelect.value);
+    status('incomingPutawayStatus',zoneSelect.value?'เลือกตำแหน่งในโซนนี้ต่อ':'สแกน QR หรือเลือกโซนและตำแหน่ง');
+    updatePutaway();
+  });
+  slotSelect.addEventListener('change',()=>{
+    if (zoneSelect.value&&slotSelect.value) selectLocation(PKBarcode.locationPayload(zoneSelect.value,slotSelect.value));
+    else {selectedLocation=null;$('incomingLocationScan').value='';status('incomingPutawayStatus','กรุณาเลือกตำแหน่งจัดเก็บ');updatePutaway();}
+  });
   $('incomingTagScan').addEventListener('change',event=>{armScanAudio();selectTag(event.target.value,true);});
   $('incomingTagScan').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();armScanAudio();selectTag(event.target.value,true);}});
   $('incomingLocationScan').addEventListener('change',event=>{armScanAudio();selectLocation(event.target.value,true);});
@@ -193,6 +216,7 @@
       refreshAfterRemoteChange(data.slot.zone,data.slot.slot_code);
       status('incomingPutawayStatus',`จัดเก็บ ${data.tag.product_code} ที่ ${data.tag.zone}/${data.tag.slot_code} แล้ว · ${data.tag.quantity} ${data.tag.unit}`);
       selectedTag=null;selectedLocation=null;$('incomingTagScan').value='';$('incomingLocationScan').value='';
+      zoneSelect.value='';populateSlotChoices('');
       updatePutaway();
       await refreshList();
     } catch(error) {
