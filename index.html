@@ -1522,8 +1522,8 @@
     border-color: var(--border); border-radius: var(--radius-card); box-shadow: var(--shadow-card);
   }
   .panel { padding: 18px; margin-bottom: 14px; }
-  .panel h2 { font-size: 15px; line-height: 1.4; letter-spacing: -.005em; }
-  .panel .panel-sub { margin-top: 4px; margin-bottom: 14px; line-height: 1.55; }
+  .panel h2 { font-size: 17px; line-height: 1.4; letter-spacing: -.005em; }
+  .panel .panel-sub { margin-top: 4px; margin-bottom: 14px; font-size: 13.5px; line-height: 1.55; color: var(--text-secondary); }
   .kpi-row { gap: 10px; margin-bottom: 14px; }
   #pane-bompk > .callout { margin-bottom: 14px; }
   .kpi { position: relative; overflow: hidden; padding: 14px; }
@@ -1699,6 +1699,8 @@
 .incoming-panel{max-width:1200px;margin-inline:auto}.incoming-view-nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:18px 0}.incoming-view-nav button{display:flex;align-items:center;gap:12px;min-width:0;min-height:68px;padding:12px;text-align:left;border:1px solid var(--border);border-radius:12px;background:var(--surface-1);color:var(--text-primary);cursor:pointer}.incoming-view-nav button[aria-pressed="true"]{border-color:#1d4ed8;background:#1d4ed8;color:#fff}.incoming-view-nav b,.incoming-view-nav small{display:block}.incoming-view-nav small{font-size:12px;opacity:.82;margin-top:2px}.incoming-nav-number,.incoming-form-group h4 span,.incoming-scan-card h4 span{display:inline-grid;place-items:center;flex:none;width:32px;height:32px;border-radius:50%;background:var(--page-plane);color:var(--text-primary);font-weight:700}.incoming-view-nav button[aria-pressed="true"] .incoming-nav-number{background:#fff;color:#1d4ed8}.incoming-steps{display:block;margin:0}.incoming-step{padding:20px}.incoming-step[hidden],#incomingHistoryPanel[hidden]{display:none}.incoming-step h3{font-size:1.18rem}.incoming-step p{line-height:1.5}.incoming-form-group{padding:16px 0;border-top:1px solid var(--border)}.incoming-form-group:first-child{border-top:0;padding-top:4px}.incoming-form-group h4,.incoming-scan-card h4{display:flex;align-items:center;gap:9px;margin:0 0 14px;font-size:1rem}.incoming-form-group h4 span,.incoming-scan-card h4 span{background:#dbeafe;color:#1e40af}.incoming-form-group .incoming-fields{grid-template-columns:repeat(3,minmax(0,1fr))}.incoming-scan-card{border:1px solid var(--border);border-radius:10px;padding:14px;margin:12px 0;background:var(--page-plane)}.incoming-scan-card .incoming-scan{margin:0}.incoming-scan input[type="text"],.incoming-scan>input{flex:1 1 220px;min-height:48px}.incoming-step .incoming-primary{min-height:50px;padding-inline:18px}.incoming-step button:focus-visible,.incoming-view-nav button:focus-visible,.incoming-fields input:focus-visible,.incoming-scan input:focus-visible{outline:3px solid #f59e0b;outline-offset:2px}.incoming-summary[hidden]{display:none}.incoming-summary[data-ready="true"]{border-color:#15803d;background:rgba(22,163,74,.09)}.incoming-summary[data-ready="false"]{border-color:var(--border)}.incoming-status:empty{display:none}.incoming-tag-actions button:not([hidden]){background:#15803d;color:#fff;border-color:#15803d}.incoming-list{max-height:none;overflow:visible;display:grid;gap:10px;margin-top:12px}.incoming-record{border:1px solid var(--border);border-radius:10px;padding:14px;background:var(--surface-1);min-width:0}.incoming-record-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.incoming-record-head strong{font-size:1rem}.incoming-record-status{display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;font-size:.82rem;font-weight:700;background:rgba(234,179,8,.16);color:var(--text-primary)}.incoming-record-status[data-stored="true"]{background:rgba(22,163,74,.16)}.incoming-record-name{margin:8px 0 4px;font-weight:600;overflow-wrap:anywhere}.incoming-record-meta{display:flex;gap:8px 18px;flex-wrap:wrap;color:var(--text-secondary);font-size:.9rem}.incoming-record-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.incoming-record-actions button{min-height:44px}.incoming-record-actions button[data-select-tag]{background:#1d4ed8;color:#fff;border-color:#1d4ed8}@media(max-width:800px){.incoming-panel{padding:12px}.incoming-view-nav{gap:6px}.incoming-view-nav button{display:block;text-align:center;min-height:76px;padding:8px 4px}.incoming-nav-number{margin:0 auto 4px;width:24px;height:24px}.incoming-view-nav small{display:none}.incoming-view-nav b{font-size:.9rem}.incoming-step{padding:14px}.incoming-form-group .incoming-fields{grid-template-columns:1fr}.incoming-fields input,.incoming-scan input,.incoming-allocation-grid input{font-size:16px}.incoming-scan>button,.incoming-scan>label{flex:1 1 100%}.incoming-step .incoming-primary,.incoming-tag-actions button{width:100%}.incoming-allocation-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .incoming-allocation-details{margin-top:10px}.incoming-allocation-details summary{cursor:pointer;font-weight:700;color:var(--series-1);min-height:44px;padding:10px 4px}.incoming-allocation-details summary:focus-visible{outline:3px solid #f59e0b;outline-offset:2px}
 .incoming-location-choice{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}.incoming-location-choice label{display:flex;flex-direction:column;gap:5px;font-weight:600;min-width:0}.incoming-location-choice select{width:100%;min-height:48px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;background:var(--surface-1);color:var(--text-primary);font:inherit}.incoming-location-choice select:disabled{opacity:.6}.incoming-location-choice select:focus-visible{outline:3px solid #f59e0b;outline-offset:2px}@media(max-width:600px){.incoming-location-choice{grid-template-columns:1fr}.incoming-location-choice select{font-size:16px}}
+.method-note{margin:0 0 14px;color:var(--text-secondary);font-size:13.5px;line-height:1.55}.method-note summary{display:list-item;width:max-content;max-width:100%;min-height:44px;padding:10px 4px;cursor:pointer;color:var(--series-1);font-weight:700}.method-note summary:focus-visible{outline:3px solid #f59e0b;outline-offset:2px}.method-note p{margin:2px 0 8px;max-width:75ch}.dashboard-content .panel button:focus-visible,.dashboard-content .panel a:focus-visible{outline:3px solid #f59e0b;outline-offset:2px}@media(max-width:700px){.dashboard-content .panel input:not([type="file"]),.dashboard-content .panel select,.dashboard-content .panel textarea{font-size:16px}}
+@media(max-width:700px){.tabs .tab-btn{font-size:14px}.tabs .tab-badge{font-size:11.5px}.theme-toggle{font-size:13px}#reportDate{font-size:12px}}
 </style>
 </head>
 <body class="viz-root">
@@ -1745,7 +1747,7 @@
       <div class="stock-update-box" aria-label="อัปเดตสต็อก">
         <button class="stock-update-btn" id="stockUpdateBtn" type="button">↥ อัปเดตสต็อก</button>
         <input id="stockExcelInput" type="file" accept=".xlsx,.xls,.csv,.txt" multiple hidden>
-        <span class="stock-update-help">รองรับ Excel / TXT · เลือกครบ 8 คลัง รวม 300-S (ไฟล์ 300)</span>
+        <details class="method-note stock-update-help"><summary>ไฟล์ที่รองรับ</summary><p>Excel หรือ TXT · เลือกครบ 8 คลัง โดยไฟล์ 300 คือคลัง 300-S</p></details>
         <span class="stock-update-status" id="stockUpdateStatus" role="status" aria-live="polite">ข้อมูลสต็อกวันที่ 29 ส.ค. 69</span>
       </div>
     </div>
@@ -1761,7 +1763,6 @@
     <div class="top-summary-row">
       <div class="panel">
         <h2>พื้นที่จัดเก็บตามอาคาร</h2>
-        <div class="panel-sub">ความจุ การใช้งาน และพื้นที่คงเหลือแยกตามอาคาร</div>
         <table id="areaZoneTable">
           <thead>
             <tr>
@@ -1839,7 +1840,6 @@
     <div class="two-col">
       <div class="panel">
         <h2>มูลค่าคงเหลือตามคลัง</h2>
-        <div class="panel-sub">มูลค่าคงเหลือแยกตามคลัง · เรียงจากมากไปน้อย</div>
         <div class="barchart vertical" id="whChart">
     <div class="bar-row">
       <div class="name" title="บรรจุภัณฑ์และแพ็คเกจจิ้ง-OEM">BCL - OEM</div>
@@ -1900,7 +1900,7 @@
       </div>
       <div class="panel">
         <h2>มูลค่าคงเหลือตามหมวดบรรจุภัณฑ์</h2>
-        <div class="panel-sub" id="catChartSub">มูลค่าคงเหลือแยกตามประเภทบรรจุภัณฑ์ · ทุกคลัง</div>
+        <div class="panel-sub" id="catChartSub">ทุกคลัง</div>
         <div class="barchart" id="catChart">
     <div class="bar-row">
       <div class="name" title="ขวด">ขวด</div>
@@ -2027,7 +2027,7 @@
 
     <div class="panel">
       <h2>รายการที่มีมูลค่าคงเหลือสูงสุด 15 อันดับ</h2>
-      <div class="panel-sub" id="topItemsSub">รวมยอดตามรหัสสินค้าจากทุกคลัง</div>
+      <div class="panel-sub" id="topItemsSub">รวมรหัสและหน่วยเดียวกัน</div>
       <table id="topTable">
         <thead>
           <tr>
@@ -2163,19 +2163,13 @@
   <!-- ============ TAB: BOM PK ============ -->
   <div class="tab-pane" id="pane-bompk" role="tabpanel" aria-labelledby="tab-bompk" hidden="">
 
-    <div class="callout">
-      <div class="dot"></div>
-      <div>
-        <b>เงื่อนไขการคำนวณ</b>
-        <p id="assumptionText">อ้างอิงสต็อกปัจจุบัน · ไม่รวมคลัง 800 (Hold) และ 900 (รอทำลาย)</p>
-      </div>
-    </div>
+    <p class="method-note">เฉพาะบรรจุภัณฑ์ · ไม่รวมคลัง 800 และ 900</p>
+    <details class="method-note"><summary>เงื่อนไขการคำนวณ</summary><p id="assumptionText">อ้างอิงสต็อกปัจจุบัน · ไม่รวมคลัง 800 และ 900</p></details>
 
     <div class="kpi-row" id="bompkKpiRow">
   <div class="kpi ">
     <div class="label">FG ที่มี BOM บรรจุภัณฑ์</div>
     <div class="value">758</div>
-    <div class="sub">finished goods</div>
   </div>
 
   <div class="kpi good">
@@ -2193,20 +2187,18 @@
   <div class="kpi ">
     <div class="label">ส่วนประกอบใน BOM</div>
     <div class="value">3,476</div>
-    <div class="sub">รายการส่วนประกอบ</div>
   </div>
 
   <div class="kpi ">
     <div class="label">ส่วนประกอบไม่ซ้ำ</div>
     <div class="value">1,577</div>
-    <div class="sub">unique packaging codes</div>
   </div>
 </div>
 
     <div class="panel">
       <h2>สัดส่วนความพร้อมบรรจุภัณฑ์</h2>
       <div class="stock-snapshot-notice" role="status"></div>
-      <div class="panel-sub">ตามสูตรมาตรฐานและสต็อกปัจจุบัน · ประเมินแต่ละ FG แยกกัน หากต้องการหลาย FG พร้อมกัน ให้ตรวจในแผนบรรจุภัณฑ์หลาย FG</div>
+      <div class="panel-sub">ประเมินแต่ละสินค้าแยกกัน · วางแผนหลายสินค้าได้ที่เมนูแผนบรรจุภัณฑ์</div>
       <div class="split-bar" id="splitBar">
   <div class="split-seg good" style="width:19.15455746367239%">19.2%</div>
   <div class="split-seg critical" style="width:80.84544253632761%">80.8%</div>
@@ -2221,7 +2213,7 @@
       <div class="fg-panel-header">
         <div class="fg-panel-header-text">
           <h2>ตรวจสอบ BOM รายสินค้า</h2>
-          <div class="panel-sub">ตรวจบรรจุภัณฑ์ตามสูตร ไม่รวมวัตถุดิบและงานกึ่งสำเร็จรูป</div>
+          <div class="panel-sub">ตรวจเฉพาะบรรจุภัณฑ์ในสูตร</div>
         </div>
       </div>
       <div class="floorplan-search" id="fgBomSearchBar">
@@ -2361,18 +2353,18 @@
     <div class="panel" id="bomPlanPanel">
       <h2>แผนบรรจุภัณฑ์หลาย FG</h2>
       <div class="stock-snapshot-notice" role="status"></div>
-      <div class="panel-sub">รวมยอดใช้บรรจุภัณฑ์ร่วมกัน แล้วเทียบสต็อกพร้อมใช้ครั้งเดียวตามสูตรมาตรฐาน · ไม่รวมคลัง 800 / 900</div>
-      <p class="panel-sub">แผนนี้ใช้ทดลองความเพียงพอของบรรจุภัณฑ์ ไม่ได้จองหรือตัดสต็อก แผนร่างบันทึกอัตโนมัติในเบราว์เซอร์นี้ และคำนวณใหม่เมื่อโหลดสต็อก · การทดลองไม่รวมรายการด้านบนไม่มีผลต่อแผนนี้</p>
+      <p class="panel-sub">ทดลองวางแผนได้ โดยไม่จองหรือตัดสต็อก</p>
+      <details class="method-note"><summary>วิธีคำนวณแผน</summary><p>รวมความต้องการของสินค้าทุกตัว แล้วเทียบสต็อกพร้อมใช้ครั้งเดียวตามสูตรมาตรฐาน ไม่รวมคลัง 800 และ 900 แผนร่างเก็บในเบราว์เซอร์นี้และคำนวณใหม่เมื่อโหลดสต็อก</p></details>
       <form id="bomPlanForm" class="bom-plan-form">
-        <label for="bomPlanFg">ชื่อหรือรหัส FG ในแผน<input id="bomPlanFg" list="fgCodeList" placeholder="เลือก FG จากรายการ" required autocomplete="off"></label>
-        <label for="bomPlanQty">จำนวนที่ต้องการ (หน่วย FG ตามสูตร)<input id="bomPlanQty" type="number" min="0.000001" step="any" value="1" required></label>
+        <label for="bomPlanFg">สินค้า FG<input id="bomPlanFg" list="fgCodeList" placeholder="ค้นชื่อหรือรหัส FG" required autocomplete="off"></label>
+        <label for="bomPlanQty">จำนวนที่ต้องการ<input id="bomPlanQty" type="number" min="0.000001" step="any" value="1" required></label>
         <button type="submit" class="excl-toggle-btn">เพิ่มในแผน</button>
         <button type="button" id="bomPlanClear" class="excl-toggle-btn">ล้างแผน</button>
       </form>
       <p id="bomPlanMessage" role="status" aria-live="polite"></p>
       <div class="bom-plan-form">
         <label for="bomPlanFilter">แสดงบรรจุภัณฑ์<select id="bomPlanFilter"><option value="all">ทั้งหมด</option><option value="shortage">เฉพาะรายการขาด</option><option value="unknown">ต้องตรวจสอบ</option></select></label>
-        <button type="button" class="excl-toggle-btn" id="bomPlanExport">ส่งออกทั้งแผน Excel</button>
+        <button type="button" class="excl-toggle-btn" id="bomPlanExport">ส่งออก Excel</button>
         <button type="button" class="excl-toggle-btn" id="bomPlanSave">บันทึกแผนร่าง</button>
       </div>
       <p id="bomPlanDraftStatus" role="status"></p>
@@ -2380,16 +2372,13 @@
       <div id="bomPlanResult" aria-live="polite"></div>
     </div>
 
-    <div class="panel">
-      <div class="panel-sub" style="margin:0;">ประเมินจากสต็อกพร้อมใช้ · ไม่รวมคลัง 800 / 900</div>
-    </div>
   </div>
 
   <div class="tab-pane" id="pane-reconcile" role="tabpanel" aria-labelledby="tab-reconcile" hidden>
     <div class="panel" id="stockReconcilePanel">
       <h2>เปรียบเทียบสต็อกในพาเลตกับสต็อกที่อัปเดต</h2>
       <div class="stock-snapshot-notice" role="status"></div>
-      <p class="panel-sub">รวมยอดตามรหัสสินค้าและหน่วยเดียวกัน · สต็อกพาเลตใช้ยอดคงเหลือจาก STOCK CARD ทุกตำแหน่ง · สต็อกที่อัปเดตไม่นับคลัง 200, 800, 900 และ 300-S</p>
+      <details class="method-note"><summary>วิธีเปรียบเทียบยอด</summary><p>รวมยอดตามรหัสและหน่วยเดียวกัน สต็อกพาเลตใช้ยอดคงเหลือจาก STOCK CARD ทุกตำแหน่ง สต็อกที่อัปเดตไม่นับคลัง 200, 800, 900 และ 300-S</p></details>
       <div class="bom-plan-form">
         <label for="stockReconcileSearch">ค้นหารายการ<input type="search" id="stockReconcileSearch" placeholder="ค้นหารหัส ชื่อสินค้า หน่วย พาเลต หรือคลัง" autocomplete="off"></label>
         <label for="stockReconcileFilter">แสดงรายการ<select id="stockReconcileFilter">
@@ -2397,7 +2386,7 @@
           <option value="missing_pallet">ไม่มีในพาเลต</option><option value="missing_stock">ไม่มีในสต็อกที่อัปเดต</option><option value="unknown">ต้องตรวจสอบ</option>
         </select></label>
         <button type="button" id="stockReconcileRefresh" class="excl-toggle-btn">คำนวณใหม่</button>
-        <button type="button" id="stockReconcileExport" class="excl-toggle-btn">ส่งออกผลเปรียบเทียบ Excel</button>
+        <button type="button" id="stockReconcileExport" class="excl-toggle-btn">ส่งออก Excel</button>
       </div>
       <p id="stockReconcileStatus" role="status" aria-live="polite">กำลังรอข้อมูลพาเลต…</p>
       <p id="stockReconcileCutoff" class="stock-snapshot-notice" role="status" aria-live="polite"></p>
@@ -2412,7 +2401,6 @@
 
     <div class="panel">
       <h2>ผังพื้นที่จัดเก็บบรรจุภัณฑ์ ชั้น 2</h2>
-      <div class="panel-sub">ติดตามสถานะและอายุสินค้าแต่ละตำแหน่งพาเลต พร้อมจัดการรับ เบิก และคืนสินค้า</div>
 
       <!-- 21 Aug 2026: multi-device live sync status chip (Supabase). Always visible at the
            top of the floor-plan tab so it is clear at a glance whether pallet-slot edits are
@@ -2425,10 +2413,10 @@
         <label>ชื่อผู้ทำรายการ *<input id="palletAuditActor" type="text" maxlength="100" placeholder="ชื่อผู้ทำรายการ" autocomplete="name"></label>
         <label>เลขเอกสารอ้างอิงสำหรับการแก้ไข / นำเข้า *<input id="palletAuditDocument" type="text" maxlength="200" placeholder="เลขเอกสาร"></label>
       </div>
-      <p class="panel-sub">ชื่อผู้ทำรายการเป็นข้อมูลที่ผู้ใช้กรอกเอง เนื่องจากระบบนี้ไม่มีการยืนยันตัวตน</p>
+      <p class="panel-sub">ชื่อผู้ทำรายการเป็นชื่อที่กรอกเอง ไม่ได้ยืนยันบัญชี</p>
       <section class="barcode-panel" aria-labelledby="barcodeTitle">
         <h3 id="barcodeTitle">สแกนสินค้าและตำแหน่งพาเลต</h3>
-        <p>สแกนสินค้าเพื่อแสดงตำแหน่งที่จัดเก็บ หรือสแกนสินค้าและป้ายตำแหน่งเพื่อเปิดรายการของพาเลตนั้น</p>
+        <p>สแกนสินค้าเพื่อหาตำแหน่ง หรือสแกนตำแหน่งเพื่อเปิดพาเลต</p>
         <div class="barcode-controls"><input id="barcodeScanInput" type="text" autocomplete="off" placeholder="สแกนด้วยเครื่องอ่าน หรือพิมพ์รหัสแล้วกด Enter" aria-label="รหัส QR หรือบาร์โค้ด"><button type="button" id="barcodeScanApply">ตรวจรหัส</button><button type="button" id="barcodeScanClear">ล้างค่าที่สแกน</button><button type="button" id="barcodeCameraStart">เปิดกล้องสแกน</button><button type="button" id="barcodeCameraStop" hidden>ปิดกล้อง</button></div>
         <div id="barcodeCameraView" class="barcode-camera" hidden></div>
         <label class="barcode-file">หรือเลือกรูป QR/บาร์โค้ด <input id="barcodeImageInput" type="file" accept="image/*" capture="environment"></label>
@@ -2456,7 +2444,7 @@
       <div id="floorplanFallbackList"></div>
       <div id="floorZoneDetail" hidden></div>
 
-      <p class="panel-sub">ถ่างสองนิ้วเพื่อขยายผัง · หุบนิ้วเพื่อย่อ · ลากนิ้วเดียวเพื่อเลื่อน · แตะโซนเพื่อดูพาเลต</p>
+      <p class="panel-sub">แตะโซนเพื่อดูพาเลต · ใช้สองนิ้วขยายหรือย่อผัง</p>
       <div class="floorplan-map-key" aria-label="คำอธิบายสีพาเลต">
         <span><i class="none"></i>ว่าง / ยังไม่มีวันที่รับ</span><span><i class="green"></i>ไม่เกิน 2 เดือน</span>
         <span><i class="yellow"></i>เกิน 2–5 เดือน</span><span><i class="red"></i>เกิน 5 เดือน</span>
@@ -2573,7 +2561,6 @@
   <div class="tab-pane" id="pane-incoming" role="tabpanel" aria-labelledby="tab-incoming" hidden>
     <div class="panel incoming-panel">
       <h2>รับเข้าและจัดเก็บ</h2>
-      <p class="panel-sub">รับสินค้าและพิมพ์ FM-ST-019 ใบกำกับสินค้าและวัตถุดิบ 4 ใบต่อพาเลต จากนั้นสแกนตำแหน่งจัดเก็บ</p>
       <div class="incoming-view-nav" id="incomingWorkflowTabs" aria-label="เลือกงานรับเข้าและจัดเก็บ">
         <button type="button" data-incoming-view="receive" aria-pressed="true"><span class="incoming-nav-number">1</span><span><b>รับสินค้า</b><small>กรอกข้อมูลและสร้างป้าย</small></span></button>
         <button type="button" data-incoming-view="putaway" aria-pressed="false"><span class="incoming-nav-number">2</span><span><b>จัดเก็บ</b><small>สแกนป้ายและตำแหน่ง</small></span></button>
@@ -2582,16 +2569,16 @@
       <div class="incoming-steps">
         <section class="incoming-step" aria-labelledby="incomingReceiveTitle">
           <h3 id="incomingReceiveTitle">รับสินค้าเข้าคลัง</h3>
-          <p>กรอกข้อมูลสินค้าและยอดรวม ระบบจะสร้าง QR แยกตามจำนวนพาเลต แล้วพิมพ์ใบกำกับ 4 ใบต่อพาเลต</p>
+          <p>กรอกสินค้า จำนวนรวม และจำนวนพาเลต</p>
           <form id="incomingReceiveForm">
             <div class="incoming-form-group">
               <h4><span>1</span> สินค้าและเอกสาร</h4>
               <div class="incoming-fields">
-              <label>เลขรับเข้า / Receiving No. *<input id="incomingReceiptNo" required maxlength="80" placeholder="เช่น PK2609-0234"></label>
-              <label>ผู้ส่งสินค้า / Supplier *<input id="incomingSupplier" required maxlength="200"></label>
-              <label>รหัสสินค้า / Product Code *<input id="incomingProductCode" required autocomplete="off" placeholder="สแกน PKITEM หรือบาร์โค้ดสินค้า"></label>
+              <label>เลขที่รับเข้า *<input id="incomingReceiptNo" required maxlength="80" placeholder="เช่น PK2609-0234"></label>
+              <label>ผู้ส่งสินค้า *<input id="incomingSupplier" required maxlength="200"></label>
+              <label>รหัสสินค้า *<input id="incomingProductCode" required autocomplete="off" placeholder="สแกนหรือพิมพ์รหัสสินค้า"></label>
               <label>ชื่อสินค้า<input id="incomingProductName" readonly></label>
-              <label>Lot / Batch No.<input id="incomingLot" maxlength="120"></label>
+              <label>Lot<input id="incomingLot" maxlength="120"></label>
               </div>
               <div class="incoming-scan"><button type="button" id="incomingProductCamera">สแกนรหัสสินค้า</button><label>หรือเลือกรูป QR <input id="incomingProductImage" type="file" accept="image/*" capture="environment"></label></div>
             </div>
@@ -2621,7 +2608,7 @@
         </section>
         <section class="incoming-step" aria-labelledby="incomingPutawayTitle" hidden>
           <h3 id="incomingPutawayTitle">นำพาเลตเข้าตำแหน่ง</h3>
-          <p>สแกนป้ายพาเลต แล้วสแกน QR ตำแหน่งหรือเลือกตำแหน่งจากรายการ ตรวจข้อมูลก่อนยืนยัน</p>
+          <p>สแกนป้ายพาเลตและระบุตำแหน่ง ก่อนยืนยัน</p>
           <div class="incoming-scan-card"><h4><span>1</span> สแกนป้ายบนพาเลต</h4><div class="incoming-scan"><input id="incomingTagScan" aria-label="QR ป้ายพาเลต" placeholder="สแกนป้ายพาเลต PKTAG"><button type="button" id="incomingTagCamera">เปิดกล้อง</button><label>หรือเลือกรูป QR <input id="incomingTagImage" type="file" accept="image/*" capture="environment"></label></div></div>
           <div class="incoming-scan-card"><h4><span>2</span> ระบุตำแหน่งจัดเก็บ</h4><p>สแกนป้ายตำแหน่ง หรือเลือกโซนและตำแหน่งด้านล่าง</p><div class="incoming-scan"><input id="incomingLocationScan" aria-label="QR ตำแหน่งจัดเก็บ" placeholder="สแกนตำแหน่ง PKLOC"><button type="button" id="incomingLocationCamera">เปิดกล้อง</button><label>หรือเลือกรูป QR <input id="incomingLocationImage" type="file" accept="image/*" capture="environment"></label></div><div class="incoming-location-choice"><label>เลือกโซน<select id="incomingZoneSelect"><option value="">เลือกโซน</option></select></label><label>เลือกตำแหน่ง<select id="incomingSlotSelect" disabled><option value="">เลือกโซนก่อน</option></select></label></div></div>
           <div id="incomingPutawaySummary" class="incoming-summary">ยังไม่ได้เลือกป้ายพาเลตและ Location</div>
@@ -2641,12 +2628,12 @@
   <div class="tab-pane" id="pane-daily-receive" role="tabpanel" aria-labelledby="tab-daily-receive" hidden>
     <div class="panel daily-panel" data-kind="receive">
       <h2>รายการรับเข้าประจำวัน</h2>
-      <p class="panel-sub">จาก STOCK CARD พาเลตทุกโซน · แสดงรับเข้าและรับคืนแยกประเภท · ไม่นับการย้ายพาเลต</p>
+      <details class="method-note"><summary>รายการที่นับในหน้านี้</summary><p>นับรายการรับเข้าและรับคืนจาก STOCK CARD ทุกโซน แยกประเภทกัน ไม่นับการย้ายพาเลต</p></details>
       <div class="daily-controls">
         <label>วันที่ <input type="date" class="daily-date" aria-label="วันที่รายการรับเข้า"></label>
         <button type="button" class="daily-prev" aria-label="วันก่อนหน้า">← วันก่อน</button>
         <button type="button" class="daily-today">วันนี้</button>
-        <label class="daily-search">ค้นหารหัส ชื่อสินค้า Lot หรือตำแหน่ง <input type="search" class="daily-query" placeholder="ค้นหารายการในวันที่เลือก"></label>
+        <label class="daily-search">ค้นหารายการ <input type="search" class="daily-query" placeholder="รหัส ชื่อสินค้า Lot หรือตำแหน่ง"></label>
       </div>
       <p class="daily-status" role="status" aria-live="polite"></p>
       <div class="daily-kpis"></div>
@@ -2659,12 +2646,12 @@
   <div class="tab-pane" id="pane-daily-issue" role="tabpanel" aria-labelledby="tab-daily-issue" hidden>
     <div class="panel daily-panel" data-kind="issue">
       <h2>รายการเบิกประจำวัน</h2>
-      <p class="panel-sub">จาก STOCK CARD พาเลตทุกโซน · นับเฉพาะรายการเบิก · ไม่นับการย้ายพาเลต</p>
+      <details class="method-note"><summary>รายการที่นับในหน้านี้</summary><p>นับเฉพาะรายการเบิกจาก STOCK CARD ทุกโซน ไม่นับการย้ายพาเลต</p></details>
       <div class="daily-controls">
         <label>วันที่ <input type="date" class="daily-date" aria-label="วันที่รายการเบิก"></label>
         <button type="button" class="daily-prev" aria-label="วันก่อนหน้า">← วันก่อน</button>
         <button type="button" class="daily-today">วันนี้</button>
-        <label class="daily-search">ค้นหารหัส ชื่อสินค้า Lot หรือตำแหน่ง <input type="search" class="daily-query" placeholder="ค้นหารายการในวันที่เลือก"></label>
+        <label class="daily-search">ค้นหารายการ <input type="search" class="daily-query" placeholder="รหัส ชื่อสินค้า Lot หรือตำแหน่ง"></label>
       </div>
       <p class="daily-status" role="status" aria-live="polite"></p>
       <div class="daily-kpis"></div>
@@ -2677,11 +2664,11 @@
   <div class="tab-pane" id="pane-receipt-plan" role="tabpanel" aria-labelledby="tab-receipt-plan" hidden>
     <div class="panel" id="receiptPlanPanel">
       <h2>แผนรับเข้าประจำวัน</h2>
-      <p class="panel-sub">แผนจากไฟล์ Excel บน Google Drive · รายการในแผนยังไม่ใช่รายการรับเข้าจริง</p>
+      <p class="panel-sub">รายการในแผนยังไม่ใช่รายการรับเข้าจริง</p>
       <div class="daily-controls">
         <label>วันที่ <input type="date" id="receiptPlanDate" aria-label="วันที่แผนรับเข้า"></label>
         <button type="button" id="receiptPlanToday">วันนี้</button>
-        <label class="daily-search">ค้นหา PO รหัส ชื่อสินค้า หรือบริษัท <input type="search" id="receiptPlanQuery" placeholder="ค้นหาในวันที่เลือก"></label>
+        <label class="daily-search">ค้นหารายการ <input type="search" id="receiptPlanQuery" placeholder="PO รหัส ชื่อสินค้า หรือบริษัท"></label>
         <button type="button" id="receiptPlanRefresh">รีเฟรชข้อมูล</button>
       </div>
       <div class="receipt-plan-source"><a href="https://docs.google.com/spreadsheets/d/1qoDuHL4kAT4SFKv2nmpy8CBRRSut_dXm/edit" target="_blank" rel="noopener noreferrer">เปิดไฟล์ต้นทางใน Google Drive</a><span>รีเฟรชอัตโนมัติทุก 5 นาทีขณะเปิดแท็บ</span></div>
@@ -2693,7 +2680,7 @@
   <div class="tab-pane" id="pane-audit" role="tabpanel" aria-labelledby="tab-audit" hidden>
     <div class="panel">
       <h2>ประวัติการแก้ไขพาเลต</h2>
-      <p class="panel-sub">แสดงการเปลี่ยนแปลงที่บันทึกหลังเปิดใช้ระบบประวัติ · ชื่อผู้ทำรายการเป็นชื่อที่กรอกเอง ไม่ได้ยืนยันด้วยบัญชี</p>
+      <p class="panel-sub">ชื่อผู้ทำรายการเป็นชื่อที่กรอกเอง ไม่ได้ยืนยันบัญชี</p>
       <div class="audit-toolbar"><input id="palletAuditSearch" type="search" placeholder="ค้นหาโซน ตำแหน่ง ผู้ทำรายการ หรือเลขเอกสาร" aria-label="ค้นหาประวัติ"><button id="palletAuditRefresh" type="button" class="excl-toggle-btn">รีเฟรช</button></div>
       <p id="palletAuditStatus" role="status" aria-live="polite"></p>
       <div id="palletAuditResult" class="audit-results"></div>
@@ -2704,7 +2691,7 @@
   </div>
 
   <footer>
-    <span>ข้อมูลสต็อก ความพร้อมผลิต และพื้นที่จัดเก็บ · สำหรับใช้ภายในบริษัท</span>
+    <span>ข้อมูลสำหรับใช้ภายในบริษัท</span>
     <div class="footer-actions">
       <button class="theme-toggle" id="saveIconsBtn" type="button" title="ดาวน์โหลดแดชบอร์ดพร้อมไอคอนล่าสุด"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 3h12l2 2v16H5V3Z" stroke-width="1.8"/><path d="M8 3v6h8V3M8 21v-7h8v7" stroke-width="1.8"/></svg><span>บันทึกไฟล์</span></button>
     </div>
@@ -6126,8 +6113,7 @@ function renderCategories(view, whCode) {
   // "รายละเอียดตามหมวดบรรจุภัณฑ์" panel itself -- this function now only builds #catChart
   // (still present) and its #catChartSub caption (still present, on the chart panel above).
   document.getElementById('catChartSub').textContent = whCode === 'all'
-    ? 'มูลค่าคงเหลือแยกตามประเภทบรรจุภัณฑ์ · ทุกคลัง'
-    : `มูลค่าคงเหลือแยกตามประเภทบรรจุภัณฑ์ · ${warehouseLabel(whCode)}`;
+    ? 'ทุกคลัง' : warehouseLabel(whCode);
 }
 
 function renderTopItems(view, whCode) {
@@ -6141,8 +6127,7 @@ function renderTopItems(view, whCode) {
     </tr>
   `).join('');
   document.getElementById('topItemsSub').textContent = whCode === 'all'
-    ? 'รวมยอดรหัสเดียวกันและหน่วยเดียวกันจากทุกคลัง · แยกแถวเมื่อหน่วยต่างกัน'
-    : `เฉพาะ ${warehouseLabel(whCode)}`;
+    ? 'รวมรหัสและหน่วยเดียวกัน · ทุกคลัง' : warehouseLabel(whCode);
 }
 
 function renderStockKpis(view, whCode) {
@@ -7970,18 +7955,18 @@ function renderBomSummary() {
   const critPct = totalFg > 0 ? 100 * bk.fg_blocked / totalFg : 0;
   const unknownPct = totalFg > 0 ? 100 * (bk.fg_unknown || 0) / totalFg : 0;
   const bompkKpiDefs = [
-    {label:'FG ที่มี BOM บรรจุภัณฑ์', value: fmt0(bk.total_fg_with_bom), sub: 'รายการ FG'},
+    {label:'FG ที่มี BOM บรรจุภัณฑ์', value: fmt0(bk.total_fg_with_bom)},
     {label:'บรรจุภัณฑ์พร้อม', value: fmt0(bk.fg_available), sub: goodPct.toFixed(1) + '% ของ FG', cls:'good'},
     {label:'บรรจุภัณฑ์ไม่พร้อม', value: fmt0(bk.fg_blocked), sub: critPct.toFixed(1) + '% ของ FG', cls:'critical'},
     {label:'ยังประเมินไม่ได้', value: fmt0(bk.fg_unknown || 0), sub: 'ตรวจประเภท หน่วย หรือปริมาณใช้'},
-    {label:'ส่วนประกอบใน BOM', value: fmt0(bk.total_bom_lines), sub: 'รายการส่วนประกอบ'},
-    {label:'ส่วนประกอบไม่ซ้ำ', value: fmt0(bk.unique_components), sub: 'รหัสบรรจุภัณฑ์'},
+    {label:'ส่วนประกอบใน BOM', value: fmt0(bk.total_bom_lines)},
+    {label:'ส่วนประกอบไม่ซ้ำ', value: fmt0(bk.unique_components)},
   ];
   document.getElementById('bompkKpiRow').innerHTML = bompkKpiDefs.map(kd => `
     <div class="kpi ${kd.cls||''}">
       <div class="label">${kd.label}</div>
       <div class="value">${kd.value}</div>
-      <div class="sub">${kd.sub}</div>
+      ${kd.sub ? `<div class="sub">${kd.sub}</div>` : ''}
     </div>
   `).join('');
   document.getElementById('splitBar').innerHTML = `
