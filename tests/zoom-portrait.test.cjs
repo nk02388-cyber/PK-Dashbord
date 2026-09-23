@@ -26,6 +26,6 @@ for (const [width, height] of [[890, 538], [320, 280], [700, 900]]) {
     close(next.x, width / 2 + 10); close(next.y, height / 2);
   }
 }
-assert.match(html, /zoomStage\.append\(zoomZoneBox, zoomSlotsLayer, zoomCadLabels, zoomZoneLabel\)/);
+assert.match(html, /zoomStage\.append\(zoomZoneBox, zoomCadSlotLabels, zoomSlotsLayer, zoomCadLabels, zoomZoneLabel\)/);
 assert.match(html, /zoomStage\.style\.backgroundPosition/);
 console.log('PASS: zoom landscape default, fit, screen-space pan, shared image/slot layer');

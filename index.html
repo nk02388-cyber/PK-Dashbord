@@ -686,7 +686,20 @@
     position: absolute; left: 0; top: 0; transform-origin: 0 0;
     background-repeat: no-repeat;
   }
-  .floorplan-zoom-slots { position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 2; }
+  .floorplan-zoom-slots { position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 3; }
+  .zoom-cad-slot-labels { position: absolute; pointer-events: none; z-index: 2; }
+  .zoom-cad-slot-label {
+    position: absolute; transform: translate(-50%, -50%); display: flex;
+    align-items: center; justify-content: center;
+    width: var(--cad-slot-mask-size, 32px); height: var(--cad-slot-mask-size, 32px);
+    background: #fff; border-radius: 2px;
+  }
+  .zoom-cad-slot-label[hidden] { display: none; }
+  .zoom-cad-slot-label > span {
+    transform: rotate(var(--map-label-rotation, 0deg));
+    color: #27364c; font-size: var(--cad-slot-font-size, 12px);
+    font-weight: 700; line-height: 1.1; white-space: nowrap;
+  }
   .zoom-cad-labels { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
   .zoom-cad-label {
     position: absolute; display: none; transform: translate(-50%, -50%) rotate(var(--map-label-rotation, 0deg));
@@ -3333,6 +3346,23 @@ zoomStage.className = 'floorplan-zoom-stage';
 zoomStage.style.backgroundImage = `url(${zoomSourceUrl})`;
 const zoomCadLabels = document.createElement('div');
 zoomCadLabels.className = 'zoom-cad-labels';
+// Slot names in the CAD image are pixels, so they turn upside down with the drawing.
+// Cover them with real text while rotated; the selected zone uses its own status chips.
+const zoomCadSlotLabels = document.createElement('div');
+zoomCadSlotLabels.className = 'zoom-cad-slot-labels';
+const cadSlotFragment = document.createDocumentFragment();
+Object.entries(ZONE_SLOTS).forEach(([zone, slots]) => slots.forEach(slot => {
+  const label = document.createElement('span');
+  label.className = 'zoom-cad-slot-label';
+  const text = document.createElement('span');
+  text.textContent = slot.code;
+  label.appendChild(text);
+  label.dataset.zone = zone;
+  label.style.left = `${slot.leftPct}%`;
+  label.style.top = `${slot.topPct}%`;
+  cadSlotFragment.appendChild(label);
+}));
+zoomCadSlotLabels.appendChild(cadSlotFragment);
 Object.entries(ZONE_PINS).forEach(([code, pin]) => {
   const label = document.createElement('span');
   label.className = 'zoom-cad-label';
@@ -3342,7 +3372,7 @@ Object.entries(ZONE_PINS).forEach(([code, pin]) => {
   zoomCadLabels.appendChild(label);
 });
 zoomViewport.style.backgroundImage = 'none';
-zoomStage.append(zoomZoneBox, zoomSlotsLayer, zoomCadLabels, zoomZoneLabel);
+zoomStage.append(zoomZoneBox, zoomCadSlotLabels, zoomSlotsLayer, zoomCadLabels, zoomZoneLabel);
 zoomViewport.append(zoomStage);
 
 let zoomScale = 3.2;
@@ -4016,6 +4046,13 @@ function updateZoomView() {
   const posY = rect.height / 2 - (zoomCenterPct.topPct / 100 * bgH) + rect.panY;
   zoomStage.style.backgroundSize = `${bgW}px ${bgH}px`;
   zoomStage.style.backgroundPosition = `${posX}px ${posY}px`;
+  zoomCadSlotLabels.style.display = mapRotation && zoomScale >= 1.5 ? 'block' : 'none';
+  zoomCadSlotLabels.style.left = `${posX}px`;
+  zoomCadSlotLabels.style.top = `${posY}px`;
+  zoomCadSlotLabels.style.width = `${bgW}px`;
+  zoomCadSlotLabels.style.height = `${bgH}px`;
+  zoomCadSlotLabels.style.setProperty('--cad-slot-mask-size', `${Math.min(0.0065 * bgW, 0.0095 * bgH) * 0.78}px`);
+  zoomCadSlotLabels.style.setProperty('--cad-slot-font-size', `${Math.min(16, Math.max(9, 5 * zoomScale))}px`);
   zoomCadLabels.querySelectorAll('.zoom-cad-label').forEach(label => {
     label.style.display = zoomScale >= 2 ? 'block' : 'none';
     label.style.left = (posX + Number(label.dataset.leftPct) / 100 * bgW) + 'px';
@@ -4073,6 +4110,9 @@ function updateZoomCount() {
 
 function renderZoomSlots(zoneCode) {
   const slots = ZONE_SLOTS[zoneCode] || [];
+  zoomCadSlotLabels.querySelectorAll('.zoom-cad-slot-label').forEach(label => {
+    label.hidden = label.dataset.zone === zoneCode;
+  });
   // Recompute the green zone-outline bounds (see zoomZoneBoxBounds above) for whichever zone
   // is being rendered -- null (no box drawn) for a zone with no slot data, since there's
   // nothing to outline.
