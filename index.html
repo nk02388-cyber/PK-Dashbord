@@ -1695,6 +1695,7 @@
 .audit-entry-fields,.audit-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin:12px 0}.audit-entry-fields label{display:flex;flex-direction:column;gap:4px;min-width:220px;flex:1}.audit-entry-fields input,.audit-toolbar input{min-height:42px;border:1px solid var(--border,#cbd5e1);border-radius:8px;padding:8px 10px;background:var(--surface,#fff);color:var(--text-primary,#172033)}.audit-toolbar input{flex:1;min-width:220px}.audit-scroll{overflow:auto;max-height:70vh}.audit-table{width:100%;border-collapse:collapse;min-width:700px}.audit-table th,.audit-table td{text-align:left;vertical-align:top;padding:10px;border-bottom:1px solid var(--border,#dbe3ef)}.audit-table th{position:sticky;top:0;background:var(--surface,#fff)}.audit-table td:last-child{min-width:220px}
 .barcode-panel{border:1px solid var(--border);background:var(--surface-1);border-radius:12px;padding:14px;margin:14px 0}.barcode-panel h3{margin:0 0 6px}.barcode-panel p{margin:6px 0 10px;color:var(--text-secondary)}.barcode-controls{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:9px 0}.barcode-controls input{flex:1 1 230px}.barcode-controls input,.barcode-controls select,.barcode-controls button{min-height:44px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;background:var(--surface-1);color:var(--text-primary)}.barcode-controls button{cursor:pointer;font-weight:600}.barcode-file{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}.barcode-file input{max-width:230px}.barcode-camera{max-width:460px;margin:10px auto}.barcode-selection{font-weight:600;padding:9px;border-radius:8px;background:var(--page-plane)}#barcodeScanStatus[data-error="true"]{color:var(--status-critical)}@media(max-width:600px){.barcode-controls input,.barcode-controls button,.barcode-controls label{width:100%}.barcode-controls label select{width:100%}}
 .incoming-steps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:16px 0}.incoming-step{border:1px solid var(--border);background:var(--surface-1);border-radius:12px;padding:16px;min-width:0}.incoming-step h3{margin:0 0 6px}.incoming-step p{color:var(--text-secondary);margin:0 0 12px}.incoming-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.incoming-fields label{display:flex;flex-direction:column;gap:5px;font-weight:600;min-width:0}.incoming-fields input,.incoming-scan input{min-width:0;width:100%;min-height:44px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;background:var(--surface-1);color:var(--text-primary)}.incoming-fields input[readonly]{background:var(--page-plane)}.incoming-scan{display:flex;gap:8px;margin:10px 0;align-items:center;flex-wrap:wrap}.incoming-scan input{flex:1 1 220px;width:auto}.incoming-step button,.incoming-toolbar button{min-height:44px;border:1px solid var(--border);border-radius:8px;padding:8px 12px;background:var(--surface-1);color:var(--text-primary);font-weight:600;cursor:pointer}.incoming-step button:disabled{opacity:.55;cursor:not-allowed}.incoming-step .incoming-primary{background:#1d4ed8;color:#fff;border-color:#1d4ed8}.incoming-status{min-height:22px;margin-top:10px;font-weight:600}.incoming-status[data-error="true"]{color:var(--status-critical)}.incoming-summary{border:1px solid var(--border);border-radius:8px;padding:10px;margin:10px 0;line-height:1.5}.incoming-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}.incoming-list{overflow:auto;max-height:55vh}.incoming-list table{width:100%;min-width:850px;border-collapse:collapse}.incoming-list th,.incoming-list td{padding:9px;border-bottom:1px solid var(--border);text-align:left}.incoming-camera{max-width:440px;margin:10px auto}.incoming-tag-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}@media(max-width:800px){.incoming-steps{grid-template-columns:1fr}.incoming-fields{grid-template-columns:1fr}}
+.incoming-allocation-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:10px}.incoming-allocation-grid label{display:flex;flex-direction:column;gap:4px;font-weight:600}.incoming-allocation-grid input{width:100%;min-height:42px;border:1px solid var(--border);border-radius:8px;padding:7px 9px;background:var(--surface-1);color:var(--text-primary)}.incoming-allocation-error{color:var(--status-critical);font-weight:700}
 </style>
 </head>
 <body class="viz-root">
@@ -2581,19 +2582,21 @@
               <label>รหัสสินค้า / Product Code *<input id="incomingProductCode" required autocomplete="off" placeholder="สแกน PKITEM หรือบาร์โค้ดสินค้า"></label>
               <label>ชื่อสินค้า<input id="incomingProductName" readonly></label>
               <label>Lot / Batch No.<input id="incomingLot" maxlength="120"></label>
-              <label>จำนวนต่อพาเลต *<input id="incomingQuantity" type="number" min="0.001" step="0.001" required inputmode="decimal"></label>
+              <label>จำนวนทั้งหมด *<input id="incomingQuantity" type="number" min="0.001" step="0.001" required inputmode="decimal"></label>
+              <label>จำนวนพาเลต *<input id="incomingPalletCount" type="number" min="1" max="100" step="1" required inputmode="numeric" value="1"></label>
               <label>หน่วย *<input id="incomingUnit" required maxlength="80"></label>
               <label>วันที่รับ *<input id="incomingReceivedOn" type="date" required></label>
               <label>วันที่ผลิต<input id="incomingManufacturedOn" type="date"></label>
               <label>วันหมดอายุ<input id="incomingExpiresOn" type="date"></label>
               <label>ผู้รับเข้า *<input id="incomingReceiver" required maxlength="100"></label>
             </div>
+            <div id="incomingAllocation" class="incoming-summary" aria-live="polite">กรอกจำนวนทั้งหมดและจำนวนพาเลตเพื่อดูจำนวนต่อป้าย</div>
             <div class="incoming-scan"><button type="button" id="incomingProductCamera">เปิดกล้องสแกนสินค้า</button><label>หรือเลือกรูป QR <input id="incomingProductImage" type="file" accept="image/*" capture="environment"></label></div>
-            <button type="submit" class="incoming-primary" id="incomingCreate">บันทึกรับเข้าและสร้างป้ายพาเลต</button>
+            <button type="submit" class="incoming-primary" id="incomingCreate">บันทึกรับเข้าและสร้างป้ายตามจำนวนพาเลต</button>
           </form>
           <p id="incomingReceiveStatus" class="incoming-status" role="status" aria-live="polite"></p>
           <div id="incomingTagReady" class="incoming-summary" hidden></div>
-          <div class="incoming-tag-actions"><button type="button" id="incomingPrintTag" hidden>พิมพ์ป้าย FM-ST-019 / QR</button></div>
+          <div class="incoming-tag-actions"><button type="button" id="incomingPrintTag" hidden>พิมพ์ป้าย FM-ST-019 ทั้งชุด (4 ป้าย/หน้า)</button></div>
         </section>
         <section class="incoming-step" aria-labelledby="incomingPutawayTitle">
           <h3 id="incomingPutawayTitle">2 · ฝั่งจัดเก็บ (FM-ST-019)</h3>
@@ -9482,8 +9485,8 @@ window.addEventListener('pageshow', () => {
 <script src="vendor/qrcode-generator.js"></script>
 <script src="barcode-operations.js?v=20260923-2"></script>
 <script src="barcode-ui.js?v=20260923-2"></script>
-<script src="incoming-workflow.js?v=20260923-1"></script>
-<script src="incoming-ui.js?v=20260923-3"></script>
+<script src="incoming-workflow.js?v=20260923-2"></script>
+<script src="incoming-ui.js?v=20260923-4"></script>
 <script src="daily-movements.js"></script>
 <script src="receipt-plan.js"></script>
 

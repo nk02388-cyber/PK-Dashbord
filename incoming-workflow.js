@@ -16,7 +16,28 @@
     const match = root.PKBarcode.resolveScan(raw, locations, []);
     return match.kind === 'location' ? {zone:match.zone, slot:match.slot} : null;
   }
-  const api = {tagPayload,parseTag,exactProduct,exactLocation};
+  function quantityUnits(value) {
+    const number=Number(value);
+    const units=Math.round(number*1000);
+    return Number.isFinite(number)&&number>0&&Number.isSafeInteger(units)&&Math.abs(number*1000-units)<1e-7 ? units : null;
+  }
+  function distributeQuantity(total,count) {
+    const units=quantityUnits(total);
+    if (units===null||!Number.isInteger(count)||count<1||count>100||units<count) return null;
+    // Whole pieces stay whole; fractional quantities retain the database's 0.001 precision.
+    const scale=units%1000===0 ? 1 : 1000;
+    const pieces=scale===1 ? units/1000 : units;
+    if (pieces<count) return null;
+    const base=Math.floor(pieces/count),remainder=pieces%count;
+    return Array.from({length:count},(_,i)=>(base+(i<remainder?1:0))/scale);
+  }
+  function validAllocation(total,values) {
+    const units=quantityUnits(total);
+    if (units===null||!Array.isArray(values)||!values.length||values.length>100) return false;
+    const parts=values.map(quantityUnits);
+    return parts.every(part=>part!==null)&&parts.reduce((sum,part)=>sum+part,0)===units;
+  }
+  const api = {tagPayload,parseTag,exactProduct,exactLocation,distributeQuantity,validAllocation};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.PKIncoming = api;
 })(typeof window !== 'undefined' ? window : globalThis);

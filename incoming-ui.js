@@ -6,7 +6,7 @@
   const status = (id,text,error=false) => { $(id).textContent=text; $(id).dataset.error=String(error); };
   const today = new Date();
   $('incomingReceivedOn').value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-  let selectedProduct=null, selectedTag=null, selectedLocation=null, lastCreated=null, pendingCreateRequestId=null;
+  let selectedProduct=null, selectedTag=null, selectedLocation=null, lastCreated=[], pendingCreateRequestId=null;
   let camera=null, cameraStarting=false, cameraRunning=false, cameraGeneration=0, scanning=false, saving=false;
   let scanAudio=null,lastScanSoundKey='',lastScanSoundAt=0;
   function armScanAudio() {
@@ -59,11 +59,34 @@
   $('incomingProductCode').addEventListener('change',()=>{armScanAudio();identifyProduct(true);});
   $('incomingProductCode').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();armScanAudio();identifyProduct(true);$('incomingQuantity').focus();}});
   $('incomingProductCode').addEventListener('input',()=>{selectedProduct=null;$('incomingProductName').value='';});
-  function renderTag(tag) {
-    if (!tag) return;
-    lastCreated=tag;
+  function updateAllocation(reset=false) {
+    const total=Number($('incomingQuantity').value),count=Number($('incomingPalletCount').value);
+    const suggested=PKIncoming.distributeQuantity(total,count);
+    if (!suggested) {
+      $('incomingAllocation').textContent='กรอกจำนวนทั้งหมดและจำนวนพาเลต 1–100 ให้ถูกต้อง';
+      return;
+    }
+    const existing=[...$('incomingAllocation').querySelectorAll('[data-pallet-qty]')];
+    if (reset||existing.length!==count) {
+      $('incomingAllocation').innerHTML=`<b>จำนวนต่อป้าย · ปรับแต่ละพาเลตได้ก่อนบันทึก</b><div class="incoming-allocation-grid">${suggested.map((qty,i)=>`<label>พาเลต ${i+1}/${count}<input type="number" min="0.001" step="0.001" inputmode="decimal" data-pallet-qty="${i}" value="${qty}"></label>`).join('')}</div><p id="incomingAllocationStatus"></p>`;
+    }
+    const values=[...$('incomingAllocation').querySelectorAll('[data-pallet-qty]')].map(input=>input.value);
+    const valid=PKIncoming.validAllocation(total,values);
+    const sum=values.reduce((n,v)=>n+(Number(v)||0),0);
+    $('incomingAllocationStatus').textContent=`รวมจากป้าย ${sum.toLocaleString('th-TH',{maximumFractionDigits:3})} / ${total.toLocaleString('th-TH',{maximumFractionDigits:3})} ${$('incomingUnit').value.trim()}${valid?' · พร้อมบันทึก':' · ยอดรวมไม่ตรง'}`;
+    $('incomingAllocationStatus').classList.toggle('incoming-allocation-error',!valid);
+  }
+  $('incomingQuantity').addEventListener('input',()=>updateAllocation(true));
+  $('incomingPalletCount').addEventListener('input',()=>updateAllocation(true));
+  $('incomingUnit').addEventListener('input',()=>updateAllocation());
+  $('incomingAllocation').addEventListener('input',event=>{if(event.target.matches('[data-pallet-qty]'))updateAllocation();});
+  function labelSequence(tag) { return `${tag.batch_index||1}/${tag.batch_total||1}`; }
+  function renderTags(tags) {
+    if (!tags?.length) return;
+    lastCreated=tags;
+    const first=tags[0];
     $('incomingTagReady').hidden=false;
-    $('incomingTagReady').innerHTML=`<b>FM-ST-019 · ${esc(tag.receiving_no)} / ${esc(tag.running_no)}</b><br>${esc(tag.product_code)} · ${esc(tag.product_name)}<br>${esc(tag.quantity)} ${esc(tag.unit)} · Lot ${esc(tag.lot_no||'—')}<br>QR: ${esc(PKIncoming.tagPayload(tag.id))}`;
+    $('incomingTagReady').innerHTML=`<b>FM-ST-019 · ${esc(first.receiving_no)} · ${tags.length} ป้าย</b><br>${esc(first.product_code)} · ${esc(first.product_name)}<br>Running ${esc(labelSequence(first))} ถึง ${esc(labelSequence(tags.at(-1)))} · รวม ${esc(tags.reduce((sum,tag)=>sum+Number(tag.quantity),0))} ${esc(first.unit)}`;
     $('incomingPrintTag').hidden=false;
   }
   async function refreshList() {
@@ -78,12 +101,12 @@
     const rows=data||[];
     $('tabBadgeIncoming').textContent=`${rows.filter(row=>row.status==='pending').length} รอจัดเก็บ`;
     status('incomingListStatus',`แสดง ${rows.length} ป้ายล่าสุด · รอจัดเก็บ ${rows.filter(row=>row.status==='pending').length} ป้าย`);
-    $('incomingList').innerHTML=rows.length?`<table><thead><tr><th>FM-ST-011 / ลำดับป้าย</th><th>สินค้า</th><th>จำนวนต่อพาเลต</th><th>สถานะ / Location</th><th>ป้าย FM-ST-019</th></tr></thead><tbody>${rows.map(row=>`<tr><td>${esc(row.receiving_no)} / ${esc(row.running_no)}</td><td>${esc(row.product_code)}<br>${esc(row.product_name)}</td><td>${esc(row.quantity)} ${esc(row.unit)}</td><td>${row.status==='stored'?`จัดเก็บ ${esc(row.zone)}/${esc(row.slot_code)}`:'รอจัดเก็บ'}</td><td><button type="button" data-print-tag="${esc(row.id)}">พิมพ์ QR</button> ${row.status==='pending'?`<button type="button" data-select-tag="${esc(row.id)}">เลือกจัดเก็บ</button>`:''}</td></tr>`).join('')}</tbody></table>`:'ยังไม่มีป้ายรับเข้า';
+    $('incomingList').innerHTML=rows.length?`<table><thead><tr><th>FM-ST-011 / Running</th><th>สินค้า</th><th>จำนวนในป้าย</th><th>สถานะ / Location</th><th>ป้าย FM-ST-019</th></tr></thead><tbody>${rows.map(row=>`<tr><td>${esc(row.receiving_no)} / ${esc(labelSequence(row))}</td><td>${esc(row.product_code)}<br>${esc(row.product_name)}</td><td>${esc(row.quantity)} ${esc(row.unit)}</td><td>${row.status==='stored'?`จัดเก็บ ${esc(row.zone)}/${esc(row.slot_code)}`:'รอจัดเก็บ'}</td><td><button type="button" data-print-tag="${esc(row.id)}">พิมพ์ป้าย</button> ${row.batch_id?`<button type="button" data-print-batch="${esc(row.batch_id)}">พิมพ์ทั้งชุด</button>`:''} ${row.status==='pending'?`<button type="button" data-select-tag="${esc(row.id)}">เลือกจัดเก็บ</button>`:''}</td></tr>`).join('')}</tbody></table>`:'ยังไม่มีป้ายรับเข้า';
     $('incomingList')._rows=rows;
   }
   function updatePutaway() {
     $('incomingPutawaySummary').innerHTML=selectedTag
-      ? `<b>FM-ST-019 · ${esc(selectedTag.receiving_no)} / ${esc(selectedTag.running_no)}</b><br>${esc(selectedTag.product_code)} · ${esc(selectedTag.product_name)} · ${esc(selectedTag.quantity)} ${esc(selectedTag.unit)}<br>Location: ${selectedLocation?`${esc(selectedLocation.zone)}/${esc(selectedLocation.slot)}`:'ยังไม่สแกน'}`
+      ? `<b>FM-ST-019 · ${esc(selectedTag.receiving_no)} / ${esc(labelSequence(selectedTag))}</b><br>${esc(selectedTag.product_code)} · ${esc(selectedTag.product_name)} · ${esc(selectedTag.quantity)} ${esc(selectedTag.unit)}<br>Location: ${selectedLocation?`${esc(selectedLocation.zone)}/${esc(selectedLocation.slot)}`:'ยังไม่สแกน'}`
       : 'ยังไม่ได้เลือกป้ายพาเลตและ Location';
     $('incomingPutaway').disabled=!(selectedTag?.status==='pending'&&selectedLocation&&$('incomingStorer').value.trim()&&!saving);
   }
@@ -112,26 +135,28 @@
   $('incomingReceiveForm').addEventListener('submit',async event=>{
     event.preventDefault();
     if (saving) return;
-    const product=identifyProduct(),qty=Number($('incomingQuantity').value);
-    if (!product||!Number.isFinite(qty)||qty<=0) {status('incomingReceiveStatus','กรุณาสแกนรหัสสินค้าที่พบในสต็อกและใส่จำนวนต่อพาเลตให้ถูกต้อง',true);return;}
+    const product=identifyProduct(),qty=Number($('incomingQuantity').value),palletCount=Number($('incomingPalletCount').value);
+    const quantities=[...$('incomingAllocation').querySelectorAll('[data-pallet-qty]')].map(input=>input.value);
+    if (!product||!PKIncoming.validAllocation(qty,quantities)||quantities.length!==palletCount) {status('incomingReceiveStatus','กรุณาตรวจรหัสสินค้า จำนวนรวม จำนวนพาเลต และยอดในแต่ละป้ายให้ตรงกัน',true);return;}
     if ($('incomingManufacturedOn').value&&$('incomingExpiresOn').value&&$('incomingExpiresOn').value<$('incomingManufacturedOn').value) {status('incomingReceiveStatus','วันหมดอายุต้องไม่ก่อนวันที่ผลิต',true);return;}
     if (!supabaseClient) {status('incomingReceiveStatus','ยังไม่ได้เชื่อมต่อฐานข้อมูล',true);return;}
     saving=true;$('incomingCreate').disabled=true;
     status('incomingReceiveStatus','กำลังบันทึก FM-ST-011…');
     try {
       pendingCreateRequestId ||= crypto.randomUUID();
-      const {data,error}=await supabaseClient.rpc('create_incoming_pallet',{
+      const {data,error}=await supabaseClient.rpc('create_incoming_batch',{
         p_receiving_no:$('incomingReceiptNo').value.trim(),p_supplier_name:$('incomingSupplier').value.trim(),
         p_product_code:product.code,p_product_name:product.name,p_lot_no:$('incomingLot').value.trim(),
-        p_unit:$('incomingUnit').value.trim(),p_quantity:qty,p_received_on:$('incomingReceivedOn').value,
+        p_unit:$('incomingUnit').value.trim(),p_total_quantity:qty,p_pallet_count:palletCount,p_quantities:quantities.map(Number),p_received_on:$('incomingReceivedOn').value,
         p_manufactured_on:$('incomingManufacturedOn').value||null,p_expires_on:$('incomingExpiresOn').value||null,
         p_actor:$('incomingReceiver').value.trim(),p_request_id:pendingCreateRequestId});
       if(error) throw error;
-      if(!data?.id) throw new Error('ผลการบันทึกไม่ครบ กรุณารีเฟรชตรวจทะเบียนก่อนลองใหม่');
-      renderTag(data);
+      if(!Array.isArray(data)||data.length!==palletCount||data.some(tag=>!tag.id)) throw new Error('ผลการบันทึกไม่ครบ กรุณารีเฟรชตรวจทะเบียนก่อนลองใหม่');
+      renderTags(data);
       pendingCreateRequestId=null;
-      status('incomingReceiveStatus',`บันทึก FM-ST-011 แล้ว · สร้างป้าย FM-ST-019 ลำดับ ${data.running_no} · รอจัดเก็บ`);
+      status('incomingReceiveStatus',`บันทึก FM-ST-011 แล้ว · สร้างป้าย FM-ST-019 ${data.length} ป้าย · รอจัดเก็บ`);
       $('incomingProductCode').value='';$('incomingProductName').value='';$('incomingLot').value='';$('incomingQuantity').value='';
+      $('incomingPalletCount').value='1';updateAllocation(true);
       selectedProduct=null;
       await refreshList();
     } catch(error) { status('incomingReceiveStatus','ยังยืนยันการบันทึกไม่ได้ · ตรวจทะเบียนก่อนลองซ้ำ: '+error.message,true); }
@@ -154,19 +179,32 @@
       status('incomingPutawayStatus',error.message?.includes('INCOMING_ALREADY_STORED')?'ป้ายนี้ถูกจัดเก็บแล้ว · รีเฟรชรายการเพื่อตรวจ Location':'บันทึก Location ไม่สำเร็จ: '+error.message,true);
     } finally {saving=false;updatePutaway();}
   });
-  function printTag(tag) {
-    if (!tag||typeof qrcode!=='function') {status('incomingReceiveStatus','สร้างป้าย QR ไม่ได้',true);return;}
-    const qr=qrcode(0,'M');qr.addData(PKIncoming.tagPayload(tag.id));qr.make();
+  function openPrintWindow() {
     const page=window.open('','_blank');
-    if(!page){status('incomingReceiveStatus','เบราว์เซอร์ปิดกั้นหน้าพิมพ์ · กรุณาอนุญาตป๊อปอัป',true);return;}
-    page.document.write(`<!doctype html><html lang="th"><meta charset="utf-8"><title>FM-ST-019 ${esc(tag.receiving_no)} / ${esc(tag.running_no)}</title><style>body{font:16px Arial,sans-serif;margin:22px}.tag{border:2px solid #222;padding:20px;max-width:540px}.tag svg{width:180px;height:180px}p{margin:7px 0}</style><div class="tag"><b>FM-ST-019 · ใบกำกับพาเลต</b><p>Receiving No.: ${esc(tag.receiving_no)} / Running No.: ${esc(tag.running_no)}</p><p>Supplier: ${esc(tag.supplier_name)}</p><p>Product: ${esc(tag.product_code)} · ${esc(tag.product_name)}</p><p>Lot: ${esc(tag.lot_no||'—')}</p><p>จำนวนต่อพาเลต: <b>${esc(tag.quantity)} ${esc(tag.unit)}</b></p><p>วันที่รับ: ${esc(tag.received_on)} · ผลิต: ${esc(tag.manufactured_on||'—')} · หมดอายุ: ${esc(tag.expires_on||'—')}</p>${qr.createSvgTag(4,2)}<p>${esc(PKIncoming.tagPayload(tag.id))}</p></div></html>`);
+    if(!page) status('incomingReceiveStatus','เบราว์เซอร์ปิดกั้นหน้าพิมพ์ · กรุณาอนุญาตป๊อปอัป',true);
+    return page;
+  }
+  function printTags(tags,page) {
+    if(!page||!tags?.length||typeof qrcode!=='function') {page?.close();status('incomingReceiveStatus','สร้างป้าย QR ไม่ได้',true);return;}
+    const labels=tags.map(tag=>{
+      const qr=qrcode(0,'M');qr.addData(PKIncoming.tagPayload(tag.id));qr.make();
+      return `<article class="tag"><header><b>FM-ST-019 · ป้ายกำกับพาเลต</b><strong>${esc(labelSequence(tag))}</strong></header><p>Receiving No.: <b>${esc(tag.receiving_no)}</b></p><p>Supplier: ${esc(tag.supplier_name)}</p><p>Product Code: <b>${esc(tag.product_code)}</b></p><p class="product-name">${esc(tag.product_name)}</p><p>Lot: ${esc(tag.lot_no||'—')}</p><p>จำนวนรวม: ${esc(tag.batch_total_quantity||tag.quantity)} ${esc(tag.unit)} · ${esc(tag.batch_total||1)} พาเลต</p><p>จำนวนในพาเลต: <b>${esc(tag.quantity)} ${esc(tag.unit)}</b></p><p>วันที่รับ: ${esc(tag.received_on)} · ผลิต: ${esc(tag.manufactured_on||'—')} · หมดอายุ: ${esc(tag.expires_on||'—')}</p><div class="qr">${qr.createSvgTag(3,1)}<small>${esc(PKIncoming.tagPayload(tag.id))}</small></div></article>`;
+    });
+    const sheets=[];for(let i=0;i<labels.length;i+=4)sheets.push(`<section class="sheet">${labels.slice(i,i+4).join('')}</section>`);
+    page.document.write(`<!doctype html><html lang="th"><meta charset="utf-8"><title>FM-ST-019 ${esc(tags[0].receiving_no)} · ${tags.length} ป้าย</title><style>@page{size:A4 portrait;margin:10mm}*{box-sizing:border-box}body{font:9pt Arial,sans-serif;margin:0;color:#111}.sheet{width:190mm;height:277mm;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr);gap:5mm;break-after:page;page-break-after:always}.sheet:last-child{break-after:auto;page-break-after:auto}.tag{border:1.5px solid #111;padding:3mm;min-width:0;overflow:hidden;overflow-wrap:anywhere}.tag header{display:flex;justify-content:space-between;align-items:start;gap:3mm;border-bottom:1px solid #555;padding-bottom:2mm;font-size:10pt}.tag header strong{font-size:15pt;white-space:nowrap}.tag p{margin:2mm 0}.product-name{font-weight:700}.qr{text-align:center;margin-top:2mm}.qr svg{width:34mm;height:34mm}.qr small{display:block;font-size:6.5pt;overflow-wrap:anywhere}</style>${sheets.join('')}</html>`);
     page.document.close();page.focus();page.print();
   }
-  $('incomingPrintTag').addEventListener('click',()=>printTag(lastCreated));
-  $('incomingList').addEventListener('click',event=>{
-    const print=event.target.closest('[data-print-tag]'),select=event.target.closest('[data-select-tag]');
+  $('incomingPrintTag').addEventListener('click',()=>printTags(lastCreated,openPrintWindow()));
+  $('incomingList').addEventListener('click',async event=>{
+    const print=event.target.closest('[data-print-tag]'),batch=event.target.closest('[data-print-batch]'),select=event.target.closest('[data-select-tag]');
     const rows=$('incomingList')._rows||[];
-    if(print) printTag(rows.find(row=>row.id===print.dataset.printTag));
+    if(print) printTags([rows.find(row=>row.id===print.dataset.printTag)],openPrintWindow());
+    if(batch) {
+      const page=openPrintWindow();if(!page)return;
+      const {data,error}=await supabaseClient.from('incoming_pallets').select('*').eq('batch_id',batch.dataset.printBatch).order('batch_index',{ascending:true});
+      if(error||!data?.length){page.close();status('incomingListStatus','โหลดป้ายทั้งชุดเพื่อพิมพ์ไม่ได้: '+(error?.message||'ไม่พบข้อมูล'),true);return;}
+      printTags(data,page);
+    }
     if(select) {selectTag(PKIncoming.tagPayload(select.dataset.selectTag));$('incomingPutawayTitle').scrollIntoView({block:'start',behavior:'smooth'});}
   });
   $('incomingRefresh').addEventListener('click',refreshList);
