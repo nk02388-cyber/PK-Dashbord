@@ -23,6 +23,16 @@
     input.value = ''; showSelection();
     if (announce) message('ล้างตำแหน่งและสินค้าที่สแกนแล้ว');
   }
+  function showProductLocations(product) {
+    const productCode = String(product?.code || '').trim();
+    const inventoryCode = Object.keys(ITEM_TO_SLOTS).find(code => code.trim().toUpperCase() === productCode.toUpperCase());
+    const matches = inventoryCode ? ITEM_TO_SLOTS[inventoryCode] : [];
+    floorplanSearchInput.value = productCode;
+    hideSearchSuggestions();
+    renderSearchMatches(matches, productCode, false);
+    floorplanSearchMsg.scrollIntoView({block:'nearest'});
+    return matches.length;
+  }
   async function stopCamera() {
     const activeCamera = camera, wasRunning = cameraRunning;
     cameraGeneration += 1; cameraRunning = false; cameraStarting = false; camera = null;
@@ -35,7 +45,6 @@
   function openMatch(location, product) {
     if (!location || !product) return;
     const {zone,slot} = location;
-    $('tab-floorplan').click();
     openZoomModal(zone);
     openSlotEdit(zone,slot);
     const index = slotItemsFor(zone,slot).findIndex(item => String(item.code).trim().toUpperCase() === String(product.code).trim().toUpperCase());
@@ -59,7 +68,13 @@
       input.value = '';
       if (match.kind === 'invalid') { message(match.reason,true); return; }
       if (match.kind === 'location') { chosenLocation = {zone:match.zone,slot:match.slot}; message(`อ่านตำแหน่ง ${match.zone}/${match.slot} แล้ว · สแกนสินค้า`); }
-      if (match.kind === 'product') { chosenProduct = match.product; $('barcodePrintProductCode').value = match.product.code; message(`อ่านสินค้า ${match.product.code} แล้ว · สแกนตำแหน่ง`); }
+      if (match.kind === 'product') {
+        chosenProduct = match.product; $('barcodePrintProductCode').value = match.product.code;
+        const positionCount = chosenLocation ? 0 : showProductLocations(match.product);
+        message(positionCount
+          ? `พบสินค้า ${match.product.code} ใน ${positionCount} ตำแหน่ง · เลือกตำแหน่งด้านล่างหรือสแกนป้ายตำแหน่ง`
+          : `อ่านสินค้า ${match.product.code} แล้ว · ยังไม่พบในพาเลต หรือสแกนป้ายตำแหน่งเพื่อเพิ่มรายการ`);
+      }
       showSelection();
       if (chosenLocation && chosenProduct) {
         const completedLocation = chosenLocation, completedProduct = chosenProduct;
@@ -105,7 +120,7 @@
     finally { try { reader.clear(); } catch (_) {} view.hidden = true; event.target.value = ''; }
   });
   document.addEventListener('visibilitychange', () => { if (document.hidden) stopCamera(); });
-  $('tabs').addEventListener('click',event => { if (event.target.closest('.tab-btn')?.dataset.tab !== 'barcode') stopCamera(); });
+  $('tabs').addEventListener('click',event => { if (event.target.closest('.tab-btn')?.dataset.tab !== 'floorplan') stopCamera(); });
   function qrMarkup(payload) { const qr = qrcode(0,'M'); qr.addData(payload); qr.make(); return qr.createSvgTag(3,2); }
   function printLabels(title,labels) {
     const page = window.open('','_blank');

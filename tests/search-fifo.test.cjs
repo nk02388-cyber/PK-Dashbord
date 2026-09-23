@@ -11,6 +11,7 @@ const items = [{zone:'D',slot:'D-16',name:'สินค้า',receiveDate:'2026
   {zone:'C',slot:'C-06',name:'สินค้า',receiveDate:'2026-08-04'}];
 const before = JSON.stringify(items);
 const ctx = vm.createContext({floorplanSearchMsg:{dataset:{}}, jumpToSlot:(zone,slot)=>ctx.jump=[zone,slot],
+  openSlotEdit:(zone,slot)=>ctx.opened=[zone,slot],
   SLOT_ITEMS:{F:{'F-01':[{code:'X',name:'Test',qty:5,receiveDate:'2026-08-01',lotNo:'LOT'}]}},ITEM_TO_SLOTS:{},
   escapeHtml:s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')});
 vm.runInContext(source,ctx);
@@ -29,6 +30,7 @@ assert.match(result,/Lot: &lt;LOT>/);
 assert.match(result,/class="fs-fifo-list"/);
 ctx.renderSearchMatches([items[0]],'X');
 assert.deepEqual(ctx.jump,['D','D-16']);
+assert.deepEqual(ctx.opened,['D','D-16']);
 ctx.renderSearchMatches([],'X');
 assert.match(ctx.floorplanSearchMsg.innerHTML,/ไม่พบตำแหน่ง/);
 ctx.rebuildItemToSlots();

@@ -15,10 +15,17 @@ assert.equal(resolveScan('PKITEM|',locations,products).reason,'รูปแบ�
 assert.equal(resolveScan('PKITEM|31-0001-02',locations,products).product.code,'31-0001-02');
 assert.equal(resolveScan('G-06',[...locations,{zone:'X',slot:'G-06'}],products).kind,'invalid','ambiguous physical label must be rejected');
 const ui = fs.readFileSync(path.join(__dirname,'..','barcode-ui.js'),'utf8');
+const html = fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
 assert.match(ui,/openSlotEdit\(zone,slot\)/);
+assert.match(ui,/renderSearchMatches\(matches, productCode, false\)/,'a product scan must show all pallet positions immediately');
+assert.match(ui,/dataset\.tab !== 'floorplan'/,'the camera belongs to the floor-plan tab');
 assert.match(ui,/clearSelection\(false\); openMatch\(completedLocation,completedProduct\)/,'completed scans must not leak into the next scan');
 assert.match(ui,/scanBusy/,'camera callbacks must be guarded against overlapping scans');
 assert.match(ui,/cameraGeneration/,'camera startup must be cancellable when the tab closes or a scan completes');
 assert.match(ui,/barcodeScanClear/,'operators need an explicit way to discard an incorrect scan');
+assert.match(html,/id="pane-floorplan"[\s\S]*?id="barcodeTitle"[\s\S]*?id="floorplanSearch"/,'scanner must be embedded before the floor-plan search');
+assert.doesNotMatch(html,/id="tab-barcode"|id="pane-barcode"/,'scanner must not remain as a separate menu tab');
+assert.match(html,/jumpToSlot\(link\.dataset\.zone, link\.dataset\.slot\);\s*openSlotEdit\(link\.dataset\.zone, link\.dataset\.slot\);/,
+  'selecting a scanned product position must open its item list');
 assert.doesNotMatch(ui,/savePalletBatch|runSlotMutation/,'scan must not change stock until the user reviews and saves');
 console.log('PASS: exact product/location scans, alias matching, ambiguity rejection and reviewed writes');
