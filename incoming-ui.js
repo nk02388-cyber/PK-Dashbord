@@ -8,22 +8,55 @@
   $('incomingReceivedOn').value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
   let selectedProduct=null, selectedTag=null, selectedLocation=null, lastCreated=null, pendingCreateRequestId=null;
   let camera=null, cameraStarting=false, cameraRunning=false, cameraGeneration=0, scanning=false, saving=false;
+  let scanAudio=null,lastScanSoundKey='',lastScanSoundAt=0;
+  function armScanAudio() {
+    try {
+      const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+      if (!AudioContextClass) return null;
+      scanAudio ||= new AudioContextClass();
+      if (scanAudio.state==='suspended') scanAudio.resume().catch(()=>{});
+      return scanAudio;
+    } catch (_) { return null; }
+  }
+  function playScanSuccess(key) {
+    const audio=armScanAudio();
+    if (!audio) return;
+    if (audio.state!=='running') {
+      audio.resume().then(()=>{if(audio.state==='running') playScanSuccess(key);}).catch(()=>{});
+      return;
+    }
+    const nowMs=Date.now();
+    if (key===lastScanSoundKey&&nowMs-lastScanSoundAt<600) return;
+    try {
+      const tone=audio.createOscillator(),volume=audio.createGain(),now=audio.currentTime;
+      tone.type='sine';
+      tone.frequency.setValueAtTime(880,now);
+      tone.frequency.setValueAtTime(1175,now+0.075);
+      volume.gain.setValueAtTime(0.0001,now);
+      volume.gain.exponentialRampToValueAtTime(0.12,now+0.012);
+      volume.gain.exponentialRampToValueAtTime(0.0001,now+0.17);
+      tone.connect(volume);volume.connect(audio.destination);
+      tone.start(now);tone.stop(now+0.18);
+      lastScanSoundKey=key;lastScanSoundAt=nowMs;
+    } catch (_) {} // Scanning must continue if sound is unavailable.
+  }
   function products() {
     return [...(STOCK.items||[]),...Object.values(SLOT_ITEMS).flatMap(slots=>Object.values(slots).flat())];
   }
-  function identifyProduct() {
+  function identifyProduct(rawScan=false) {
     const raw=$('incomingProductCode').value.trim();
     selectedProduct=PKIncoming.exactProduct(raw,products());
     $('incomingProductName').value=selectedProduct?.name||'';
     if (selectedProduct) {
+      if (rawScan) playScanSuccess(`product:${selectedProduct.code}`);
       $('incomingProductCode').value=selectedProduct.code;
       if (!$('incomingUnit').value) $('incomingUnit').value=selectedProduct.unit||'';
       status('incomingReceiveStatus',`พบสินค้า ${selectedProduct.code} · ${selectedProduct.name||''}`);
     } else if (raw) status('incomingReceiveStatus','ไม่พบรหัสสินค้าตรงตัวในสต็อกที่อัปเดต',true);
     return selectedProduct;
   }
-  $('incomingProductCode').addEventListener('change',identifyProduct);
-  $('incomingProductCode').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();identifyProduct();$('incomingQuantity').focus();}});
+  $('incomingProductCode').addEventListener('change',()=>{armScanAudio();identifyProduct(true);});
+  $('incomingProductCode').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();armScanAudio();identifyProduct(true);$('incomingQuantity').focus();}});
   $('incomingProductCode').addEventListener('input',()=>{selectedProduct=null;$('incomingProductName').value='';});
   function renderTag(tag) {
     if (!tag) return;
@@ -53,26 +86,27 @@
       : 'ยังไม่ได้เลือกป้ายพาเลตและ Location';
     $('incomingPutaway').disabled=!(selectedTag?.status==='pending'&&selectedLocation&&$('incomingStorer').value.trim()&&!saving);
   }
-  async function selectTag(raw) {
+  async function selectTag(raw,rawScan=false) {
     const id=PKIncoming.parseTag(raw);
     if (!id) {selectedTag=null;updatePutaway();status('incomingPutawayStatus','QR ป้ายพาเลตไม่ถูกต้อง · ต้องเป็น PKTAG',true);return;}
     if (!supabaseClient) {status('incomingPutawayStatus','ยังไม่ได้เชื่อมต่อฐานข้อมูล',true);return;}
     const {data,error}=await supabaseClient.from('incoming_pallets').select('*').eq('id',id).single();
     if (error||!data) {selectedTag=null;updatePutaway();status('incomingPutawayStatus','ไม่พบป้ายพาเลตนี้ในทะเบียนรับเข้า',true);return;}
     selectedTag=data; $('incomingTagScan').value=PKIncoming.tagPayload(id);
+    if (rawScan&&data.status==='pending') playScanSuccess(`tag:${data.id}`);
     updatePutaway();
     status('incomingPutawayStatus',data.status==='pending'?'อ่านป้ายแล้ว · สแกน Location เพื่อจัดเก็บ':`ป้ายนี้จัดเก็บแล้วที่ ${data.zone}/${data.slot_code}`,data.status!=='pending');
   }
-  function selectLocation(raw) {
+  function selectLocation(raw,rawScan=false) {
     selectedLocation=PKIncoming.exactLocation(raw,locations);
     if (!selectedLocation) status('incomingPutawayStatus','ไม่พบ Location ตรงตัวในผัง · ตรวจ QR ตำแหน่ง',true);
-    else { $('incomingLocationScan').value=PKBarcode.locationPayload(selectedLocation.zone,selectedLocation.slot);status('incomingPutawayStatus',`เลือก Location ${selectedLocation.zone}/${selectedLocation.slot} · ตรวจข้อมูลแล้วกดยืนยัน`); }
+    else { if (rawScan) playScanSuccess(`location:${selectedLocation.zone}/${selectedLocation.slot}`); $('incomingLocationScan').value=PKBarcode.locationPayload(selectedLocation.zone,selectedLocation.slot);status('incomingPutawayStatus',`เลือก Location ${selectedLocation.zone}/${selectedLocation.slot} · ตรวจข้อมูลแล้วกดยืนยัน`); }
     updatePutaway();
   }
-  $('incomingTagScan').addEventListener('change',event=>selectTag(event.target.value));
-  $('incomingTagScan').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();selectTag(event.target.value);}});
-  $('incomingLocationScan').addEventListener('change',event=>selectLocation(event.target.value));
-  $('incomingLocationScan').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();selectLocation(event.target.value);}});
+  $('incomingTagScan').addEventListener('change',event=>{armScanAudio();selectTag(event.target.value,true);});
+  $('incomingTagScan').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();armScanAudio();selectTag(event.target.value,true);}});
+  $('incomingLocationScan').addEventListener('change',event=>{armScanAudio();selectLocation(event.target.value,true);});
+  $('incomingLocationScan').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();armScanAudio();selectLocation(event.target.value,true);}});
   $('incomingStorer').addEventListener('input',updatePutaway);
   $('incomingReceiveForm').addEventListener('submit',async event=>{
     event.preventDefault();
@@ -145,13 +179,14 @@
   async function useScan(target,raw) {
     if(scanning)return;scanning=true;
     try {
-      if(target==='product'){$('incomingProductCode').value=raw;identifyProduct();}
-      if(target==='tag')await selectTag(raw);
-      if(target==='location')selectLocation(raw);
+      if(target==='product'){$('incomingProductCode').value=raw;identifyProduct(true);}
+      if(target==='tag')await selectTag(raw,true);
+      if(target==='location')selectLocation(raw,true);
     } finally {scanning=false;}
   }
   async function startCamera(target) {
     if(cameraStarting||cameraRunning)return;
+    armScanAudio();
     if(typeof Html5Qrcode==='undefined'){status('incomingListStatus','โหลดตัวอ่าน QR ไม่สำเร็จ กรุณารีเฟรช',true);return;}
     const generation=++cameraGeneration;cameraStarting=true;
     try {
@@ -173,6 +208,7 @@
   for(const [id,target] of [['incomingProductImage','product'],['incomingTagImage','tag'],['incomingLocationImage','location']])
     $(id).addEventListener('change',async event=>{
       const file=event.target.files?.[0];if(!file)return;
+      armScanAudio();
       await stopCamera();
       const reader=new Html5Qrcode('incomingCameraView');$('incomingCameraView').hidden=false;
       try{await useScan(target,await reader.scanFile(file,true));}
