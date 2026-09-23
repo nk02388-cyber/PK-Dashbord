@@ -5,7 +5,7 @@
   const selection = $('barcodeScanSelection'), view = $('barcodeCameraView');
   const startButton = $('barcodeCameraStart'), stopButton = $('barcodeCameraStop');
   const locations = Object.entries(ZONE_SLOTS).flatMap(([zone, slots]) => slots.map(slot => ({zone,slot:slot.code})));
-  const printZone = $('barcodePrintZone');
+  const printZone = $('barcodePrintZone'), printStatus = $('barcodePrintStatus');
   [...new Set(locations.map(loc => loc.zone))].sort((a,b) => a.localeCompare(b,'th',{numeric:true})).forEach(zone => {
     const option = document.createElement('option'); option.value = zone; option.textContent = zone; printZone.append(option);
   });
@@ -15,6 +15,7 @@
     return [...(STOCK.items || []), ...Object.values(SLOT_ITEMS).flatMap(slots => Object.values(slots).flat())];
   }
   function message(text, error = false) { status.textContent = text; status.dataset.error = String(error); }
+  function printMessage(text, error = false) { printStatus.textContent = text; printStatus.dataset.error = String(error); }
   function showSelection() {
     selection.textContent = chosenProduct ? `สินค้า: ${chosenProduct.code} ${chosenProduct.name || ''}` : 'ยังไม่ได้เลือกสินค้า';
   }
@@ -160,13 +161,13 @@
   function qrMarkup(payload) { const qr = qrcode(0,'M'); qr.addData(payload); qr.make(); return qr.createSvgTag(3,2); }
   function printLabels(title,labels) {
     const page = window.open('','_blank');
-    if (!page) { message('เบราว์เซอร์ปิดกั้นหน้าพิมพ์ กรุณาอนุญาตป๊อปอัป',true); return; }
+    if (!page) { printMessage('เบราว์เซอร์ปิดกั้นหน้าพิมพ์ กรุณาอนุญาตป๊อปอัป',true); return; }
     page.document.write(`<!doctype html><html lang="th"><meta charset="utf-8"><title>${escapeHtml(title)}</title><style>body{font:14px Arial,sans-serif}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.label{border:1px solid #333;padding:9px;text-align:center;break-inside:avoid}.label svg{width:100px;height:100px}.label b,.label small{display:block;margin:4px}</style><h2>${escapeHtml(title)}</h2><div class="grid">${labels}</div></html>`);
     page.document.close(); page.focus(); page.print();
   }
   $('barcodePrintLocations').addEventListener('click', () => {
     const zone = printZone.value, slots = locations.filter(loc => loc.zone === zone);
-    if (!slots.length || typeof qrcode !== 'function') { message('ยังสร้างป้าย QR ไม่ได้',true); return; }
+    if (!slots.length || typeof qrcode !== 'function') { printMessage('ยังสร้างป้าย QR ไม่ได้',true); return; }
     const labels = slots.map(loc => {
       return `<div class="label"><div>${qrMarkup(PKBarcode.locationPayload(loc.zone,loc.slot))}</div><b>${escapeHtml(loc.zone)} / ${escapeHtml(loc.slot)}</b><small>PKLOC · ชั้น 2</small></div>`;
     }).join('');
@@ -175,7 +176,7 @@
   $('barcodePrintProduct').addEventListener('click', () => {
     const code = $('barcodePrintProductCode').value.trim();
     const product = products().find(item => String(item.code || '').trim().toUpperCase() === code.toUpperCase());
-    if (!product || !code || typeof qrcode !== 'function') { message('ไม่พบรหัสสินค้าแบบตรงตัว กรุณาตรวจรหัสก่อนพิมพ์',true); return; }
+    if (!product || !code || typeof qrcode !== 'function') { printMessage('ไม่พบรหัสสินค้าแบบตรงตัว กรุณาตรวจรหัสก่อนพิมพ์',true); return; }
     printLabels(`ป้ายสินค้า ${product.code}`,`<div class="label"><div>${qrMarkup(PKBarcode.productPayload(product.code))}</div><b>${escapeHtml(product.code)}</b><small>${escapeHtml(product.name || '')}</small></div>`);
   });
 })();

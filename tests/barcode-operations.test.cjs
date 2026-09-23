@@ -29,6 +29,10 @@ assert.match(ui,/scanBusy/,'camera callbacks must be guarded against overlapping
 assert.match(ui,/cameraGeneration/,'camera startup must be cancellable when the tab closes or a scan completes');
 assert.match(ui,/barcodeScanClear/,'operators need an explicit way to discard an incorrect scan');
 assert.match(html,/id="pane-floorplan"[\s\S]*?id="barcodeTitle"[\s\S]*?id="floorplanSearch"/,'scanner must be embedded before the floor-plan search');
+assert.match(html,/id="tab-print-labels"[^>]*data-tab="print-labels"[^>]*aria-controls="pane-print-labels"/,'label printing needs its own menu tab');
+assert.match(html,/id="pane-print-labels"[\s\S]*?id="barcodePrintZone"[\s\S]*?id="barcodePrintLocations"[\s\S]*?id="barcodePrintProductCode"[\s\S]*?id="barcodePrintProduct"[\s\S]*?id="barcodePrintStatus"[\s\S]*?id="pane-incoming"/,'both print controls and their status must live in the new panel');
+assert.equal((html.match(/id="barcodePrintZone"/g)||[]).length,1,'the print controls must not remain duplicated in the floor-plan scanner');
+assert.match(ui,/function printMessage\([\s\S]*?printStatus\.textContent/,'print errors must be visible in the new tab');
 assert.doesNotMatch(html,/id="tab-barcode"|id="pane-barcode"/,'scanner must not remain as a separate menu tab');
 assert.match(html,/jumpToSlot\(link\.dataset\.zone, link\.dataset\.slot\);\s*openSlotEdit\(link\.dataset\.zone, link\.dataset\.slot\);/,
   'selecting a scanned product position must open its item list');
