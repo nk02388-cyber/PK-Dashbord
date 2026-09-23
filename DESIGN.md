@@ -1,26 +1,26 @@
 ---
 version: alpha
 name: BCL Packaging Operations
-description: A clear, compact design system for warehouse stock, pallet maps, scanning and inventory workflows.
+description: A structured, flat design system for warehouse stock, pallet maps, scanning and inventory workflows.
 colors:
-  primary: "#1E40AF"
-  primary-hover: "#1B378F"
+  primary: "#0F62FE"
+  primary-hover: "#0050E6"
   on-primary: "#FFFFFF"
   surface: "#FFFFFF"
-  canvas: "#F3F6FB"
-  canvas-dark: "#081321"
-  surface-dark: "#122238"
-  ink: "#12233D"
-  ink-dark: "#F4F7FC"
-  secondary: "#425670"
-  secondary-dark: "#C5D2E4"
-  muted: "#62748B"
-  border: "#D7E1EE"
-  border-dark: "#31445F"
-  success: "#15803D"
-  warning: "#F59E0B"
-  danger: "#C62836"
-  focus: "#2563EB"
+  canvas: "#F4F4F4"
+  canvas-dark: "#161616"
+  surface-dark: "#262626"
+  ink: "#161616"
+  ink-dark: "#F4F4F4"
+  secondary: "#525252"
+  secondary-dark: "#C6C6C6"
+  muted: "#6F6F6F"
+  border: "#D4D4D4"
+  border-dark: "#525252"
+  success: "#198038"
+  warning: "#F1C21B"
+  danger: "#DA1E28"
+  focus: "#0F62FE"
 typography:
   page-title:
     fontFamily: Noto Sans Thai
@@ -48,9 +48,9 @@ typography:
     fontWeight: 500
     lineHeight: 1.4
 rounded:
-  sm: 8px
-  md: 12px
-  lg: 16px
+  sm: 4px
+  md: 6px
+  lg: 8px
   pill: 999px
 spacing:
   xs: 4px
@@ -111,31 +111,31 @@ components:
 
 ## Overview
 
-This is a working warehouse interface. Staff must distinguish actions, stock status, scanned locations and document numbers quickly on desktop and mobile. Use calm navy surfaces, one blue action color and restrained semantic status colors. Keep the existing BCL mark and Thai-first labels.
+This is a working warehouse interface. Staff must distinguish actions, stock status, scanned locations and document numbers quickly on desktop and mobile. The structure is informed by the [IBM example in VoltAgent's awesome-design-md collection](https://github.com/VoltAgent/awesome-design-md/tree/main/design-md/ibm): flat surfaces, clear hairlines, compact spacing and one confident blue action color. It is adapted for BCL branding, Thai text and operational screens rather than copied as an IBM page.
 
 ## Colors
 
-Blue identifies navigation and the main action. Green means successful or available, amber means attention or a highlighted inventory total, and red means error or overdue. White cards sit on a cool, low-contrast canvas; the dark theme uses the same semantic hierarchy.
+Blue identifies navigation and the main action. Green means successful or available, yellow means attention or a highlighted inventory total, and red means error or overdue. White cards sit on a neutral gray canvas; dark mode uses charcoal surfaces. Color accompanies text, never replaces it.
 
 ## Typography
 
-Use Noto Sans Thai with system fallbacks. Page and section titles identify place and task; labels stay close to their fields. Tabular numerals keep quantities, costs, document numbers and pallet counts easy to scan. Never shrink mobile form text below 16px, avoiding browser zoom on focus.
+Use Noto Sans Thai with system fallbacks instead of IBM's Latin-first typeface. Page and section titles identify place and task; labels stay close to their fields. Tabular numerals keep quantities, costs, document numbers and pallet counts easy to scan. Never shrink mobile form text below 16px, avoiding browser zoom on focus.
 
 ## Layout
 
-Use a 4px spacing grid. Desktop has a 320px navigation rail and a fluid content area. Narrow screens use a horizontal tab rail and single-column forms. Keep related controls inside one panel. Preserve full-width maps, responsive data tables and 44px minimum interactive targets.
+Use a 4px spacing grid. Desktop has a 300px navigation rail and a fluid content area. Narrow screens use a horizontal tab rail and single-column forms. Keep related controls inside one panel. Preserve full-width maps, responsive data tables and 44px minimum interactive targets.
 
 ## Elevation & Depth
 
-Use one subtle card shadow and a stronger dialog shadow. Borders define groups before shadows do. Avoid gradients on ordinary cards; reserve a restrained accent treatment for high-level summary values.
+Use 1px hairlines and small surface changes to separate content. Regular cards and controls have no shadow. Only elevated dialogs may cast a shadow. Avoid gradients on ordinary cards and summary values.
 
 ## Shapes
 
-Inputs and buttons use 8px corners; panels and dialogs use 16px corners. Status badges may be pill-shaped. Keep icon stroke weight and button heights consistent across workflows.
+Inputs and buttons use 4px corners; panels use 8px corners. Status badges may be pill-shaped when space is tight. Keep icon stroke weight and button heights consistent across workflows.
 
 ## Components
 
-Buttons have primary, secondary, danger and disabled states. Inputs, search, select and scan fields share height, radius and focus treatment. Panels, step cards, tables, empty states and status badges use the same surface and border tokens. Critical information is never conveyed by color alone.
+Buttons have primary, secondary, danger and disabled states. Inputs, search, select and scan fields share height, radius and a visible blue focus outline. Panels, step cards, tables, empty states and status badges use the same surface and border tokens. Critical information is never conveyed by color alone.
 
 ## Do's and Don'ts
 
@@ -144,3 +144,4 @@ Buttons have primary, secondary, danger and disabled states. Inputs, search, sel
 - Do preserve status text and keyboard focus when adding color.
 - Don't center narrow forms inside a wide page or let controls use inconsistent heights.
 - Don't apply decorative treatments to the CAD map, QR code or printed labels.
+- Don't add atmospheric gradients, glass effects or card shadows to routine work surfaces.
