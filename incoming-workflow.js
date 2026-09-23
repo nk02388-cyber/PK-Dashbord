@@ -12,6 +12,38 @@
     const match = root.PKBarcode.resolveScan(raw, [], products);
     return match.kind === 'product' ? match.product : null;
   }
+  function searchProducts(query, products) {
+    const normalize = value => String(value ?? '').trim().toLocaleLowerCase('th');
+    const needle = normalize(query);
+    if (!needle) return [];
+    const catalog = new Map();
+    for (const item of products || []) {
+      const code = String(item.code ?? '').trim(), key = normalize(code);
+      if (!key) continue;
+      const name = String(item.name ?? '').trim();
+      const searchName = String(item.search_name ?? item.searchName ?? item.name_search ?? '').trim();
+      const unit = String(item.unit ?? '').trim();
+      const previous = catalog.get(key);
+      if (!previous) catalog.set(key, {code,name,searchName,unit});
+      else {
+        if (!previous.name && name) previous.name = name;
+        if (!previous.searchName && searchName) previous.searchName = searchName;
+        if (!previous.unit && unit) previous.unit = unit;
+      }
+    }
+    return [...catalog.values()].map(item => {
+      const code = normalize(item.code), name = normalize(item.name), searchName = normalize(item.searchName);
+      let rank = Infinity;
+      if (code === needle) rank = 0;
+      else if (name === needle || searchName === needle) rank = 1;
+      else if (code.startsWith(needle)) rank = 2;
+      else if (name.startsWith(needle) || searchName.startsWith(needle)) rank = 3;
+      else if (code.includes(needle)) rank = 4;
+      else if (name.includes(needle) || searchName.includes(needle)) rank = 5;
+      return {...item,rank};
+    }).filter(item => Number.isFinite(item.rank))
+      .sort((a,b) => a.rank-b.rank || a.code.localeCompare(b.code,'th',{numeric:true,sensitivity:'base'}));
+  }
   function exactLocation(raw, locations) {
     const match = root.PKBarcode.resolveScan(raw, locations, []);
     return match.kind === 'location' ? {zone:match.zone, slot:match.slot} : null;
@@ -41,7 +73,7 @@
   function labelSheets(tags) {
     return Array.isArray(tags) ? tags.map(tag=>Array(4).fill(tag)) : [];
   }
-  const api = {tagPayload,parseTag,exactProduct,exactLocation,distributeQuantity,validAllocation,labelSheets};
+  const api = {tagPayload,parseTag,exactProduct,searchProducts,exactLocation,distributeQuantity,validAllocation,labelSheets};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.PKIncoming = api;
 })(typeof window !== 'undefined' ? window : globalThis);

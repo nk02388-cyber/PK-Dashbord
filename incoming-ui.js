@@ -65,23 +65,73 @@
     } catch (_) {} // Scanning must continue if sound is unavailable.
   }
   function products() {
-    return [...(STOCK.items||[]),...Object.values(SLOT_ITEMS).flatMap(slots=>Object.values(slots).flat())];
+    return STOCK.items||[];
   }
-  function identifyProduct(rawScan=false) {
-    const raw=$('incomingProductCode').value.trim();
-    selectedProduct=PKIncoming.exactProduct(raw,products());
-    $('incomingProductName').value=selectedProduct?.name||'';
-    if (selectedProduct) {
-      if (rawScan) playScanSuccess(`product:${selectedProduct.code}`);
-      $('incomingProductCode').value=selectedProduct.code;
-      if (!$('incomingUnit').value) $('incomingUnit').value=selectedProduct.unit||'';
-      status('incomingReceiveStatus',`พบสินค้า ${selectedProduct.code} · ${selectedProduct.name||''}`);
-    } else if (raw) status('incomingReceiveStatus','ไม่พบรหัสสินค้าตรงตัวในสต็อกที่อัปเดต',true);
+  const productInput=$('incomingProductCode'),productSuggestions=$('incomingProductSuggestions');
+  let suggestionItems=[],activeSuggestion=-1;
+  function hideProductSuggestions() {
+    suggestionItems=[];activeSuggestion=-1;
+    productSuggestions.hidden=true;productSuggestions.replaceChildren();
+    productInput.setAttribute('aria-expanded','false');
+    productInput.removeAttribute('aria-activedescendant');
+  }
+  function showProductSuggestions() {
+    const query=productInput.value.trim();
+    if (!query) {hideProductSuggestions();return;}
+    const results=PKIncoming.searchProducts(query,products());
+    suggestionItems=results.slice(0,8);activeSuggestion=-1;
+    productSuggestions.innerHTML=suggestionItems.length
+      ? suggestionItems.map((item,index)=>`<button type="button" role="option" id="incomingProductOption${index}" aria-selected="false" data-index="${index}"><span class="incoming-suggestion-code">${esc(item.code)}</span><span>${esc(item.name||'ไม่ระบุชื่อสินค้า')}</span><small>${esc(item.unit||'')}${item.searchName&&item.searchName!==item.name?' · '+esc(item.searchName):''}</small></button>`).join('')
+      : '<div class="incoming-suggestion-empty">ไม่พบในสต็อกที่อัปเดต</div>';
+    productSuggestions.hidden=false;productInput.setAttribute('aria-expanded','true');
+  }
+  function chooseProduct(item,rawScan=false) {
+    if (!item) return null;
+    const canonical=PKIncoming.searchProducts(item.code,products()).find(candidate=>candidate.code.toUpperCase()===String(item.code).toUpperCase());
+    selectedProduct=canonical||item;
+    productInput.value=selectedProduct.code;
+    $('incomingProductName').value=selectedProduct.name||'';
+    $('incomingUnit').value=selectedProduct.unit||'';
+    hideProductSuggestions();
+    if (rawScan) playScanSuccess(`product:${selectedProduct.code}`);
+    status('incomingReceiveStatus',`เลือกสินค้า ${selectedProduct.code} · ${selectedProduct.name||''}`);
     return selectedProduct;
   }
-  $('incomingProductCode').addEventListener('change',()=>{armScanAudio();identifyProduct(true);});
-  $('incomingProductCode').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();armScanAudio();identifyProduct(true);$('incomingQuantity').focus();}});
-  $('incomingProductCode').addEventListener('input',()=>{selectedProduct=null;$('incomingProductName').value='';});
+  function setActiveSuggestion(index) {
+    if (!suggestionItems.length) return;
+    activeSuggestion=(index+suggestionItems.length)%suggestionItems.length;
+    for (const option of productSuggestions.querySelectorAll('[role="option"]'))
+      option.setAttribute('aria-selected',String(Number(option.dataset.index)===activeSuggestion));
+    productInput.setAttribute('aria-activedescendant',`incomingProductOption${activeSuggestion}`);
+    productSuggestions.querySelector(`#incomingProductOption${activeSuggestion}`)?.scrollIntoView({block:'nearest'});
+  }
+  function identifyProduct(rawScan=false) {
+    const raw=productInput.value.trim();
+    const match=PKIncoming.exactProduct(raw,products());
+    if (match) return chooseProduct(match,rawScan);
+    selectedProduct=null;$('incomingProductName').value='';
+    if (raw) status('incomingReceiveStatus','เลือกรายการจากผลค้นหา หรือสแกนรหัสสินค้าในสต็อกที่อัปเดต',true);
+    return selectedProduct;
+  }
+  productInput.addEventListener('input',()=>{selectedProduct=null;$('incomingProductName').value='';$('incomingUnit').value='';showProductSuggestions();});
+  productInput.addEventListener('focus',showProductSuggestions);
+  productInput.addEventListener('change',()=>{if(!selectedProduct)identifyProduct();});
+  productInput.addEventListener('keydown',event=>{
+    if(event.key==='ArrowDown'||event.key==='ArrowUp') {event.preventDefault();setActiveSuggestion(activeSuggestion+(event.key==='ArrowDown'?1:-1));}
+    if(event.key==='Escape') hideProductSuggestions();
+    if(event.key==='Enter') {
+      event.preventDefault();armScanAudio();
+      if(activeSuggestion>=0) chooseProduct(suggestionItems[activeSuggestion]);
+      else identifyProduct(true);
+      if(selectedProduct)$('incomingQuantity').focus();
+    }
+  });
+  productSuggestions.addEventListener('pointerdown',event=>{if(event.target.closest('[data-index]'))event.preventDefault();});
+  productSuggestions.addEventListener('click',event=>{
+    const option=event.target.closest('[data-index]');
+    if(option){chooseProduct(suggestionItems[Number(option.dataset.index)]);$('incomingQuantity').focus();}
+  });
+  productInput.addEventListener('blur',()=>setTimeout(hideProductSuggestions,150));
   function updateAllocation(reset=false) {
     const total=Number($('incomingQuantity').value),count=Number($('incomingPalletCount').value);
     const suggested=PKIncoming.distributeQuantity(total,count);

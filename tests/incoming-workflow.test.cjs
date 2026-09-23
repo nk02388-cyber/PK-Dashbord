@@ -10,6 +10,16 @@ for(const invalid of ['',id,'PKTAG|','PKTAG|not-a-uuid',`PKTAG|${id}|extra`]) as
 const products=[{code:'31-0007-05-5502',name:'ฝาปั๊ม',unit:'ชิ้น'},{code:'31-0007-05-5502',name:'ฝาปั๊ม',unit:'ชิ้น'}];
 assert.equal(incoming.exactProduct('PKITEM|31-0007-05-5502',products).code,'31-0007-05-5502');
 assert.equal(incoming.exactProduct('31-0007',products),null,'partial codes must never create a receipt');
+const stockCatalog=[
+  {code:'31-0007-05-5502',name:'ฝาปั๊ม สีขาว',search_name:'PUMP WHITE',unit:'ชิ้น'},
+  {code:'31-0007-05-5502',name:'ฝาปั๊ม สีขาว',unit:'ชิ้น',wh:'202'},
+  {code:'21-0021-01',name:'ขวด KOTA',unit:'ขวด'},
+];
+assert.deepEqual(incoming.searchProducts('0007',stockCatalog).map(item=>item.code),['31-0007-05-5502']);
+assert.deepEqual(incoming.searchProducts('ฝาปั๊ม',stockCatalog).map(item=>item.code),['31-0007-05-5502']);
+assert.deepEqual(incoming.searchProducts('pump',stockCatalog).map(item=>item.code),['31-0007-05-5502']);
+assert.deepEqual(incoming.searchProducts('ขวด',stockCatalog).map(item=>item.code),['21-0021-01']);
+assert.equal(incoming.searchProducts('31-0007',stockCatalog)[0].unit,'ชิ้น');
 const locations=[{zone:'G',slot:'G-02'},{zone:'G',slot:'G-06'}];
 assert.deepEqual(incoming.exactLocation('PKLOC|G|G-02',locations),{zone:'G',slot:'G-02'});
 assert.equal(incoming.exactLocation('G-0',locations),null,'partial locations must never complete putaway');
@@ -39,10 +49,12 @@ assert.match(batchSql,/for i in 1\.\.p_pallet_count loop[\s\S]*insert into publi
 assert.match(batchSql,/pg_catalog\.jsonb_agg\(to_jsonb\(tag\) order by tag\.batch_index\)/);
 const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
 assert.match(html,/id="incomingPalletCount"/);
+assert.match(html,/id="incomingProductSuggestions"[^>]*role="listbox"/,'receipt search must expose selectable updated-stock results');
 assert.match(html,/id="incomingZoneSelect"[\s\S]*id="incomingSlotSelect"/,'putaway must offer zone and location selectors');
 assert.match(html,/4 ใบ\/พาเลต/);
 assert.match(html,/id="incomingWorkflowTabs"[\s\S]*data-incoming-view="receive"[\s\S]*data-incoming-view="putaway"[\s\S]*data-incoming-view="history"/,'receive, putaway and recent tags must be distinct views');
 const ui=fs.readFileSync(path.join(__dirname,'..','incoming-ui.js'),'utf8');
+assert.match(ui,/return STOCK\.items\|\|\[\]/,'receipt search must use the refreshed stock rather than pallet entries');
 assert.match(ui,/rpc\('create_incoming_batch'/,'the receipt form must create all pallet tags as one batch');
 assert.match(ui,/PKIncoming\.labelSheets\(tags\)/,'printing must group copies by pallet');
 assert.match(ui,/ZONE_SLOTS\[zone\]/,'the location selector must use mapped floor-plan slots');
