@@ -309,7 +309,7 @@
   .filter-status b { color: var(--text-primary); font-weight: 600; }
 
   .stock-update-box { display:flex; align-items:center; gap:10px; flex-wrap:wrap; width:100%; padding-top:10px; margin-top:2px; border-top:1px dashed var(--border); }
-  .stock-update-btn { display:inline-flex; align-items:center; gap:8px; border:0; border-radius:8px; padding:8px 14px; font:inherit; font-size:13px; font-weight:700; cursor:pointer; color:#fff; background:#0b6bcb; box-shadow:0 2px 7px rgba(11,107,203,.24); }
+  .stock-update-btn { display:inline-flex; align-items:center; min-height:44px; gap:8px; border:0; border-radius:8px; padding:8px 14px; font:inherit; font-size:13px; font-weight:700; cursor:pointer; color:#fff; background:#0b6bcb; box-shadow:0 2px 7px rgba(11,107,203,.24); }
   .stock-update-btn:hover { filter:brightness(.94); }
   .stock-update-btn:focus-visible { outline:3px solid rgba(11,107,203,.28); outline-offset:2px; }
   .stock-update-btn[disabled] { opacity:.6; cursor:wait; }
@@ -329,7 +329,7 @@
   tr.bom-excluded-row td.name-cell { text-decoration: line-through; }
   tr.bom-excluded-row td.name-cell .code { text-decoration: none; }
   .excl-toggle-btn {
-    font: inherit; font-size: 11px; padding: 4px 10px; border-radius: 8px; cursor: pointer;
+    font: inherit; font-size: 13px; min-height: 44px; padding: 8px 12px; border-radius: 8px; cursor: pointer;
     background: var(--page-plane); color: var(--text-secondary); border: 1px solid var(--border);
     white-space: nowrap; transition: filter .12s;
   }
@@ -425,13 +425,13 @@
   .floorplan-search label { font-size: 12.5px; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
   .floorplan-search-control { position: relative; flex: 1; min-width: 220px; }
   .floorplan-search input[type="text"] {
-    width: 100%; padding: 7px 10px; border-radius: 7px; border: 1px solid var(--border);
+    width: 100%; min-height: 44px; padding: 7px 10px; border-radius: 7px; border: 1px solid var(--border);
     /* 21 Aug 2026: same hardcoded-white-background bug as .fse-item-row/.fse-add-form input
        (--card-bg is never a real theme token) -- fixed the same way, to --page-plane. */
     background: var(--page-plane); color: var(--text-primary); font: inherit; font-size: 13px;
   }
   .floorplan-search button {
-    padding: 7px 14px; border-radius: 7px; border: 1px solid var(--border);
+    min-height: 44px; padding: 7px 14px; border-radius: 7px; border: 1px solid var(--border);
     background: var(--series-1, #2a78d6); color: #fff; font: inherit; font-size: 12.5px; font-weight: 600;
     cursor: pointer; white-space: nowrap;
   }
@@ -537,6 +537,7 @@
     background: var(--page-plane); border: 1px solid var(--border);
     box-shadow: 0 1px 6px rgba(0,0,0,0.25);
   }
+  @media (max-width: 700px) { .floorplan-ov-controls { max-width: calc(100% - 20px); flex-wrap: wrap; justify-content: flex-end; } }
   .floorplan-zoom-level {
     min-width: 46px; display: inline-flex; align-items: center; justify-content: center;
     padding: 0 7px; border-right: 1px solid var(--border); color: var(--text-secondary);
@@ -665,13 +666,13 @@
   .floorplan-zoom-head .fz-hint { font-size: 11.5px; color: var(--text-secondary); }
   .floorplan-zoom-controls { display: flex; align-items: center; gap: 6px; }
   .fz-zoom-ctrl-btn {
-    min-width: 34px; height: 34px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--border);
+    min-width: 44px; height: 44px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--border);
     background: var(--page-plane); color: var(--text-primary); font-size: 16px; font-weight: 700;
     cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1;
   }
   .fz-zoom-ctrl-btn:hover { filter: brightness(0.93); }
   .fz-zoom-close {
-    width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--border);
+    width: 44px; height: 44px; border-radius: 8px; border: 1px solid var(--border);
     background: var(--page-plane); color: var(--text-primary); font-size: 16px;
     cursor: pointer; display: flex; align-items: center; justify-content: center; margin-left: 6px;
   }
@@ -1266,7 +1267,7 @@
   .fg-bom-head > div { min-width: 0; max-width: 100%; }
   .bom-plan-form { display:flex; flex-wrap:wrap; align-items:end; gap:12px; margin:16px 0; }
   .bom-plan-form label { display:grid; gap:6px; flex:1 1 220px; min-width:0; }
-  .bom-plan-form input, .bom-plan-qty { padding:9px; border:1px solid var(--border); border-radius:8px; background:var(--surface-1); color:var(--text-primary); min-width:0; max-width:100%; }
+  .bom-plan-form input, .bom-plan-qty { min-height:44px; padding:9px; border:1px solid var(--border); border-radius:8px; background:var(--surface-1); color:var(--text-primary); min-width:0; max-width:100%; }
   .bom-plan-qty { width:120px; }
   #bomPlanPanel button, .bom-simulation button { min-height:44px; }
   #bomPlanSelection table { min-width:600px; }
@@ -1275,7 +1276,7 @@
   .bom-simulation p { margin:6px 0; }
   #bomBrands summary { cursor:pointer; padding:12px; font-weight:600; }
   #bomBrands { margin:12px 0; border:1px solid var(--border); border-radius:10px; }
-  .bom-plan-form select { padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--surface-1); color:var(--text-primary); }
+  .bom-plan-form select { min-height:44px; padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--surface-1); color:var(--text-primary); }
   .stock-snapshot-notice { padding:10px 12px; margin:10px 0; border:1px solid var(--border); border-radius:8px; font-size:12px; overflow-wrap:anywhere; }
   .stock-snapshot-notice.snapshot-warning { border-color:var(--status-warning); background:var(--status-critical-wash); }
   .fg-status-chip { display:inline-block; max-width:100%; font-size: 16px; font-weight:800; padding: 10px 20px; border-radius: 10px; white-space: normal; letter-spacing:-0.01em; }
@@ -1302,8 +1303,9 @@
     .filter-status { margin-left: 0; width: 100%; }
     .floorplan-zoom-modal { padding: 0; }
     .floorplan-zoom-box { width: 100vw; max-height: 100vh; height: 100vh; aspect-ratio: auto; border-radius: 0; }
-    .floorplan-zoom-head { flex-shrink: 0; padding: 10px 12px; }
-    .floorplan-zoom-head .fz-hint { font-size: 10px; margin-top: 4px; }
+    .floorplan-zoom-head { display:grid; grid-template-columns:minmax(0,1fr); flex-shrink: 0; padding: 10px 12px; }
+    .floorplan-zoom-controls { flex-wrap:wrap; justify-content:flex-start; }
+    .floorplan-zoom-head .fz-hint { font-size: 12px; line-height: 1.4; margin-top: 4px; }
     .floorplan-zoom-viewport { min-height: clamp(170px, 26vh, 250px); }
     .floorplan-slot-edit { max-height: 40vh; }
     .floorplan-zoom-status { flex-shrink: 0; padding: 8px 12px; }
@@ -1704,6 +1706,7 @@
 .incoming-product-field{position:relative;min-width:0}.incoming-product-field>label{display:flex;flex-direction:column;gap:5px;font-weight:600}.incoming-product-suggestions{position:absolute;z-index:40;top:100%;left:0;right:0;max-height:300px;overflow-y:auto;padding:5px;border:1px solid var(--border);border-radius:8px;background:var(--surface-1);box-shadow:0 10px 24px rgba(15,23,42,.18)}.incoming-product-suggestions[hidden]{display:none}.incoming-product-suggestions button{display:grid;gap:2px;width:100%;min-height:52px;padding:8px 10px;text-align:left;border:0;border-radius:6px;background:transparent;color:var(--text-primary);cursor:pointer}.incoming-product-suggestions button:hover,.incoming-product-suggestions button[aria-selected="true"]{background:rgba(42,120,214,.13)}.incoming-product-suggestions small{color:var(--text-secondary);font-size:12px;overflow-wrap:anywhere}.incoming-product-suggestions .incoming-suggestion-code{font-weight:700}.incoming-product-suggestions .incoming-suggestion-empty{padding:10px;color:var(--text-secondary)}
 .incoming-form-group .incoming-receive-fields,.incoming-form-group .incoming-date-fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 16px}.incoming-receive-fields .incoming-product-field{grid-column:1/-1}.incoming-receive-fields input{min-height:48px}.incoming-scan-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}.incoming-scan-actions .incoming-camera-button{min-width:180px}.incoming-camera-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:9px 14px;border:1px solid var(--border);border-radius:8px;background:var(--surface-1);color:var(--text-primary);font:inherit;font-weight:700;line-height:1.3;white-space:nowrap;cursor:pointer}.incoming-step .incoming-camera-button{background:var(--page-plane)}.incoming-camera-button svg{width:19px;height:19px;flex:none}@media(max-width:800px){.incoming-form-group .incoming-receive-fields,.incoming-form-group .incoming-date-fields{grid-template-columns:1fr}.incoming-receive-fields .incoming-product-field{grid-column:auto}}@media(max-width:500px){.incoming-scan-actions .incoming-camera-button{width:100%}}
 #incomingPutaway{margin-top:16px}
+@media(max-width:700px){#stockReconcilePanel .bom-plan-form>label{flex-basis:100%}#stockReconcilePanel .bom-plan-form>.excl-toggle-btn{flex:1 1 0;min-width:0}}
 .method-note{margin:0 0 14px;color:var(--text-secondary);font-size:13.5px;line-height:1.55}.method-note summary{display:list-item;width:max-content;max-width:100%;min-height:44px;padding:10px 4px;cursor:pointer;color:var(--series-1);font-weight:700}.method-note summary:focus-visible{outline:3px solid #f59e0b;outline-offset:2px}.method-note p{margin:2px 0 8px;max-width:75ch}.dashboard-content .panel button:focus-visible,.dashboard-content .panel a:focus-visible{outline:3px solid #f59e0b;outline-offset:2px}@media(max-width:700px){.dashboard-content .panel input:not([type="file"]),.dashboard-content .panel select,.dashboard-content .panel textarea{font-size:16px}}
 @media(max-width:700px){.tabs .tab-btn{font-size:14px}.tabs .tab-badge{font-size:11.5px}.theme-toggle{font-size:13px}#reportDate{font-size:12px}}
 </style>
@@ -2461,8 +2464,8 @@
         </div>
         <div class="floorplan-ov-controls">
           <span class="floorplan-zoom-level" id="floorplanZoomLevel" aria-live="polite">100%</span>
-          <button type="button" class="fz-zoom-ctrl-btn" id="floorplanOverviewZoomOut" title="ซูมออก">−</button>
-          <button type="button" class="fz-zoom-ctrl-btn" id="floorplanOverviewZoomIn" title="ซูมเข้า">+</button>
+          <button type="button" class="fz-zoom-ctrl-btn" id="floorplanOverviewZoomOut" title="ซูมออก" aria-label="ซูมออกจากผังพื้นที่จัดเก็บ">−</button>
+          <button type="button" class="fz-zoom-ctrl-btn" id="floorplanOverviewZoomIn" title="ซูมเข้า" aria-label="ซูมเข้าผังพื้นที่จัดเก็บ">+</button>
           <button type="button" class="fz-zoom-ctrl-btn map-rotate-btn" id="floorplanOverviewRotate" title="หมุนผังตามเข็มนาฬิกา 90°" aria-label="หมุนผังหลัก 90 องศา">↻ หมุนผัง</button>
           <button type="button" class="fz-zoom-ctrl-btn" id="floorplanOverviewZoomReset" title="รีเซ็ต">รีเซ็ต</button>
           <button type="button" class="fz-zoom-ctrl-btn map-rotate-btn" id="floorplanOverviewFullscreen" title="ขยายผังเต็มจอ" aria-label="ขยายผังเต็มจอ" aria-pressed="false">⛶ เต็มจอ</button>
@@ -2481,8 +2484,8 @@
           <div class="fz-hint">ถ่าง/หุบสองนิ้วเพื่อขยาย/ย่อ · ลากนิ้วเดียวเพื่อเลื่อน · กด +/− เพื่อซูม</div>
         </div>
         <div class="floorplan-zoom-controls">
-          <button type="button" class="fz-zoom-ctrl-btn" id="floorplanZoomOut" title="ซูมออก">−</button>
-          <button type="button" class="fz-zoom-ctrl-btn" id="floorplanZoomIn" title="ซูมเข้า">+</button>
+          <button type="button" class="fz-zoom-ctrl-btn" id="floorplanZoomOut" title="ซูมออก" aria-label="ซูมออกจากผังโซน">−</button>
+          <button type="button" class="fz-zoom-ctrl-btn" id="floorplanZoomIn" title="ซูมเข้า" aria-label="ซูมเข้าผังโซน">+</button>
           <button type="button" class="fz-zoom-ctrl-btn map-rotate-btn" id="floorplanZoomRotate" title="หมุนผังตามเข็มนาฬิกา 90°" aria-label="หมุนผังพาเลต 90 องศา">↻ หมุนผัง</button>
           <button type="button" class="fz-zoom-ctrl-btn" id="floorplanZoomReset" title="รีเซ็ต" style="font-size:11px;">รีเซ็ต</button>
           <button type="button" class="fz-zoom-close" id="floorplanZoomClose" title="ปิด" aria-label="ปิดหน้าต่างผังโซน">✕</button>
