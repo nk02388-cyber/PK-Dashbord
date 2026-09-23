@@ -2572,7 +2572,7 @@
   <div class="tab-pane" id="pane-incoming" role="tabpanel" aria-labelledby="tab-incoming" hidden>
     <div class="panel incoming-panel">
       <h2>รับเข้าและจัดเก็บ</h2>
-      <p class="panel-sub">รับสินค้าและพิมพ์ป้ายก่อน จากนั้นนำพาเลตไปสแกนตำแหน่งจัดเก็บ</p>
+      <p class="panel-sub">รับสินค้าและพิมพ์ FM-ST-019 ใบกำกับสินค้าและวัตถุดิบ 4 ใบต่อพาเลต จากนั้นสแกนตำแหน่งจัดเก็บ</p>
       <div class="incoming-view-nav" id="incomingWorkflowTabs" aria-label="เลือกงานรับเข้าและจัดเก็บ">
         <button type="button" data-incoming-view="receive" aria-pressed="true"><span class="incoming-nav-number">1</span><span><b>รับสินค้า</b><small>กรอกข้อมูลและสร้างป้าย</small></span></button>
         <button type="button" data-incoming-view="putaway" aria-pressed="false"><span class="incoming-nav-number">2</span><span><b>จัดเก็บ</b><small>สแกนป้ายและตำแหน่ง</small></span></button>
@@ -2581,7 +2581,7 @@
       <div class="incoming-steps">
         <section class="incoming-step" aria-labelledby="incomingReceiveTitle">
           <h3 id="incomingReceiveTitle">รับสินค้าเข้าคลัง</h3>
-          <p>กรอกข้อมูลสินค้าและยอดรวม ระบบจะสร้างป้าย QR ตามจำนวนพาเลต</p>
+          <p>กรอกข้อมูลสินค้าและยอดรวม ระบบจะสร้าง QR แยกตามจำนวนพาเลต แล้วพิมพ์ใบกำกับ 4 ใบต่อพาเลต</p>
           <form id="incomingReceiveForm">
             <div class="incoming-form-group">
               <h4><span>1</span> สินค้าและเอกสาร</h4>
@@ -2616,7 +2616,7 @@
           </form>
           <p id="incomingReceiveStatus" class="incoming-status" role="status" aria-live="polite"></p>
           <div id="incomingTagReady" class="incoming-summary" hidden></div>
-          <div class="incoming-tag-actions"><button type="button" id="incomingPrintTag" hidden>พิมพ์ป้ายทั้งหมด · 4 ใบ/หน้า</button><button type="button" id="incomingGoPutaway" hidden>ไปจัดเก็บพาเลต</button></div>
+          <div class="incoming-tag-actions"><button type="button" id="incomingPrintTag" hidden>พิมพ์ FM-ST-019 ทั้งชุด · 4 ใบ/พาเลต</button><button type="button" id="incomingGoPutaway" hidden>ไปจัดเก็บพาเลต</button></div>
         </section>
         <section class="incoming-step" aria-labelledby="incomingPutawayTitle" hidden>
           <h3 id="incomingPutawayTitle">นำพาเลตเข้าตำแหน่ง</h3>
@@ -9507,8 +9507,8 @@ window.addEventListener('pageshow', () => {
 <script src="vendor/qrcode-generator.js"></script>
 <script src="barcode-operations.js?v=20260923-2"></script>
 <script src="barcode-ui.js?v=20260923-2"></script>
-<script src="incoming-workflow.js?v=20260923-2"></script>
-<script src="incoming-ui.js?v=20260923-5"></script>
+<script src="incoming-workflow.js?v=20260923-3"></script>
+<script src="incoming-ui.js?v=20260923-6"></script>
 <script src="daily-movements.js"></script>
 <script src="receipt-plan.js"></script>
 

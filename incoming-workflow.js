@@ -37,7 +37,11 @@
     const parts=values.map(quantityUnits);
     return parts.every(part=>part!==null)&&parts.reduce((sum,part)=>sum+part,0)===units;
   }
-  const api = {tagPayload,parseTag,exactProduct,exactLocation,distributeQuantity,validAllocation};
+  // Each pallet has its own paper sheet; the four cut labels on that sheet share one QR.
+  function labelSheets(tags) {
+    return Array.isArray(tags) ? tags.map(tag=>Array(4).fill(tag)) : [];
+  }
+  const api = {tagPayload,parseTag,exactProduct,exactLocation,distributeQuantity,validAllocation,labelSheets};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.PKIncoming = api;
 })(typeof window !== 'undefined' ? window : globalThis);
