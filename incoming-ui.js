@@ -17,7 +17,8 @@
   $('incomingReceivedOn').value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
   let selectedProduct=null, selectedTag=null, selectedLocation=null, lastCreated=[], pendingCreateRequestId=null;
   let camera=null, cameraStarting=false, cameraRunning=false, cameraGeneration=0, scanning=false, saving=false;
-  let scanAudio=null,lastScanSoundKey='',lastScanSoundAt=0;
+  const armScanAudio = () => PKScanSound.arm();
+  const playScanSuccess = key => PKScanSound.success(key);
   const incomingViews={receive:$('incomingReceiveTitle').closest('.incoming-step'),putaway:$('incomingPutawayTitle').closest('.incoming-step'),history:$('incomingHistoryPanel')};
   function showIncomingView(view,scroll=false) {
     if (!incomingViews[view]) return;
@@ -32,38 +33,6 @@
     if (button) showIncomingView(button.dataset.incomingView);
   });
   $('incomingGoPutaway').addEventListener('click',()=>showIncomingView('putaway',true));
-  function armScanAudio() {
-    try {
-      const AudioContextClass=window.AudioContext||window.webkitAudioContext;
-      if (!AudioContextClass) return null;
-      scanAudio ||= new AudioContextClass();
-      if (scanAudio.state==='suspended') scanAudio.resume().catch(()=>{});
-      return scanAudio;
-    } catch (_) { return null; }
-  }
-  function playScanSuccess(key) {
-    const audio=armScanAudio();
-    if (!audio) return;
-    if (audio.state!=='running') {
-      audio.resume().then(()=>{if(audio.state==='running') playScanSuccess(key);}).catch(()=>{});
-      return;
-    }
-    const nowMs=Date.now();
-    if (key===lastScanSoundKey&&nowMs-lastScanSoundAt<600) return;
-    try {
-      const tone=audio.createOscillator(),volume=audio.createGain(),now=audio.currentTime;
-      // A short square-wave chirp is closer to a handheld barcode scanner than a soft sine tone.
-      tone.type='square';
-      tone.frequency.setValueAtTime(1900,now);
-      volume.gain.setValueAtTime(0.0001,now);
-      volume.gain.exponentialRampToValueAtTime(0.24,now+0.004);
-      volume.gain.setValueAtTime(0.24,now+0.09);
-      volume.gain.exponentialRampToValueAtTime(0.0001,now+0.125);
-      tone.connect(volume);volume.connect(audio.destination);
-      tone.start(now);tone.stop(now+0.13);
-      lastScanSoundKey=key;lastScanSoundAt=nowMs;
-    } catch (_) {} // Scanning must continue if sound is unavailable.
-  }
   function products() {
     return STOCK.items||[];
   }
@@ -338,7 +307,8 @@
   for(const [id,target] of [['incomingProductCamera','product'],['incomingTagCamera','tag'],['incomingLocationCamera','location']])
     $(id).addEventListener('click',()=>startCamera(target));
   $('incomingCameraStop').addEventListener('click',stopCamera);
-  for(const [id,target] of [['incomingProductImage','product'],['incomingTagImage','tag'],['incomingLocationImage','location']])
+  for(const [id,target] of [['incomingProductImage','product'],['incomingTagImage','tag'],['incomingLocationImage','location']]) {
+    $(id).addEventListener('click',armScanAudio);
     $(id).addEventListener('change',async event=>{
       const file=event.target.files?.[0];if(!file)return;
       armScanAudio();
@@ -348,6 +318,7 @@
       catch(_){status('incomingListStatus','อ่าน QR จากรูปไม่ได้ · กรุณาถ่ายใหม่ให้คมชัด',true);}
       finally{try{reader.clear();}catch(_){}$('incomingCameraView').hidden=true;event.target.value='';}
     });
+  }
   document.addEventListener('visibilitychange',()=>{if(document.hidden)stopCamera();});
   $('tabs').addEventListener('click',event=>{if(event.target.closest('.tab-btn')?.dataset.tab!=='incoming')stopCamera();});
   showIncomingView('receive');

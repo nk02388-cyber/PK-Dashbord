@@ -61,18 +61,18 @@
     }
   }
   async function openStoredTag(id) {
-    if (!supabaseClient) { message('ยังไม่ได้เชื่อมต่อฐานข้อมูลรับเข้า',true); return; }
+    if (!supabaseClient) { message('ยังไม่ได้เชื่อมต่อฐานข้อมูลรับเข้า',true); return false; }
     const {data:tag,error:tagError} = await supabaseClient.from('incoming_pallets')
       .select('id,status,zone,slot_code,product_code,receiving_no,batch_index,batch_total').eq('id',id).single();
-    if (tagError || !tag) { message('ไม่พบป้ายพาเลตนี้ในทะเบียนรับเข้า',true); return; }
+    if (tagError || !tag) { message('ไม่พบป้ายพาเลตนี้ในทะเบียนรับเข้า',true); return false; }
     if (tag.status !== 'stored' || !tag.zone || !tag.slot_code) {
-      message('ป้ายพาเลตนี้ยังรอจัดเก็บ · ไปที่เมนูรับเข้าและจัดเก็บ',true); return;
+      message('ป้ายพาเลตนี้ยังรอจัดเก็บ · ไปที่เมนูรับเข้าและจัดเก็บ',true); return false;
     }
     const location = locations.find(loc => loc.zone === tag.zone && loc.slot === tag.slot_code);
-    if (!location) { message('ตำแหน่งของป้ายนี้ไม่อยู่ในผัง · กรุณาตรวจข้อมูลจัดเก็บ',true); return; }
+    if (!location) { message('ตำแหน่งของป้ายนี้ไม่อยู่ในผัง · กรุณาตรวจข้อมูลจัดเก็บ',true); return false; }
     const {data:slot,error:slotError} = await supabaseClient.from('pallet_slots').select('*')
       .eq('zone',location.zone).eq('slot_code',location.slot).single();
-    if (slotError || !slot) { message('โหลดรายการสินค้าในตำแหน่งนี้ไม่ได้ · กรุณาลองใหม่',true); return; }
+    if (slotError || !slot) { message('โหลดรายการสินค้าในตำแหน่งนี้ไม่ได้ · กรุณาลองใหม่',true); return false; }
     applyRemoteSlotRow(slot,{silent:true,force:true});
     refreshAfterRemoteChange(location.zone,location.slot);
     await stopCamera(); clearSelection(false);
@@ -87,6 +87,7 @@
     } else {
       showFseFeedback(`ป้ายนี้เคยจัดเก็บที่ ${location.zone}/${location.slot} แต่ไม่พบสินค้าปัจจุบัน · ตรวจประวัติการเบิกหรือย้าย`, 'error');
     }
+    return index >= 0;
   }
   async function apply(raw) {
     const scanValue = String(raw ?? '').trim().toUpperCase(), now = Date.now();
@@ -96,7 +97,7 @@
       const match = PKBarcode.resolveScan(raw,locations,products());
       input.value = '';
       if (match.kind === 'invalid') { message(match.reason,true); return; }
-      if (match.kind === 'tag') { await openStoredTag(match.id); return; }
+      if (match.kind === 'tag') { if (await openStoredTag(match.id)) PKScanSound.success(`tag:${match.id}`); return; }
       if (match.kind === 'location') {
         const product = chosenProduct;
         await stopCamera(); clearSelection(false);
@@ -105,6 +106,7 @@
           jumpToSlot(match.zone,match.slot); openSlotEdit(match.zone,match.slot);
           showFseFeedback(`ตำแหน่ง ${match.zone}/${match.slot} · เลือกรายการสินค้าเพื่อเบิก`);
         }
+        PKScanSound.success(`location:${match.zone}/${match.slot}`);
         return;
       }
       if (match.kind === 'product') {
@@ -113,17 +115,19 @@
         message(positionCount
           ? `พบสินค้า ${match.product.code} ใน ${positionCount} ตำแหน่ง · เลือกตำแหน่งด้านล่างหรือสแกนป้ายตำแหน่ง`
           : `อ่านสินค้า ${match.product.code} แล้ว · ยังไม่พบในพาเลต หรือสแกนป้ายตำแหน่งเพื่อเพิ่มรายการ`);
+        PKScanSound.success(`product:${match.product.code}`);
       }
       showSelection();
     } catch (error) {
       message('เปิดรายการจากรหัสนี้ไม่ได้: '+(error?.message || 'กรุณาลองใหม่'),true);
     } finally { scanBusy = false; }
   }
-  $('barcodeScanApply').addEventListener('click', () => apply(input.value));
+  $('barcodeScanApply').addEventListener('click', () => { PKScanSound.arm(); apply(input.value); });
   $('barcodeScanClear').addEventListener('click', () => clearSelection());
-  input.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); apply(input.value); } });
+  input.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); PKScanSound.arm(); apply(input.value); } });
   startButton.addEventListener('click', async () => {
     if (cameraRunning || cameraStarting) return;
+    PKScanSound.arm();
     if (typeof Html5Qrcode === 'undefined') { message('โหลดตัวอ่านบาร์โค้ดไม่สำเร็จ กรุณารีเฟรช',true); return; }
     const generation = ++cameraGeneration;
     cameraStarting = true; startButton.disabled = true;
@@ -146,8 +150,10 @@
     }
   });
   stopButton.addEventListener('click',stopCamera);
+  $('barcodeImageInput').addEventListener('click', () => PKScanSound.arm());
   $('barcodeImageInput').addEventListener('change',async event => {
     const file = event.target.files?.[0]; if (!file) return;
+    PKScanSound.arm();
     if (typeof Html5Qrcode === 'undefined') { message('โหลดตัวอ่านบาร์โค้ดไม่สำเร็จ',true); return; }
     await stopCamera();
     const reader = new Html5Qrcode('barcodeCameraView');
