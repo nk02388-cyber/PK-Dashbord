@@ -1490,15 +1490,7 @@
     border-radius: 13px; background: color-mix(in srgb, var(--surface-1) 96%, transparent);
     box-shadow: var(--shadow-card); backdrop-filter: blur(12px);
   }
-  .tabs[hidden] { display: none !important; }
-  .nav-toggle {
-    display: inline-flex; align-items: center; gap: 9px; min-height: 44px;
-    margin: 12px 0; padding: 8px 14px; border: 1px solid var(--border);
-    border-radius: 10px; background: var(--surface-1); color: var(--text-primary);
-    box-shadow: var(--shadow-card); cursor: pointer; font: inherit; font-weight: 700;
-  }
-  .nav-toggle:hover, .nav-toggle:focus-visible { border-color: var(--series-1); }
-  .nav-toggle-current { color: var(--text-secondary); font-weight: 500; }
+  .nav-heading { margin: 12px 0 8px; font-weight: 700; color: var(--text-primary); }
   .tab-btn {
     min-height: 44px; margin: 0; padding: 8px 12px; border: 1px solid transparent;
     border-radius: 9px; font-size: 13px; white-space: nowrap;
@@ -1681,8 +1673,7 @@
   @media (max-width:700px) { .daily-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); } .daily-kpi strong { font-size:21px; } }
   @media (min-width: 1024px) {
     body.viz-root { padding: 12px 16px; }
-    .dashboard-layout { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 16px; }
-    .dashboard-layout.nav-expanded { grid-template-columns: 320px minmax(0, 1fr); }
+    .dashboard-layout { display: grid; grid-template-columns: 320px minmax(0, 1fr); align-items: start; gap: 16px; }
     .tabs {
       position: sticky; top: calc(var(--sticky-header-h, 0px) + 10px);
       display: flex; flex-direction: column; align-items: stretch; gap: 5px;
@@ -1699,7 +1690,6 @@
     .dashboard-content .filter-bar { top: calc(var(--sticky-header-h, 0px) + 8px); }
   }
   @media (max-width: 1023px) {
-    .nav-toggle { width: 100%; }
     .tabs { position: relative; top: auto; }
   }
 .audit-entry-fields,.audit-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin:12px 0}.audit-entry-fields label{display:flex;flex-direction:column;gap:4px;min-width:220px;flex:1}.audit-entry-fields input,.audit-toolbar input{min-height:42px;border:1px solid var(--border,#cbd5e1);border-radius:8px;padding:8px 10px;background:var(--surface,#fff);color:var(--text-primary,#172033)}.audit-toolbar input{flex:1;min-width:220px}.audit-scroll{overflow:auto;max-height:70vh}.audit-table{width:100%;border-collapse:collapse;min-width:700px}.audit-table th,.audit-table td{text-align:left;vertical-align:top;padding:10px;border-bottom:1px solid var(--border,#dbe3ef)}.audit-table th{position:sticky;top:0;background:var(--surface,#fff)}.audit-table td:last-child{min-width:220px}
@@ -1725,9 +1715,9 @@
     </div>
   </header>
 
-  <button class="nav-toggle" id="navToggle" type="button" aria-controls="tabs" aria-expanded="false"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke-width="1.8" stroke-linecap="round"/></svg><span>เมนู</span><span class="nav-toggle-current" id="navCurrentLabel">DASHBORD</span></button>
+  <div class="nav-heading" id="navHeading">เมนู</div>
   <div class="dashboard-layout" id="dashboardLayout">
-  <nav class="tabs" id="tabs" role="tablist" aria-label="ส่วนข้อมูลแดชบอร์ด" hidden>
+  <nav class="tabs" id="tabs" role="tablist" aria-label="ส่วนข้อมูลแดชบอร์ด">
     <button class="tab-btn active" id="tab-stock" data-tab="stock" type="button" role="tab" aria-selected="true" aria-controls="pane-stock"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m4 7 8-4 8 4-8 4-8-4Z" stroke-width="1.8"/><path d="m4 7v10l8 4 8-4V7M12 11v10" stroke-width="1.8"/></svg><span>DASHBORD</span><span class="tab-badge" id="tabBadgeStock">฿32.41M</span></button>
     <button class="tab-btn" id="tab-bompk" data-tab="bompk" type="button" role="tab" aria-selected="false" aria-controls="pane-bompk" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 21V9l6 3V8l6 4V5h6v16H3Z" stroke-width="1.8"/><path d="M7 17h2m3 0h2m3 0h2" stroke-width="1.8"/></svg><span>ความพร้อมบรรจุภัณฑ์ (BOM PK)</span><span class="tab-badge critical" id="tabBadgeBompk">612 ติดขัด</span></button>
     <button class="tab-btn" id="tab-bom-plan" data-tab="bom-plan" type="button" role="tab" aria-selected="false" aria-controls="pane-bom-plan" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8 4h8l2 2v15H6V6l2-2Zm0 0v3h8V4M9 12h6m-6 4h6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>แผนบรรจุภัณฑ์หลาย FG</span></button>
@@ -2724,15 +2714,6 @@ document.getElementById('reportDate').textContent = String(STOCK.report_date || 
 
 // ---------- Tabs ----------
 const tabButtons = document.querySelectorAll('.tab-btn');
-const tabsNav = document.getElementById('tabs');
-const navToggle = document.getElementById('navToggle');
-function setNavOpen(open) {
-  tabsNav.hidden = !open;
-  document.getElementById('dashboardLayout').classList.toggle('nav-expanded', open);
-  navToggle.setAttribute('aria-expanded', String(open));
-  if (typeof updateStickyOffsets === 'function') updateStickyOffsets();
-}
-navToggle.addEventListener('click', () => setNavOpen(tabsNav.hidden));
 function activateTab(b, moveFocus = false) {
   tabButtons.forEach(x => {
     const selected = x === b;
@@ -2743,9 +2724,10 @@ function activateTab(b, moveFocus = false) {
   b.classList.add('active');
   document.querySelectorAll('.tab-pane').forEach(p => p.hidden = true);
   document.getElementById('pane-' + b.dataset.tab).hidden = false;
-  document.getElementById('navCurrentLabel').textContent = b.querySelector('span:not(.tab-badge)')?.textContent || b.textContent.trim();
-  setNavOpen(false);
-  if (moveFocus || document.activeElement === b) navToggle.focus();
+  if (moveFocus) b.focus();
+  if (window.matchMedia('(max-width: 1023px)').matches && !moveFocus) {
+    document.getElementById('dashboardContent').scrollIntoView({block:'start'});
+  }
   // (The total-value card lives inside #pane-stock itself now, so it's hidden/shown
   // automatically along with the rest of that pane -- no separate toggle needed.)
 }
@@ -2761,12 +2743,6 @@ document.getElementById('tabs').addEventListener('keydown', (e) => {
   if (e.key === 'Home') next = 0;
   if (e.key === 'End') next = buttons.length - 1;
   activateTab(buttons[next], true);
-});
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && !tabsNav.hidden) {
-    setNavOpen(false);
-    navToggle.focus();
-  }
 });
 document.getElementById('tabBadgeStock').textContent = '฿' + fmtCompact(STOCK.kpis.total_value);
 document.getElementById('tabBadgeBompk').textContent = fmt0(BOMPK.kpis.fg_blocked) + ' ติดขัด';
