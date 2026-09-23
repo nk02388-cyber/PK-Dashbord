@@ -1,4 +1,4 @@
 [functions.pk-user-access]
-# The login action is unauthenticated. The function validates user JWTs and
-# checks the app_users admin role for every management action itself.
-verify_jwt = false
+# Login uses the project's anon JWT. Management calls use the signed-in user's
+# JWT and the function also checks the app_users admin role itself.
+verify_jwt = true

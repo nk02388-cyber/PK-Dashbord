@@ -1,5 +1,5 @@
-// Deploy with JWT verification OFF: login is public, while every management action
-// verifies the caller's bearer token and admin profile inside this function.
+// Keep Supabase JWT verification ON. Login calls use the project's anon JWT;
+// management actions replace it with the signed-in user's JWT and are rechecked here.
 const url = Deno.env.get('SUPABASE_URL');
 const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
 const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');

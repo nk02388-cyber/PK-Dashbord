@@ -35,6 +35,9 @@ const request = (action, values = {}, token = '') => handler(new Request('https:
   method: 'POST', headers: { origin: 'https://nk02388-cyber.github.io', 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },
   body: JSON.stringify({ action, ...values }),
 }));
+const browserAuth = fs.readFileSync(path.join(__dirname, '../auth-ui.js'), 'utf8');
+assert.match(browserAuth, /authorization:\s*`Bearer \$\{token \|\| SUPABASE_ANON_KEY\}`/,
+  'login requests must pass Supabase JWT verification with the anon JWT');
 (async () => {
   operations = [];
   assert.equal((await request('list')).status, 401);

@@ -36,7 +36,7 @@
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'content-type': 'application/json', apikey: SUPABASE_ANON_KEY,
-        ...(token ? { authorization: `Bearer ${token}` } : {}) },
+        authorization: `Bearer ${token || SUPABASE_ANON_KEY}` },
       body: JSON.stringify({ action, ...values }),
     });
     const result = await response.json().catch(() => ({}));
