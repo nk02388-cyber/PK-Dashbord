@@ -54,6 +54,7 @@
     const { data, error } = await supabaseClient.from('app_users').select('id,username,role').eq('id', user.id).single();
     if (error || !data) throw new Error('บัญชีนี้ไม่มีสิทธิ์ใช้งาน');
     profile = data;
+    window.PK_APP_USER = Object.freeze({ id: data.id, username: data.username, role: data.role });
     document.body.classList.remove('auth-locked');
     screen.hidden = true;
     logoutButton.hidden = false;
@@ -66,6 +67,7 @@
   }
   function showSignedOut() {
     profile = null;
+    window.PK_APP_USER = null;
     remoteLoaded = false;
     document.body.classList.add('auth-locked');
     screen.hidden = false;

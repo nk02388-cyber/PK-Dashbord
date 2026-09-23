@@ -2430,10 +2430,9 @@
         <span id="syncStatusText">เชื่อมต่อข้อมูลเรียลไทม์แล้ว</span>
       </div>
       <div class="audit-entry-fields">
-        <label>ชื่อผู้ทำรายการ *<input id="palletAuditActor" type="text" maxlength="100" placeholder="ชื่อผู้ทำรายการ" autocomplete="name"></label>
         <label>เลขเอกสารอ้างอิงสำหรับการแก้ไข / นำเข้า *<input id="palletAuditDocument" type="text" maxlength="200" placeholder="เลขเอกสาร"></label>
       </div>
-      <p class="panel-sub">ชื่อผู้ทำรายการเป็นข้อมูลที่ผู้ใช้กรอกเอง เนื่องจากระบบนี้ไม่มีการยืนยันตัวตน</p>
+      <p class="panel-sub">ระบบบันทึกชื่อผู้ทำรายการจากบัญชีที่เข้าสู่ระบบโดยอัตโนมัติ</p>
       <div class="bom-plan-form" style="margin-top:12px">
         <button type="button" id="floorplanExcelExport" class="excl-toggle-btn" style="min-height:44px">ส่งออกข้อมูลทุกโซน Excel</button>
         <span id="floorplanExcelStatus" role="status"></span>
@@ -2636,7 +2635,7 @@
   <div class="tab-pane" id="pane-audit" role="tabpanel" aria-labelledby="tab-audit" hidden>
     <div class="panel">
       <h2>ประวัติการแก้ไขพาเลต</h2>
-      <p class="panel-sub">แสดงการเปลี่ยนแปลงที่บันทึกหลังเปิดใช้ระบบประวัติ · ชื่อผู้ทำรายการเป็นชื่อที่กรอกเอง ไม่ได้ยืนยันด้วยบัญชี</p>
+      <p class="panel-sub">แสดงการเปลี่ยนแปลงที่บันทึกหลังเปิดใช้ระบบประวัติ · ผู้ทำรายการอ้างอิงจากบัญชีที่เข้าสู่ระบบ</p>
       <div class="audit-toolbar"><input id="palletAuditSearch" type="search" placeholder="ค้นหาโซน ตำแหน่ง ผู้ทำรายการ หรือเลขเอกสาร" aria-label="ค้นหาประวัติ"><button id="palletAuditRefresh" type="button" class="excl-toggle-btn">รีเฟรช</button></div>
       <p id="palletAuditStatus" role="status" aria-live="polite"></p>
       <div id="palletAuditResult" class="audit-results"></div>
@@ -3457,14 +3456,10 @@ function buildSlotRow(zoneCode, slotCode) {
   };
 }
 function palletAuditMetadata(action = 'adjust', documentNo = '') {
-  const actorInput = document.getElementById('palletAuditActor');
   const documentInput = document.getElementById('palletAuditDocument');
-  const actor = actorInput?.value.trim() || '';
   const documentNumber = documentNo.trim() || documentInput?.value.trim() || '';
-  if (!actor) throw new Error('กรุณาระบุชื่อผู้ทำรายการก่อนบันทึก');
   if (!documentNumber) throw new Error('กรุณาระบุเลขเอกสารอ้างอิงก่อนบันทึก');
-  try { localStorage.setItem('palletAuditActor', actor); } catch (_) {}
-  return {actor, document_no:documentNumber, action};
+  return {document_no:documentNumber, action};
 }
 async function savePalletBatch(slots, dates = [], audit = {}) {
   if (!supabaseClient) throw new Error('ยังไม่ได้เชื่อมต่อระบบบันทึกพาเลต');

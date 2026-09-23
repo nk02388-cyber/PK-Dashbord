@@ -44,9 +44,23 @@ end $$;
 
 create or replace function public.app_save_pallet_changes(p_slots jsonb default '[]', p_dates jsonb default '[]')
 returns jsonb language plpgsql security definer set search_path = '' as $$
+declare
+  actor_name text;
+  secured_slots jsonb;
 begin
-  if not public.is_app_user() then raise exception 'Login required' using errcode = '42501'; end if;
-  return public.save_pallet_changes(p_slots, p_dates);
+  select username into actor_name from public.app_users where id = auth.uid();
+  if actor_name is null then raise exception 'Login required' using errcode = '42501'; end if;
+  if p_slots is null or jsonb_typeof(p_slots) <> 'array' then
+    raise exception 'PALLET_INVALID: invalid batch' using errcode = '22023';
+  end if;
+  select coalesce(jsonb_agg(
+    (entry - '_audit') || jsonb_build_object('_audit',
+      coalesce(entry->'_audit', '{}'::jsonb) || jsonb_build_object('actor', actor_name)
+    ) order by ord
+  ), '[]'::jsonb)
+  into secured_slots
+  from jsonb_array_elements(p_slots) with ordinality as rows(entry, ord);
+  return public.save_pallet_changes(secured_slots, p_dates);
 end $$;
 create or replace function public.app_get_latest_stock_inventory()
 returns jsonb language plpgsql stable security definer set search_path = '' as $$
