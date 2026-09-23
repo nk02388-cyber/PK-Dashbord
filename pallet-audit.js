@@ -1,9 +1,11 @@
 // History is read from the database, never reconstructed from this browser's cache.
 (() => {
+  const actor = document.getElementById('palletAuditActor');
   const search = document.getElementById('palletAuditSearch');
   const status = document.getElementById('palletAuditStatus');
   const result = document.getElementById('palletAuditResult');
   const more = document.getElementById('palletAuditMore');
+  try { actor.value = localStorage.getItem('palletAuditActor') || ''; } catch (_) {}
   const labels = {receive:'รับเข้า',issue:'เบิก',return:'รับคืน',transfer:'ย้าย',adjust:'แก้ยอด / แก้รายการ',remove:'ลบ',import:'นำเข้าข้อมูล'};
   const pageSize = 100;
   let rows = [], cursor = null, loading = false;

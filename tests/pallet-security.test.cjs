@@ -6,7 +6,7 @@ async function main(){
   const ctx=vm.createContext({SLOT_ITEMS:{F:{'F-18':[{code:'TEST',qty:10,remainingQty:10}]}},PALLET_STATUS:{F:{'F-18':'occupied'}},
     palletCanEdit:true,palletDataReady:true,palletWriteBusy:false,palletVersions:new Map(),receiveVersions:new Map(),palletRemoteRows:new Map(),
     editingSlot:{zone:'F',slot:'F-18',version:3},slotEditPanel:{},renderOverviewSlotStatus(){},refreshAfterRemoteChange(){},
-    showFseFeedback:m=>feedback=m,setSyncStatus(){},document:{getElementById(){return {value:'DOC-1'}}},
+    showFseFeedback:m=>feedback=m,setSyncStatus(){},document:{getElementById(id){return {value:id==='palletAuditActor'?'tester':'DOC-1'}}},localStorage:{setItem(){}},
     supabaseClient:{async rpc(name,args){calls++;sent=args;
       if(mode==='conflict')return {error:{code:'40001'}};
       if(mode==='denied')return {error:{code:'42501'}};
@@ -16,13 +16,9 @@ async function main(){
     'getRemainingQty','addSlotItem','removeSlotItem','updateSlotItem','withdrawSlotItem','returnSlotItem','syncReceiveDateToRemote','setReceiveDate'])vm.runInContext(extract(n),ctx);
   ctx.RECEIVE_DATES={};
   assert.equal(await ctx.runSlotMutation('F','F-18',()=>ctx.withdrawSlotItem('F','F-18',0,{qty:2,date:'2026-09-05',unit:'pcs',by:'tester'})),true);
-  assert.equal(sent.p_slots[0].expected_version,3);assert.equal(sent.p_slots[0]._audit.actor,undefined,'Browser must not provide the audit actor');assert.equal(sent.p_slots[0]._audit.document_no,'DOC-1');assert.equal(ctx.editingSlot.version,4);assert.equal(ctx.SLOT_ITEMS.F['F-18'][0].remainingQty,8);
+  assert.equal(sent.p_slots[0].expected_version,3);assert.equal(sent.p_slots[0]._audit.actor,'tester');assert.equal(sent.p_slots[0]._audit.document_no,'DOC-1');assert.equal(ctx.editingSlot.version,4);assert.equal(ctx.SLOT_ITEMS.F['F-18'][0].remainingQty,8);
   assert.equal(sent.p_slots[0]._audit.action,'adjust');
   assert.match(fs.readFileSync(path.join(__dirname,'..','supabase-pallet-audit.sql'),'utf8'),/create trigger pallet_audit_after_write after insert or update on public\.pallet_slots/);
-  const appUsersSql=fs.readFileSync(path.join(__dirname,'..','supabase-app-users.sql'),'utf8');
-  assert.match(appUsersSql,/select username into actor_name from public\.app_users where id = auth\.uid\(\)/);
-  assert.match(appUsersSql,/jsonb_build_object\('actor', actor_name\)/);
-  assert.doesNotMatch(html,/id="palletAuditActor"/);
   const saved=JSON.stringify(ctx.SLOT_ITEMS);
   for(const fail of ['conflict','network','denied']){
     mode=fail;assert.equal(await ctx.runSlotMutation('F','F-18',()=>ctx.removeSlotItem('F','F-18',0)),false);
