@@ -9,7 +9,8 @@
   [...new Set(locations.map(loc => loc.zone))].sort((a,b) => a.localeCompare(b,'th',{numeric:true})).forEach(zone => {
     const option = document.createElement('option'); option.value = zone; option.textContent = zone; printZone.append(option);
   });
-  let chosenLocation = null, chosenProduct = null, camera = null, cameraRunning = false;
+  let chosenLocation = null, chosenProduct = null, camera = null, cameraRunning = false, cameraStarting = false;
+  let cameraGeneration = 0, scanBusy = false, lastScanValue = '', lastScanAt = 0;
   function products() {
     return [...(STOCK.items || []), ...Object.values(SLOT_ITEMS).flatMap(slots => Object.values(slots).flat())];
   }
@@ -17,49 +18,80 @@
   function showSelection() {
     selection.textContent = `ตำแหน่ง: ${chosenLocation ? chosenLocation.zone+'/'+chosenLocation.slot : 'ยังไม่สแกน'} · สินค้า: ${chosenProduct ? chosenProduct.code+' '+(chosenProduct.name || '') : 'ยังไม่สแกน'}`;
   }
+  function clearSelection(announce = true) {
+    chosenLocation = null; chosenProduct = null; lastScanValue = ''; lastScanAt = 0;
+    input.value = ''; showSelection();
+    if (announce) message('ล้างตำแหน่งและสินค้าที่สแกนแล้ว');
+  }
   async function stopCamera() {
-    if (cameraRunning && camera) { try { await camera.stop(); } catch (_) {} }
-    cameraRunning = false; camera = null; view.hidden = true; view.replaceChildren();
+    const activeCamera = camera, wasRunning = cameraRunning;
+    cameraGeneration += 1; cameraRunning = false; cameraStarting = false; camera = null;
+    if (activeCamera && wasRunning) { try { await activeCamera.stop(); } catch (_) {} }
+    if (activeCamera) { try { activeCamera.clear(); } catch (_) {} }
+    view.hidden = true; view.replaceChildren();
+    startButton.disabled = false;
     startButton.hidden = false; stopButton.hidden = true;
   }
-  function openMatch() {
-    if (!chosenLocation || !chosenProduct) return;
-    const {zone,slot} = chosenLocation;
+  function openMatch(location, product) {
+    if (!location || !product) return;
+    const {zone,slot} = location;
     $('tab-floorplan').click();
     openZoomModal(zone);
     openSlotEdit(zone,slot);
-    const index = slotItemsFor(zone,slot).findIndex(item => String(item.code).trim().toUpperCase() === String(chosenProduct.code).trim().toUpperCase());
+    const index = slotItemsFor(zone,slot).findIndex(item => String(item.code).trim().toUpperCase() === String(product.code).trim().toUpperCase());
     if (index >= 0) {
       const row = fseItemsList.querySelectorAll('.fse-item-row')[index];
       row?.classList.add('barcode-match'); row?.scrollIntoView({block:'nearest'});
-      showFseFeedback(`พบ ${chosenProduct.code} ใน ${zone}/${slot} · ตรวจนับยอดที่แสดงก่อนแก้ไข`);
+      showFseFeedback(`พบ ${product.code} ใน ${zone}/${slot} · ตรวจนับยอดที่แสดงก่อนแก้ไข`);
     } else {
-      fseAddCode.value = chosenProduct.code;
+      fseAddCode.value = product.code;
       autofillAddProductDetails();
       fseAddLotNo.focus();
-      showFseFeedback(`ตำแหน่ง ${zone}/${slot} ยังไม่มี ${chosenProduct.code} · กรอก Lot วันที่ จำนวน และเอกสารรับก่อนบันทึก`);
+      showFseFeedback(`ตำแหน่ง ${zone}/${slot} ยังไม่มี ${product.code} · กรอก Lot วันที่ จำนวน และเอกสารรับก่อนบันทึก`);
     }
   }
   async function apply(raw) {
-    const match = PKBarcode.resolveScan(raw,locations,products());
-    input.value = '';
-    if (match.kind === 'invalid') { message(match.reason,true); return; }
-    if (match.kind === 'location') { chosenLocation = {zone:match.zone,slot:match.slot}; message(`อ่านตำแหน่ง ${match.zone}/${match.slot} แล้ว · สแกนสินค้า`); }
-    if (match.kind === 'product') { chosenProduct = match.product; $('barcodePrintProductCode').value = match.product.code; message(`อ่านสินค้า ${match.product.code} แล้ว · สแกนตำแหน่ง`); }
-    showSelection();
-    if (chosenLocation && chosenProduct) { await stopCamera(); openMatch(); }
+    const scanValue = String(raw ?? '').trim().toUpperCase(), now = Date.now();
+    if (scanBusy || (scanValue && scanValue === lastScanValue && now - lastScanAt < 1200)) return;
+    scanBusy = true; lastScanValue = scanValue; lastScanAt = now;
+    try {
+      const match = PKBarcode.resolveScan(raw,locations,products());
+      input.value = '';
+      if (match.kind === 'invalid') { message(match.reason,true); return; }
+      if (match.kind === 'location') { chosenLocation = {zone:match.zone,slot:match.slot}; message(`อ่านตำแหน่ง ${match.zone}/${match.slot} แล้ว · สแกนสินค้า`); }
+      if (match.kind === 'product') { chosenProduct = match.product; $('barcodePrintProductCode').value = match.product.code; message(`อ่านสินค้า ${match.product.code} แล้ว · สแกนตำแหน่ง`); }
+      showSelection();
+      if (chosenLocation && chosenProduct) {
+        const completedLocation = chosenLocation, completedProduct = chosenProduct;
+        await stopCamera(); clearSelection(false); openMatch(completedLocation,completedProduct);
+      }
+    } finally { scanBusy = false; }
   }
   $('barcodeScanApply').addEventListener('click', () => apply(input.value));
+  $('barcodeScanClear').addEventListener('click', () => clearSelection());
   input.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); apply(input.value); } });
   startButton.addEventListener('click', async () => {
+    if (cameraRunning || cameraStarting) return;
     if (typeof Html5Qrcode === 'undefined') { message('โหลดตัวอ่านบาร์โค้ดไม่สำเร็จ กรุณารีเฟรช',true); return; }
+    const generation = ++cameraGeneration;
+    cameraStarting = true; startButton.disabled = true;
     try {
-      camera = new Html5Qrcode('barcodeCameraView', {formatsToSupport:[0,3,4,5,6,8,9,10,11,13,14]});
+      const nextCamera = new Html5Qrcode('barcodeCameraView', {formatsToSupport:[0,3,4,5,6,8,9,10,11,13,14]});
+      camera = nextCamera;
       view.hidden = false;
-      await camera.start({facingMode:'environment'},{fps:8,qrbox:(w,h)=>({width:Math.min(w-20,320),height:Math.min(h-20,220)})},decoded => apply(decoded),()=>{});
+      await nextCamera.start({facingMode:'environment'},{fps:8,qrbox:(w,h)=>({width:Math.min(w-20,320),height:Math.min(h-20,220)})},decoded => apply(decoded),()=>{});
+      if (generation !== cameraGeneration || camera !== nextCamera) {
+        try { await nextCamera.stop(); } catch (_) {}
+        try { nextCamera.clear(); } catch (_) {}
+        return;
+      }
       cameraRunning = true; startButton.hidden = true; stopButton.hidden = false;
       message('เล็งกล้องไปที่ QR หรือบาร์โค้ด');
-    } catch (error) { await stopCamera(); message('เปิดกล้องไม่ได้ · ตรวจสิทธิ์กล้องหรือใช้รูปภาพ/เครื่องสแกน: '+error,true); }
+    } catch (error) {
+      if (generation === cameraGeneration) { await stopCamera(); message('เปิดกล้องไม่ได้ · ตรวจสิทธิ์กล้องหรือใช้รูปภาพ/เครื่องสแกน: '+error,true); }
+    } finally {
+      if (generation === cameraGeneration) { cameraStarting = false; startButton.disabled = false; }
+    }
   });
   stopButton.addEventListener('click',stopCamera);
   $('barcodeImageInput').addEventListener('change',async event => {

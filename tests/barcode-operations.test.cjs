@@ -10,9 +10,15 @@ assert.equal(resolveScan(productPayload('31-0001-01'),locations,products).produc
 assert.equal(resolveScan('8851234567890',locations,products).product.code,'31-0001-01');
 assert.equal(resolveScan('31-0001',locations,products).kind,'invalid','partial SKU must not select a product');
 assert.equal(resolveScan('PKLOC|G|BAD',locations,products).kind,'invalid');
+assert.equal(resolveScan('PKLOC||G-06',locations,products).reason,'รูปแบบ QR ไม่ถูกต้อง');
+assert.equal(resolveScan('PKITEM|',locations,products).reason,'รูปแบบ QR ไม่ถูกต้อง');
 assert.equal(resolveScan('PKITEM|31-0001-02',locations,products).product.code,'31-0001-02');
 assert.equal(resolveScan('G-06',[...locations,{zone:'X',slot:'G-06'}],products).kind,'invalid','ambiguous physical label must be rejected');
 const ui = fs.readFileSync(path.join(__dirname,'..','barcode-ui.js'),'utf8');
 assert.match(ui,/openSlotEdit\(zone,slot\)/);
+assert.match(ui,/clearSelection\(false\); openMatch\(completedLocation,completedProduct\)/,'completed scans must not leak into the next scan');
+assert.match(ui,/scanBusy/,'camera callbacks must be guarded against overlapping scans');
+assert.match(ui,/cameraGeneration/,'camera startup must be cancellable when the tab closes or a scan completes');
+assert.match(ui,/barcodeScanClear/,'operators need an explicit way to discard an incorrect scan');
 assert.doesNotMatch(ui,/savePalletBatch|runSlotMutation/,'scan must not change stock until the user reviews and saves');
 console.log('PASS: exact product/location scans, alias matching, ambiguity rejection and reviewed writes');

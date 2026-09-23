@@ -11,6 +11,9 @@
     const explicitProduct = normalize(parts[0]) === 'PKITEM';
     if ((explicitLocation && parts.length !== 3) || (explicitProduct && parts.length !== 2))
       return {kind:'invalid', reason:'รูปแบบ QR ไม่ถูกต้อง'};
+    if ((explicitLocation && (!normalize(parts[1]) || !normalize(parts[2])))
+      || (explicitProduct && !normalize(parts[1])))
+      return {kind:'invalid', reason:'รูปแบบ QR ไม่ถูกต้อง'};
     const locationMatches = locations.filter(loc => explicitLocation
       ? normalize(loc.zone) === normalize(parts[1]) && normalize(loc.slot) === normalize(parts[2])
       : !explicitProduct && (normalize(loc.slot) === value || normalize(`${loc.zone}/${loc.slot}`) === value));
