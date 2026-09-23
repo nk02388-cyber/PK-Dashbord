@@ -144,24 +144,12 @@
       cameraRunning = true; startButton.hidden = true; stopButton.hidden = false;
       message('เล็งกล้องไปที่ QR หรือบาร์โค้ด');
     } catch (error) {
-      if (generation === cameraGeneration) { await stopCamera(); message('เปิดกล้องไม่ได้ · ตรวจสิทธิ์กล้องหรือใช้รูปภาพ/เครื่องสแกน: '+error,true); }
+      if (generation === cameraGeneration) { await stopCamera(); message('เปิดกล้องไม่ได้ · ตรวจสิทธิ์กล้องหรือใช้เครื่องสแกน: '+error,true); }
     } finally {
       if (generation === cameraGeneration) { cameraStarting = false; startButton.disabled = false; }
     }
   });
   stopButton.addEventListener('click',stopCamera);
-  $('barcodeImageInput').addEventListener('click', () => PKScanSound.arm());
-  $('barcodeImageInput').addEventListener('change',async event => {
-    const file = event.target.files?.[0]; if (!file) return;
-    PKScanSound.arm();
-    if (typeof Html5Qrcode === 'undefined') { message('โหลดตัวอ่านบาร์โค้ดไม่สำเร็จ',true); return; }
-    await stopCamera();
-    const reader = new Html5Qrcode('barcodeCameraView');
-    view.hidden = false;
-    try { await apply(await reader.scanFile(file,true)); }
-    catch (_) { message('อ่านรหัสจากรูปไม่ได้ กรุณาถ่ายใหม่ให้ป้ายอยู่กลางภาพและคมชัด',true); }
-    finally { try { reader.clear(); } catch (_) {} view.hidden = true; event.target.value = ''; }
-  });
   document.addEventListener('visibilitychange', () => { if (document.hidden) stopCamera(); });
   $('tabs').addEventListener('click',event => { if (event.target.closest('.tab-btn')?.dataset.tab !== 'floorplan') stopCamera(); });
   function qrMarkup(payload) { const qr = qrcode(0,'M'); qr.addData(payload); qr.make(); return qr.createSvgTag(3,2); }

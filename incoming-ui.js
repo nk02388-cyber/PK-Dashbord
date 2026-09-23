@@ -301,24 +301,12 @@
       if(generation!==cameraGeneration||camera!==reader){try{await reader.stop();}catch(_){}try{reader.clear();}catch(_){}return;}
       cameraRunning=true;$('incomingCameraStop').hidden=false;
       $('incomingCameraView').scrollIntoView({block:'nearest'});
-    } catch(error){if(generation===cameraGeneration){await stopCamera();status('incomingListStatus','เปิดกล้องไม่ได้ · ตรวจสิทธิ์กล้องหรือใช้รูปภาพ: '+error,true);}}
+    } catch(error){if(generation===cameraGeneration){await stopCamera();status('incomingListStatus','เปิดกล้องไม่ได้ · ตรวจสิทธิ์กล้องหรือใช้เครื่องสแกน: '+error,true);}}
     finally{if(generation===cameraGeneration)cameraStarting=false;}
   }
   for(const [id,target] of [['incomingProductCamera','product'],['incomingTagCamera','tag'],['incomingLocationCamera','location']])
     $(id).addEventListener('click',()=>startCamera(target));
   $('incomingCameraStop').addEventListener('click',stopCamera);
-  for(const [id,target] of [['incomingProductImage','product'],['incomingTagImage','tag'],['incomingLocationImage','location']]) {
-    $(id).addEventListener('click',armScanAudio);
-    $(id).addEventListener('change',async event=>{
-      const file=event.target.files?.[0];if(!file)return;
-      armScanAudio();
-      await stopCamera();
-      const reader=new Html5Qrcode('incomingCameraView');$('incomingCameraView').hidden=false;
-      try{await useScan(target,await reader.scanFile(file,true));}
-      catch(_){status('incomingListStatus','อ่าน QR จากรูปไม่ได้ · กรุณาถ่ายใหม่ให้คมชัด',true);}
-      finally{try{reader.clear();}catch(_){}$('incomingCameraView').hidden=true;event.target.value='';}
-    });
-  }
   document.addEventListener('visibilitychange',()=>{if(document.hidden)stopCamera();});
   $('tabs').addEventListener('click',event=>{if(event.target.closest('.tab-btn')?.dataset.tab!=='incoming')stopCamera();});
   showIncomingView('receive');
