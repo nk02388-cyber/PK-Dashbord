@@ -1,5 +1,6 @@
 .pk-auth-screen{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;padding:20px;background:var(--page-plane,#f7f9fc);color:var(--text-primary,#172033)}
 .pk-auth-screen[hidden]{display:none}
+.pk-auth-card[hidden]{display:none}
 .stock-update-btn[hidden],#userManagerButton[hidden],#logoutButton[hidden]{display:none!important}
 .pk-auth-card{width:min(100%,430px);padding:28px;background:var(--surface-1,#fff);border:1px solid var(--border,#d8e2f0);border-radius:18px;box-shadow:0 16px 50px rgba(13,35,77,.12)}
 .pk-auth-card h2{margin:0 0 6px;font-size:22px}.pk-auth-card p{margin:0 0 22px;color:var(--text-secondary,#526174);font-size:14px}

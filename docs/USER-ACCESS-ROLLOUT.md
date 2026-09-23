@@ -1,12 +1,12 @@
-# User access rollout (not yet live)
+# User access rollout
 
 The application now has a username/password login screen, one Admin role, and an Admin-only user list with add/delete actions. Passwords are handled by Supabase Auth. No password or service key belongs in Git or the browser bundle.
 
 ## Rollout order
 
-1. Have the account owner set the requested password directly on the existing Supabase Auth user (`d8c53d9d-7501-419a-9598-a36861102510`) in Authentication > Users. The agent must not type or change that credential.
+1. Deploy the recovery form, send a Supabase password-recovery email to the existing Admin account, and have the account owner enter the new credential on the live recovery page.
 2. Run `supabase-app-users.sql` in the project's SQL Editor. It creates the `app_users` profile table, promotes the existing account to the one Admin, and installs guarded RPC wrappers without changing the old public API yet. Check that the transaction commits and that there is exactly one Admin.
-3. Deploy `supabase/functions/pk-user-access/index.ts` as `pk-user-access`, using `supabase/config.toml` (`verify_jwt = false`). The login action needs to be callable before a user has a JWT. Every management action validates a user JWT and checks the Admin role. Do not expose the service role key to the website.
+3. Deploy `supabase/functions/pk-user-access/index.ts` as `pk-user-access`, using `supabase/config.toml` (`verify_jwt = true`). Login requests use the project's publishable key as the gateway bearer token. Every management action replaces it with the signed-in user's JWT, validates that JWT, and checks the Admin role. Do not expose the service role key to the website.
 4. Test Admin login, Admin user listing, user creation, subuser login, rejected subuser management, subuser deletion, and rejected login after deletion against a staging URL or preview. Confirm that password values never appear in logs or source.
 5. Deploy the new website files together. Then run `supabase-app-users-lockdown.sql` so anonymous clients lose live data and write access, and the old unrestricted RPC names are no longer executable by browsers. Verify both Admin and subuser can still read and save pallets, and only Admin can replace stock.
 

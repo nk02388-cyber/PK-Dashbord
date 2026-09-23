@@ -38,6 +38,9 @@ const request = (action, values = {}, token = '') => handler(new Request('https:
 const browserAuth = fs.readFileSync(path.join(__dirname, '../auth-ui.js'), 'utf8');
 assert.match(browserAuth, /authorization:\s*`Bearer \$\{token \|\| SUPABASE_ANON_KEY\}`/,
   'login requests must pass Supabase JWT verification with the anon JWT');
+assert.match(browserAuth, /event === 'PASSWORD_RECOVERY'/, 'recovery links must open the password form');
+assert.match(browserAuth, /auth\.updateUser\(\{ password \}\)/, 'recovery form must update the Supabase password');
+assert.match(browserAuth, /password\.length < 12/, 'recovery form must enforce the password minimum');
 (async () => {
   operations = [];
   assert.equal((await request('list')).status, 401);

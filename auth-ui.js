@@ -1,4 +1,6 @@
 (() => {
+  let recoveryMode = new URLSearchParams(location.hash.slice(1)).get('type') === 'recovery'
+    || new URLSearchParams(location.search).has('code');
   const screen = document.createElement('section');
   screen.className = 'pk-auth-screen';
   screen.setAttribute('aria-label', 'เข้าสู่ระบบ');
@@ -8,6 +10,13 @@
     <label for="pkUsername">ชื่อผู้ใช้</label><input id="pkUsername" name="username" autocomplete="username" required>
     <label for="pkPassword">รหัสผ่าน</label><input id="pkPassword" name="password" type="password" autocomplete="current-password" required>
     <button type="submit">เข้าสู่ระบบ</button><div class="pk-auth-message" id="pkLoginMessage" role="alert"></div>
+  </form>
+  <form class="pk-auth-card" id="pkRecoveryForm" hidden>
+    <h2>ตั้งรหัสผ่านใหม่</h2>
+    <p>กำหนดรหัสผ่านอย่างน้อย 12 ตัวอักษรสำหรับบัญชี Admin</p>
+    <label for="pkRecoveryPassword">รหัสผ่านใหม่</label><input id="pkRecoveryPassword" type="password" autocomplete="new-password" minlength="12" required>
+    <label for="pkRecoveryConfirm">ยืนยันรหัสผ่านใหม่</label><input id="pkRecoveryConfirm" type="password" autocomplete="new-password" minlength="12" required>
+    <button type="submit">บันทึกรหัสผ่าน</button><div class="pk-auth-message" id="pkRecoveryMessage" role="alert"></div>
   </form>`;
   document.body.append(screen);
   const manager = document.createElement('dialog');
@@ -23,7 +32,9 @@
     </form>`;
   document.body.append(manager);
   const loginForm = document.getElementById('pkLoginForm');
+  const recoveryForm = document.getElementById('pkRecoveryForm');
   const loginMessage = document.getElementById('pkLoginMessage');
+  const recoveryMessage = document.getElementById('pkRecoveryMessage');
   const userMessage = document.getElementById('pkUsersMessage');
   const userList = document.getElementById('pkUserList');
   const managerButton = document.getElementById('userManagerButton');
@@ -65,12 +76,22 @@
       await Promise.allSettled([initSupabaseSync(), loadLatestStockFromSupabase()]);
     }
   }
+  function showRecovery() {
+    document.body.classList.add('auth-locked');
+    screen.hidden = false;
+    loginForm.hidden = true;
+    recoveryForm.hidden = false;
+    logoutButton.hidden = true;
+    managerButton.hidden = true;
+  }
   function showSignedOut() {
     profile = null;
     window.PK_APP_USER = null;
     remoteLoaded = false;
     document.body.classList.add('auth-locked');
     screen.hidden = false;
+    loginForm.hidden = false;
+    recoveryForm.hidden = true;
     logoutButton.hidden = true;
     managerButton.hidden = true;
     if (manager.open) manager.close();
@@ -95,6 +116,25 @@
       await supabaseClient?.auth.signOut().catch(() => {});
       showSignedOut();
     } finally { button.disabled = false; }
+  });
+  recoveryForm.addEventListener('submit', async (event) => {
+    event.preventDefault(); recoveryMessage.textContent = '';
+    const password = document.getElementById('pkRecoveryPassword').value;
+    const confirmation = document.getElementById('pkRecoveryConfirm').value;
+    const button = recoveryForm.querySelector('button'); button.disabled = true;
+    try {
+      if (password.length < 12) throw new Error('รหัสผ่านต้องมีอย่างน้อย 12 ตัวอักษร');
+      if (password !== confirmation) throw new Error('รหัสผ่านทั้งสองช่องไม่ตรงกัน');
+      const { error } = await supabaseClient.auth.updateUser({ password });
+      if (error) throw error;
+      recoveryMode = false;
+      history.replaceState({}, '', location.pathname);
+      recoveryForm.reset();
+      await supabaseClient.auth.signOut();
+      showSignedOut();
+      loginMessage.textContent = 'ตั้งรหัสผ่านสำเร็จ กรุณาเข้าสู่ระบบ';
+    } catch (error) { recoveryMessage.textContent = error.message || 'ตั้งรหัสผ่านไม่สำเร็จ'; }
+    finally { button.disabled = false; }
   });
   logoutButton.addEventListener('click', async () => {
     await supabaseClient?.auth.signOut();
@@ -148,6 +188,10 @@
     finally { button.disabled = false; }
   });
   if (!supabaseClient) { loginMessage.textContent = 'ไม่สามารถเชื่อมต่อระบบเข้าสู่ระบบ'; return; }
-  supabaseClient.auth.onAuthStateChange((event) => { if (event === 'SIGNED_OUT') showSignedOut(); });
-  showSignedIn().catch(() => showSignedOut());
+  supabaseClient.auth.onAuthStateChange((event) => {
+    if (event === 'PASSWORD_RECOVERY') { recoveryMode = true; showRecovery(); }
+    else if (event === 'SIGNED_OUT') showSignedOut();
+  });
+  if (recoveryMode) showRecovery();
+  else showSignedIn().catch(() => showSignedOut());
 })();
