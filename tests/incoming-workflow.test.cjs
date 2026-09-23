@@ -16,7 +16,8 @@ assert.equal(incoming.exactLocation('G-0',locations),null,'partial locations mus
 const sql=fs.readFileSync(path.join(__dirname,'..','supabase-incoming.sql'),'utf8');
 assert.match(sql,/request_id uuid not null unique/,'retrying a receipt must not create a second tag');
 assert.match(sql,/where id=p_tag_id for update[\s\S]*tag\.status <> 'pending'/,'one tag must be put away only once');
-assert.match(sql,/public\.incoming_locations where zone=zone_code and slot_code=slot_code/,'database must reject an unknown location');
+assert.match(sql,/public\.incoming_locations loc where loc\.zone=target_zone and loc\.slot_code=target_slot/,'database must reject an unknown location without ambiguous column names');
+assert.doesNotMatch(sql,/\bslot_code\s+text\s*:=/,'PL/pgSQL local variables must not shadow table columns');
 assert.match(sql,/insert into public\.pallet_slots[\s\S]*update public\.incoming_pallets set status='stored'/,'stock and tag status must change in one transaction');
 const locs=[...sql.matchAll(/\('[A-Z][A-Z0-9-]*','[A-Z][A-Z0-9-]*',2,(\d+)\)/g)];
 assert.equal(locs.length,40);

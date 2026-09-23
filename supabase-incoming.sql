@@ -124,15 +124,15 @@ create or replace function public.putaway_incoming_pallet(
   p_tag_id uuid,p_zone text,p_slot text,p_actor text
 ) returns jsonb language plpgsql security definer set search_path = '' as $$
 declare tag public.incoming_pallets; saved_slot public.pallet_slots;
-  zone_code text := upper(btrim(coalesce(p_zone,'')));
-  slot_code text := upper(btrim(coalesce(p_slot,'')));
+  target_zone text := upper(btrim(coalesce(p_zone,'')));
+  target_slot text := upper(btrim(coalesce(p_slot,'')));
   item jsonb;
 begin
-  if p_tag_id is null or length(zone_code) not between 1 and 20 or length(slot_code) not between 1 and 40
-    or slot_code !~ '^[A-Z][A-Z0-9-]*$' or length(btrim(coalesce(p_actor,''))) not between 1 and 100 then
+  if p_tag_id is null or length(target_zone) not between 1 and 20 or length(target_slot) not between 1 and 40
+    or target_slot !~ '^[A-Z][A-Z0-9-]*$' or length(btrim(coalesce(p_actor,''))) not between 1 and 100 then
     raise exception 'INCOMING_INVALID: tag, location and operator are required' using errcode='22023';
   end if;
-  if not exists (select 1 from public.incoming_locations where zone=zone_code and slot_code=slot_code) then
+  if not exists (select 1 from public.incoming_locations loc where loc.zone=target_zone and loc.slot_code=target_slot) then
     raise exception 'INCOMING_INVALID: unknown location' using errcode='22023';
   end if;
   select * into tag from public.incoming_pallets where id=p_tag_id for update;
@@ -147,13 +147,13 @@ begin
   perform pg_catalog.set_config('app.pallet_audit_meta',
     pg_catalog.jsonb_build_object('action','receive','actor',btrim(p_actor),'document_no',tag.receiving_no)::text,true);
   insert into public.pallet_slots(zone,slot_code,occupied,items)
-    values(zone_code,slot_code,true,pg_catalog.jsonb_build_array(item)) on conflict do nothing returning * into saved_slot;
+    values(target_zone,target_slot,true,pg_catalog.jsonb_build_array(item)) on conflict do nothing returning * into saved_slot;
   if not found then
     update public.pallet_slots set items=items||pg_catalog.jsonb_build_array(item),occupied=true,
       version=version+1,updated_at=clock_timestamp()
-      where zone=zone_code and slot_code=slot_code returning * into saved_slot;
+      where zone=target_zone and slot_code=target_slot returning * into saved_slot;
   end if;
-  update public.incoming_pallets set status='stored',zone=zone_code,slot_code=slot_code,
+  update public.incoming_pallets set status='stored',zone=target_zone,slot_code=target_slot,
     stored_by=btrim(p_actor),stored_at=clock_timestamp() where id=tag.id returning * into tag;
   perform pg_catalog.set_config('app.pallet_audit_meta','',true);
   return pg_catalog.jsonb_build_object('tag',to_jsonb(tag),'slot',to_jsonb(saved_slot));
