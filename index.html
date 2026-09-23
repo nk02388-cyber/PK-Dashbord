@@ -589,6 +589,7 @@
   .floor-pin .fp-text {
     line-height: 1; white-space: nowrap;
     font-size: clamp(3px, .88cqw, 16px);
+    transform: rotate(var(--map-label-rotation, 0deg));
     text-shadow: 0 0 .16em #fff, .08em 0 #fff, -.08em 0 #fff, 0 .08em #fff, 0 -.08em #fff;
   }
   .floor-pin:hover { filter: brightness(0.92); z-index: 5; }
@@ -688,7 +689,7 @@
   .floorplan-zoom-slots { position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 2; }
   .zoom-cad-labels { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
   .zoom-cad-label {
-    position: absolute; display: none; transform: translate(-50%, -50%);
+    position: absolute; display: none; transform: translate(-50%, -50%) rotate(var(--map-label-rotation, 0deg));
     padding: 0 .14em; border-radius: .12em; background: #fff; color: #172033;
     font-weight: 900; line-height: 1.05; white-space: nowrap; letter-spacing: -.04em;
   }
@@ -727,7 +728,7 @@
      not one of many same-size grid cells, so it stays consistently large and readable at any zoom
      level instead of shrinking/growing with the box. */
   .zoom-zone-label {
-    position: absolute; display: none; transform: translateX(-50%);
+    position: absolute; display: none; transform: translateX(-50%) rotate(var(--map-label-rotation, 0deg));
     background: #d9730d; color: #fff; font-weight: 800; font-size: 17px; letter-spacing: 0.02em;
     padding: 5px 14px; border-radius: 6px; white-space: nowrap;
     box-shadow: 0 2px 5px rgba(0,0,0,0.35);
@@ -757,6 +758,7 @@
      border-radius use em units so they scale together with font-size at any zoom level. */
   .zoom-slot-label {
     line-height: 1.6; white-space: nowrap; font-weight: 700; pointer-events: none;
+    transform: rotate(var(--map-label-rotation, 0deg));
     font-size: clamp(6px, min(46cqh, 17cqw), 19px);
     color: #1a1200;
     background: #fff3b0;
@@ -3165,6 +3167,7 @@ function ovApply() {
   const layout = overviewPortraitLayout(width, imageAspect, mapRotation);
   floorplanWrap.style.aspectRatio = String(layout.aspectRatio);
   floorplanStage.style.width = layout.stageWidth + 'px';
+  floorplanStage.style.setProperty('--map-label-rotation', `${-mapRotation}deg`);
   ovClamp();
   floorplanStage.style.transform = `translate(${ovPanX}px, ${ovPanY}px) scale(${ovScale}) translate(${layout.offsetX}px, ${layout.offsetY}px) rotate(${mapRotation}deg)`;
   const level = document.getElementById('floorplanZoomLevel');
@@ -4005,6 +4008,7 @@ function updateZoomView() {
   const rect = zoomPortraitLayout(viewportRect.width, viewportRect.height, zoomPanX, zoomPanY, mapRotation);
   zoomStage.style.width = rect.width + 'px';
   zoomStage.style.height = rect.height + 'px';
+  zoomStage.style.setProperty('--map-label-rotation', `${-mapRotation}deg`);
   zoomStage.style.transform = rect.transform;
   const bgW = FLOORPLAN_ZOOM_W * zoomScale;
   const bgH = FLOORPLAN_ZOOM_H * zoomScale;
