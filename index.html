@@ -1877,13 +1877,6 @@ header.top .header-logo { border-radius: 14px; }
 .viz-root .tab-btn .tab-badge { color: #143746; background: #e3eadd; }
 .viz-root .tab-btn.active .tab-badge { color: #173845; background: rgba(255,255,255,.58); }
 .viz-root .tab-btn .tab-badge.critical { color: #923d3d; background: #f8e8e5; }
-.stock-overview-heading { margin: 1px 0 18px; }
-.stock-overview-heading .eyebrow {
-  display: block; margin-bottom: 5px; color: #4a766b; font-size: 11px;
-  font-weight: 800; letter-spacing: .13em;
-}
-.stock-overview-heading h2 { margin: 0; color: var(--text-primary); font-size: clamp(25px, 2.1vw, 34px); line-height: 1.2; }
-.stock-overview-heading p { margin: 5px 0 0; color: var(--text-secondary); font-size: 13px; }
 .filter-bar { border-radius: 18px; padding: 12px 16px; box-shadow: var(--shadow-card); }
 .filter-bar select { border-radius: 999px; font-weight: 700; }
 .stock-update-btn { border-radius: 999px !important; background: var(--brand-blue); box-shadow: none; }
@@ -1965,8 +1958,6 @@ header.top .header-logo { border-radius: 14px; }
 @media (max-width: 700px) {
   body.viz-root { padding: 10px; }
   header.top { padding: 12px; border-radius: 17px; }
-  .stock-overview-heading { margin-top: 8px; }
-  .stock-overview-heading h2 { font-size: 24px; }
   .top-summary-row .kpi-side-row { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .top-summary-row .packaging-age-card { grid-column: 1 / -1; }
   .top-summary-row .speed-meter-card, .top-summary-row .kpi-total-fixed { height: 160px; }
@@ -2041,12 +2032,6 @@ header.top .header-logo { border-radius: 14px; }
 
   <!-- ============ TAB: STOCK ============ -->
   <div class="tab-pane" id="pane-stock" role="tabpanel" aria-labelledby="tab-stock">
-
-    <div class="stock-overview-heading">
-      <span class="eyebrow">BCL / WAREHOUSE OVERVIEW</span>
-      <h2>ภาพรวมคลังสินค้า</h2>
-      <p>พื้นที่จัดเก็บ มูลค่าสต็อก และสถานะบรรจุภัณฑ์</p>
-    </div>
 
     <div class="filter-bar">
       <label for="whFilter">เลือกคลัง:</label>
