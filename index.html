@@ -1844,6 +1844,29 @@ header.top {
 header.top h1 { font-size: clamp(17px, 1.35vw, 22px); letter-spacing: -.025em; }
 header.top .header-logo { border-radius: 14px; }
 #reportDate, .theme-toggle { border-radius: 999px; }
+#themeToggle {
+  display: inline-flex; align-items: center; justify-content: space-between;
+  width: 78px; min-width: 78px; height: 42px; min-height: 42px;
+  margin: 0; padding: 3px; gap: 2px; border: 1px solid var(--border);
+  border-radius: 999px; background: var(--surface-1); color: var(--text-secondary);
+  cursor: pointer; transition: border-color .18s ease, background-color .18s ease;
+}
+#themeToggle:hover { border-color: var(--series-1); background: var(--surface-1); }
+#themeToggle .theme-option {
+  display: grid; place-items: center; flex: 0 0 34px; width: 34px; height: 34px;
+  border-radius: 50%; transition: background-color .2s ease, color .2s ease, transform .2s ease;
+}
+#themeToggle .theme-option svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.7; fill: none; }
+:root[data-theme="light"] #themeToggle .theme-option-sun,
+:root[data-theme="dark"] #themeToggle .theme-option-moon { background: #f3d477; color: #173845; }
+:root[data-theme="dark"] #themeToggle { background: #203b46; color: #e9eee8; }
+#themeToggle:focus-visible { outline: 3px solid var(--focus-ring, #e0ce9c); outline-offset: 3px; }
+@media (max-width: 700px) {
+  header.top .meta { gap: 4px; }
+  #reportDate { padding-inline: 7px; font-size: 10px; }
+  header.top .warehouse-tour-replay { padding-inline: 8px; font-size: 11px; }
+  #themeToggle { width: 80px; min-width: 80px; height: 44px; min-height: 44px; padding: 4px; }
+}
 .tabs {
   border: 0; border-radius: var(--radius-panel); padding: 12px;
   background: var(--nav-ink); box-shadow: 0 12px 28px rgba(14,45,59,.11);
@@ -1994,7 +2017,10 @@ header.top .header-logo { border-radius: 14px; }
     <div class="meta">
       <span id="reportDate">ข้อมูล ณ วันที่ 17 ส.ค. 69</span>
       <button class="warehouse-tour-replay" id="warehouseTourReplay" type="button" aria-label="เปิดทัวร์คลังสินค้า 3D อีกครั้ง">ทัวร์คลัง 3D</button>
-      <button class="theme-toggle" id="themeToggle" type="button" aria-pressed="false">โหมดมืด</button>
+      <button class="theme-toggle" id="themeToggle" type="button" aria-pressed="false" aria-label="เปลี่ยนเป็นโหมดมืด" title="เปลี่ยนเป็นโหมดมืด">
+        <span class="theme-option theme-option-sun" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.8"/><path stroke-linecap="round" d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg></span>
+        <span class="theme-option theme-option-moon" aria-hidden="true"><svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20.3 14.1A8.5 8.5 0 0 1 9.9 3.7 8.5 8.5 0 1 0 20.3 14.1Z"/></svg></span>
+      </button>
     </div>
   </header>
 
@@ -9812,9 +9838,9 @@ const btn = document.getElementById('themeToggle');
 function applyDashboardTheme(theme, persist = false) {
   const selected = theme === 'dark' ? 'dark' : 'light';
   document.documentElement.setAttribute('data-theme', selected);
-  btn.textContent = selected === 'dark' ? 'โหมดสว่าง' : 'โหมดมืด';
   btn.setAttribute('aria-pressed', selected === 'dark' ? 'true' : 'false');
   btn.setAttribute('aria-label', selected === 'dark' ? 'เปลี่ยนเป็นโหมดสว่าง' : 'เปลี่ยนเป็นโหมดมืด');
+  btn.setAttribute('title', selected === 'dark' ? 'เปลี่ยนเป็นโหมดสว่าง' : 'เปลี่ยนเป็นโหมดมืด');
   if (persist) {
     try { localStorage.setItem('pk-dashboard-theme', selected); }
     catch (_) { /* Theme still works for this page when storage is unavailable. */ }
