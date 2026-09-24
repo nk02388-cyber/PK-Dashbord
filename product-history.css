@@ -18,6 +18,11 @@
 .product-history-product strong { color: var(--series-1); font-size: 13px; }
 .product-history-product h3 { margin: 3px 0 0; color: var(--text-primary); font-size: 18px; }
 .product-history-product > span { color: var(--text-secondary); font-size: 12px; }
+.product-history-latest-supplier { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px 18px; padding: 15px 17px; border: 1px solid var(--border); border-radius: 12px; background: var(--page-plane); }
+.product-history-latest-supplier > div { display: grid; gap: 3px; }
+.product-history-latest-supplier h3 { margin: 0; color: var(--text-primary); font-size: 14px; }
+.product-history-latest-supplier small, .product-history-latest-supplier span { color: var(--text-secondary); font-size: 12px; }
+.product-history-latest-supplier strong { color: var(--text-primary); font-size: 14px; }
 .product-history-section { display: grid; gap: 10px; min-width: 0; }
 .product-history-balance { min-width: 0; padding: 16px; border: 1px solid var(--border); border-top: 3px solid var(--series-1); border-radius: 12px; background: var(--page-plane); }
 .product-history-balance > span { display: block; color: var(--text-secondary); font-size: 12px; font-weight: 700; }

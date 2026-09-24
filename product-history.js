@@ -4,7 +4,7 @@
   const normalize = value => String(value ?? '').trim().replace(/\s+/g, ' ').toLocaleLowerCase('th-TH').replace(/[\u0e48-\u0e4b]/g, '');
   const codeKey = value => String(value ?? '').trim().toUpperCase();
 
-  function buildCatalog(stockItems, slotItems) {
+  function buildCatalog(stockItems, slotItems, latestSuppliers = {}) {
     const catalog = new Map();
     const add = (item, source) => {
       const code = codeKey(item?.code);
@@ -17,11 +17,19 @@
         if (item[field]) product.keywords.add(String(item[field]));
       }
       if (source === 'stock') product.inStock = true;
-      else product.onPallet = true;
+      if (source === 'pallet') product.onPallet = true;
     };
     for (const item of stockItems || []) add(item, 'stock');
     for (const slots of Object.values(slotItems || {})) {
       for (const items of Object.values(slots || {})) for (const item of items || []) add(item, 'pallet');
+    }
+    for (const [code, latest] of Object.entries(latestSuppliers || {})) {
+      add({code, name:latest.name}, 'supplier');
+      const product = catalog.get(codeKey(code));
+      if (product) {
+        product.fromSupplierFile = true;
+        if (latest.supplier) product.keywords.add(String(latest.supplier));
+      }
     }
     return [...catalog.values()].map(product => ({...product, name:[...product.names][0] || '', searchText:normalize([product.code,...product.names,...product.keywords].join(' '))}));
   }
@@ -101,7 +109,7 @@
 
   function renderDetail() {
     if (!selectedCode) { detailEl.hidden = true; detailEl.innerHTML = ''; return; }
-    const product = buildCatalog(STOCK.items, SLOT_ITEMS).find(row => row.code === selectedCode);
+    const product = buildCatalog(STOCK.items, SLOT_ITEMS, PK_LATEST_SUPPLIERS).find(row => row.code === selectedCode);
     if (!product) { selectedCode = ''; renderDetail(); return; }
     const stock = summarizeStock(STOCK.items, selectedCode);
     const movements = collectMovements(SLOT_ITEMS, selectedCode, getStockMovement);
@@ -110,9 +118,14 @@
     const syncFailed = document.getElementById('syncStatusBar')?.classList.contains('sync-error');
     const stockLabel = stockSnapshotState === 'latest' ? 'สต็อกล่าสุดจากระบบ' : 'สต็อกสำรองในไฟล์';
     const stockDate = String(STOCK.report_date || 'ไม่ระบุวันที่').replace(/^ณ วันที่:\s*/, '');
+    const latestSupplier = PK_LATEST_SUPPLIERS[selectedCode];
+    const supplierDetails = latestSupplier
+      ? `<strong>${escape(latestSupplier.supplier)}</strong><span>รับล่าสุด ${escape(latestSupplier.receivedOn || 'ไม่ระบุวันที่')}${latestSupplier.receipt && latestSupplier.receipt !== '-' ? ` · เอกสาร ${escape(latestSupplier.receipt)}` : ''}</span>`
+      : '<span>ไม่มีข้อมูลผู้ส่งสินค้าล่าสุดสำหรับรหัสนี้ในไฟล์ที่ได้รับ</span>';
     const balanceValues = balances.length ? balances.map(row => `<p><strong>${row.known ? fmt(row.qty) : '—'}</strong><small>${escape(row.unit)}</small></p>`).join('') : '<p><strong>—</strong></p>';
     detailEl.hidden = false;
     detailEl.innerHTML = `<div class="product-history-product"><div><strong>${escape(product.code)}</strong><h3>${escape(product.name || 'ไม่ระบุชื่อสินค้า')}</h3></div><span>${escape(stockLabel)}</span></div>
+      <section class="product-history-latest-supplier" aria-label="ผู้ส่งสินค้ารับเข้าล่าสุด"><div><h3>ผู้ส่งสินค้ารับเข้าล่าสุด</h3><small>อ้างอิงไฟล์ข้อมูลรับเข้า ณ 24 ก.ย. 69</small></div><div>${supplierDetails}</div></section>
       <section class="product-history-balance" aria-label="ยอดคงเหลือในสต็อก"><span>คงเหลือในสต็อก · ${escape(stockDate)}</span><div>${balanceValues}</div></section>
       <section class="product-history-section"><h3>ยอดคงเหลือตามคลัง</h3><p class="product-history-note">${escape(String(STOCK.report_date || 'ไม่ระบุวันที่สต็อก'))}</p>
         <div class="product-history-stock">${stock.length ? stock.map(row => `<div><span>คลัง ${escape(row.wh)} · ${escape(row.unit)}</span><strong>${row.known ? fmt(row.qty) : 'ไม่ทราบจำนวน'}</strong></div>`).join('') : '<p>ไม่มีรหัสนี้ในสต็อกที่อัปเดต</p>'}</div></section>
@@ -125,9 +138,9 @@
   function renderMatches() {
     const query = queryInput.value.trim();
     if (!query) { matchesEl.innerHTML = ''; statusEl.textContent = 'พิมพ์เพื่อค้นหาสินค้า'; renderDetail(); return; }
-    const results = searchCatalog(buildCatalog(STOCK.items, SLOT_ITEMS), query);
+    const results = searchCatalog(buildCatalog(STOCK.items, SLOT_ITEMS, PK_LATEST_SUPPLIERS), query);
     statusEl.textContent = results.length ? `พบ ${fmt(results.length)} รหัสสินค้า${results.length > 50 ? ' · แสดง 50 รายการแรก' : ''}` : 'ไม่พบชื่อหรือรหัสที่ตรงกับคำค้น';
-    matchesEl.innerHTML = results.slice(0,50).map(product => `<button type="button" class="product-history-match${product.code === selectedCode ? ' is-selected' : ''}" data-code="${escape(product.code)}"><strong>${escape(product.code)}</strong><span>${escape(product.name || 'ไม่ระบุชื่อสินค้า')}</span><small>${product.inStock ? 'มีในสต็อก' : 'พบในพาเลต'}${product.onPallet ? ' · มีบันทึกพาเลต' : ''}</small></button>`).join('');
+    matchesEl.innerHTML = results.slice(0,50).map(product => `<button type="button" class="product-history-match${product.code === selectedCode ? ' is-selected' : ''}" data-code="${escape(product.code)}"><strong>${escape(product.code)}</strong><span>${escape(product.name || 'ไม่ระบุชื่อสินค้า')}</span><small>${product.inStock ? 'มีในสต็อก' : product.onPallet ? 'พบในพาเลต' : 'พบในไฟล์ผู้ส่งสินค้า'}${product.onPallet ? ' · มีบันทึกพาเลต' : ''}</small></button>`).join('');
     renderDetail();
   }
 

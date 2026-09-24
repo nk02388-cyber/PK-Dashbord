@@ -22,6 +22,21 @@ test('searches latest stock and pallet records by code, name and keyword', () =>
   assert.deepEqual(searchCatalog(catalog,'missing'),[]);
 });
 
+test('latest supplier workbook enriches search without inventing pallet movements', () => {
+  const latest = {
+    '31-0001': {name:'ขวด JABS Lotion', supplier:'บริษัท ล่าสุด', receivedOn:'24/09/2569'},
+    'NEW-01': {name:'สินค้าใหม่', supplier:'บริษัท อีกแห่ง', receivedOn:'23/09/2569'},
+  };
+  const catalog = buildCatalog(stock, pallets, latest);
+  assert.deepEqual(searchCatalog(catalog,'บริษัท ล่าสุด').map(row => row.code),['31-0001']);
+  const supplierOnly = searchCatalog(catalog,'NEW-01')[0];
+  assert.equal(supplierOnly.name,'สินค้าใหม่');
+  assert.equal(supplierOnly.fromSupplierFile,true);
+  assert.equal(supplierOnly.inStock,false);
+  assert.equal(supplierOnly.onPallet,false);
+  assert.deepEqual(collectMovements(pallets,'NEW-01',() => ({rows:[]})),[]);
+});
+
 test('combines real pallet movements in date order and retains their location', () => {
   const rows = collectMovements(pallets,'31-0001', () => ({rows:[
     {date:'31/08/2026',label:'รับเข้า',type:'receive',qty:20},
