@@ -66,8 +66,9 @@
     align-items: center;
     gap: 11px;
     flex: none;
-    margin: 0 3px 15px;
-    padding: 4px 8px 19px;
+    min-height: 82px;
+    margin: -20px -14px 14px;
+    padding: 19px 22px 18px;
     border-bottom: 1px solid rgba(255, 255, 255, .15);
     color: #f5f6ec;
     font-size: 13px;
