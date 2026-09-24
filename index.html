@@ -1965,6 +1965,7 @@ header.top .header-logo { border-radius: 14px; }
 <link rel="stylesheet" href="dashboard-shell.css?v=20260924-2">
 <link rel="stylesheet" href="product-history.css?v=20260924-7">
 <link rel="stylesheet" href="notifications.css?v=20260924-2">
+<link rel="stylesheet" href="reorder-points.css?v=20260924-1">
 </head>
 <body class="viz-root">
 <section class="warehouse-intro" id="warehouseIntro" role="dialog" aria-modal="true" aria-labelledby="warehouseTourTitle" hidden>
@@ -2019,6 +2020,7 @@ header.top .header-logo { border-radius: 14px; }
     <div class="dashboard-nav-brand" aria-hidden="true"><img src="assets/bcl-logo.png" alt=""><span>BIO-COSLAB</span></div>
     <button class="tab-btn active" id="tab-stock" data-tab="stock" type="button" role="tab" aria-selected="true" aria-controls="pane-stock"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m4 7 8-4 8 4-8 4-8-4Z" stroke-width="1.8"/><path d="m4 7v10l8 4 8-4V7M12 11v10" stroke-width="1.8"/></svg><span>DASHBORD</span><span class="tab-badge" id="tabBadgeStock">฿32.41M</span></button>
     <button class="tab-btn" id="tab-product-history" data-tab="product-history" type="button" role="tab" aria-selected="false" aria-controls="pane-product-history" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" stroke-width="1.8"/><path d="m15.5 15.5 5 5M7.5 10.5h6m-3-3v6" stroke-width="1.8" stroke-linecap="round"/></svg><span>ค้นหาการเคลื่อนไหวสินค้า</span></button>
+    <button class="tab-btn" id="tab-reorder" data-tab="reorder" type="button" role="tab" aria-selected="false" aria-controls="pane-reorder" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 19h16M6 16V8h3v8m3 0V5h3v11m3 0v-5h2v5M5 4h3m-3 4h2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>จุดสั่งซื้อสินค้า</span><span class="tab-badge critical" id="tabBadgeReorder">รอสต็อก</span></button>
     <button class="tab-btn" id="tab-floorplan" data-tab="floorplan" type="button" role="tab" aria-selected="false" aria-controls="pane-floorplan" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z" stroke-width="1.8"/><path d="M9 3v15m6-12v15" stroke-width="1.8"/></svg><span>เบิกและรับคืนเบิก</span><span class="tab-badge" id="tabBadgeFloorplan">46 โซน</span></button>
     <button class="tab-btn" id="tab-incoming" data-tab="incoming" type="button" role="tab" aria-selected="false" aria-controls="pane-incoming" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 17v4h16v-4M4 7h4m8 0h4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>รับเข้าและจัดเก็บ</span><span class="tab-badge" id="tabBadgeIncoming">—</span></button>
     <button class="tab-btn" id="tab-bompk" data-tab="bompk" type="button" role="tab" aria-selected="false" aria-controls="pane-bompk" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 21V9l6 3V8l6 4V5h6v16H3Z" stroke-width="1.8"/><path d="M7 17h2m3 0h2m3 0h2" stroke-width="1.8"/></svg><span>ความพร้อมบรรจุภัณฑ์ (BOM PK)</span><span class="tab-badge critical" id="tabBadgeBompk">612 ติดขัด</span></button>
@@ -2043,6 +2045,18 @@ header.top .header-logo { border-radius: 14px; }
       <p id="productHistorySearchStatus" class="product-history-status" role="status" aria-live="polite">พิมพ์เพื่อค้นหาสินค้า</p>
       <div id="productHistoryMatches" class="product-history-matches"></div>
       <div id="productHistoryDetail" class="product-history-detail" hidden></div>
+    </section>
+  </div>
+
+  <div class="tab-pane" id="pane-reorder" role="tabpanel" aria-labelledby="tab-reorder" hidden>
+    <section class="panel reorder-panel" aria-labelledby="reorderTitle">
+      <h2 id="reorderTitle">จุดสั่งซื้อสินค้า</h2>
+      <p class="reorder-notice" id="reorderNotice"></p>
+      <p class="reorder-notice">แจ้งเตือนเฉพาะสินค้าที่ใช้สม่ำเสมอหรือเป็นช่วงและมีประวัติอย่างน้อย 8 สัปดาห์ · ไม่นับสต็อกคลัง Hold, รอทำลาย และนำกลับมาใช้ใหม่</p>
+      <div class="reorder-summary" id="reorderSummary" aria-label="สรุปจุดสั่งซื้อ"></div>
+      <div class="reorder-controls"><input id="reorderSearch" type="search" aria-label="ค้นหารหัส ชื่อสินค้า หรือผู้ขาย" placeholder="ค้นหารหัส ชื่อสินค้า หรือผู้ขาย"><select id="reorderFilter" aria-label="กรองสถานะจุดสั่งซื้อ"><option value="all">ทุกสถานะ</option><option value="alert">ถึงจุดสั่งซื้อ</option><option value="review">ทบทวนเกณฑ์</option><option value="unmatched">จับคู่สต็อกไม่ได้</option><option value="normal">ปกติ</option></select></div>
+      <p class="reorder-count" id="reorderCount"></p>
+      <div class="reorder-table-wrap"><table class="reorder-table"><thead><tr><th>สินค้า</th><th>ผู้ขายหลัก</th><th class="num">สต็อกที่ใช้ได้</th><th class="num">ROP</th><th class="num">ขาดจาก ROP</th><th>หน่วย</th><th>สถานะ / รูปแบบใช้</th></tr></thead><tbody id="reorderRows"></tbody></table></div>
     </section>
   </div>
 
@@ -6594,6 +6608,7 @@ function rebuildStockControls() {
   if (fseAddCode.value.trim() && editingSlot) renderAddProductSuggestions(fseAddCode.value);
   window.PKProductHistory?.refresh();
   globalThis.PKNotifications?.refreshStock();
+  globalThis.PKReorder?.refresh();
 }
 
 let stockSnapshotState = 'loading';
@@ -6606,6 +6621,7 @@ function renderStockSnapshotNotice() {
     el.classList.toggle('snapshot-warning', stockSnapshotState !== 'latest');
   });
   globalThis.PKNotifications?.refreshStock();
+  globalThis.PKReorder?.refresh();
 }
 async function loadLatestStockFromSupabase() {
   if (!stockSupabaseClient) {
@@ -9802,7 +9818,9 @@ window.addEventListener('pageshow', () => {
 <script src="daily-movements.js"></script>
 <script src="latest-suppliers.js?v=20260924-1"></script>
 <script src="product-history.js?v=20260924-7"></script>
-<script src="notifications.js?v=20260924-2"></script>
+<script src="reorder-points-data.js?v=20260924-1"></script>
+<script src="reorder-points.js?v=20260924-1"></script>
+<script src="notifications.js?v=20260924-3"></script>
 <script src="receipt-plan.js"></script>
 <script src="welcome-greeting.js?v=20260924-1" defer></script>
 <script src="warehouse-intro.js?v=20260924-1" defer></script>

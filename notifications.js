@@ -73,13 +73,13 @@
   function render() {
     ensureCurrentDay();
     const stockReady = stockSnapshotState === 'latest';
-    const low = stockReady ? findLowStock(STOCK.items) : {configured:0,rows:[]};
+    const reorderRows = stockReady ? PKReorder.evaluate(PK_ROP_DATA,STOCK.items).filter(row => row.status === 'alert') : [];
     const negative = stockReady ? negativeStock(STOCK.items) : [];
     const bomCount = stockReady ? Number(/^\s*([\d,]+)/.exec(document.getElementById('tabBadgeBompk')?.textContent || '')?.[1].replace(/,/g,'')) || 0 : 0;
     const syncProblem = document.getElementById('syncStatusBar')?.classList.contains('sync-error') || document.getElementById('syncStatusBar')?.classList.contains('sync-unavailable');
     const actions = [];
     if (pending.count > 0) actions.push({kind:'pending',tone:'warning',title:`${fmt(pending.count)} พาเลตรอจัดเก็บ`,detail:[...new Set(pending.rows.map(row => row.product_code).filter(Boolean))].join(' · ') || 'เปิดรายการรับเข้าและจัดเก็บ'});
-    if (low.rows.length) actions.push({kind:'low',tone:'warning',title:`สินค้าเหลือต่ำ ${fmt(low.rows.length)} รหัส`,detail:`${low.rows[0].code} · คงเหลือ ${fmt(low.rows[0].qty)} ${low.rows[0].unit} / ขั้นต่ำ ${fmt(low.rows[0].minimum)}`});
+    if (reorderRows.length) actions.push({kind:'reorder',tone:'warning',title:`ถึงจุดสั่งซื้อ ${fmt(reorderRows.length)} รหัส`,detail:`${reorderRows[0].code} · คงเหลือ ${fmt(reorderRows[0].available)} ${reorderRows[0].unit} / ROP ${fmt(reorderRows[0].rop)}`});
     if (negative.length) actions.push({kind:'negative',tone:'critical',title:`สต็อกติดลบ ${fmt(negative.length)} รายการ`,detail:`เริ่มตรวจที่รหัส ${negative[0].code}`});
     if (bomCount > 0) actions.push({kind:'bom',tone:'critical',title:`บรรจุภัณฑ์ไม่พร้อม ${fmt(bomCount)} FG`,detail:'เปิดหน้าความพร้อมบรรจุภัณฑ์เพื่อตรวจสอบ'});
     if (stockSnapshotState === 'fallback') actions.push({kind:'stock',tone:'warning',title:'โหลดสต็อกล่าสุดไม่ได้',detail:'กำลังแสดงข้อมูลสำรองในไฟล์'});
@@ -92,7 +92,6 @@
     toggle.setAttribute('aria-label',currentActions.length ? `เปิดการแจ้งเตือน ${currentActions.length} ประเภท` : 'เปิดการแจ้งเตือน');
     list.innerHTML = currentActions.length ? currentActions.map(action => `<button type="button" class="notification-item" data-action="${action.kind}" data-tone="${action.tone}"><strong>${escape(action.title)}</strong><small>${escape(action.detail)}</small></button>`).join('') : `<p class="notification-empty">${actions.length ? 'ล้างการแจ้งเตือนวันนี้แล้ว · รายการใหม่จะแสดงเมื่อข้อมูลเปลี่ยน' : 'ไม่มีรายการที่ต้องดำเนินการ'}</p>`;
     if (pending.count == null && !pending.error) list.insertAdjacentHTML('beforeend','<p class="notification-empty">กำลังตรวจรายการรอจัดเก็บ…</p>');
-    if (stockReady && !low.configured) list.insertAdjacentHTML('beforeend','<p class="notification-hint">ยังไม่มีเกณฑ์ขั้นต่ำรายสินค้า จึงยังไม่แจ้งเตือนสินค้าเหลือต่ำ</p>');
   }
 
   async function refreshPending() {
@@ -148,8 +147,9 @@
       document.getElementById('tab-incoming')?.click();
       document.querySelector('[data-incoming-view="history"]')?.click();
     } else if (action === 'bom') document.getElementById('tab-bompk')?.click();
-    else if (action === 'low' || action === 'negative') {
-      const item = action === 'low' ? findLowStock(STOCK.items).rows[0] : negativeStock(STOCK.items)[0];
+    else if (action === 'reorder') document.getElementById('tab-reorder')?.click();
+    else if (action === 'negative') {
+      const item = negativeStock(STOCK.items)[0];
       if (item) { document.getElementById('tab-product-history')?.click(); window.PKProductHistory?.open(item.code); }
     } else if (action === 'stock') document.getElementById('tab-stock')?.click();
     else if (action === 'sync') document.getElementById('tab-floorplan')?.click();

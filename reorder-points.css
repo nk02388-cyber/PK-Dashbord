@@ -1,0 +1,26 @@
+.reorder-panel{display:grid;gap:16px;min-width:0}
+.reorder-panel h2{margin:0;font-size:20px}
+.reorder-notice{margin:0;color:var(--text-secondary);font-size:13px;line-height:1.5}
+.reorder-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.reorder-summary>div{display:grid;gap:4px;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--page-plane)}
+.reorder-summary strong{font-size:22px;font-variant-numeric:tabular-nums}
+.reorder-summary span{font-size:12px;color:var(--text-secondary)}
+.reorder-controls{display:flex;gap:10px;flex-wrap:wrap}
+.reorder-controls input,.reorder-controls select{min-height:44px;border:1px solid var(--border);border-radius:9px;padding:8px 11px;background:var(--surface-1);color:var(--text-primary);font:inherit}
+.reorder-controls input{flex:1 1 230px;min-width:0}
+.reorder-controls select{flex:0 1 220px}
+.reorder-count{margin:0;color:var(--text-secondary);font-size:12px}
+.reorder-table-wrap{max-height:65vh;overflow:auto;border:1px solid var(--border);border-radius:12px}
+.reorder-table{width:100%;min-width:850px;border-collapse:collapse;font-size:12px}
+.reorder-table th,.reorder-table td{padding:10px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+.reorder-table th{position:sticky;top:0;z-index:1;background:var(--page-plane);white-space:nowrap}
+.reorder-table td small{display:block;margin-top:4px;color:var(--text-secondary);line-height:1.35}
+.reorder-table .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.reorder-code{border:0;padding:0;background:none;color:var(--series-1);font:inherit;font-weight:700;cursor:pointer}
+.reorder-code:hover{text-decoration:underline}
+.reorder-status{display:inline-block;padding:3px 7px;border-radius:999px;background:var(--page-plane);white-space:nowrap;font-weight:700}
+.reorder-status[data-status="alert"]{background:var(--status-critical-wash);color:var(--status-critical)}
+.reorder-status[data-status="review"]{background:var(--status-warning-wash,#fff0ca);color:var(--text-primary)}
+.reorder-empty{text-align:center!important;color:var(--text-secondary)}
+.reorder-controls input:focus-visible,.reorder-controls select:focus-visible,.reorder-code:focus-visible{outline:3px solid var(--focus-ring,#e0ce9c);outline-offset:2px}
+@media(max-width:700px){.reorder-panel{padding:16px}.reorder-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.reorder-controls select{flex:1 1 100%}.reorder-controls input{font-size:16px}}
