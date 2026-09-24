@@ -8,7 +8,7 @@ const stock = [
   {code:'31-0002', name:'ฝา JABS', wh:'201', unit:'ชิ้น', qty:5},
 ];
 const pallets = {A:{'A-01':[
-  {code:'31-0001', name:'ขวด JABS Lotion', lotNo:'LOT-1'},
+  {code:'31-0001', name:'ขวด JABS Lotion', lotNo:'LOT-1', supplierName:'บริษัท ผู้ส่งสินค้า'},
   {code:'OLD-01', name:'สินค้าเก่า', lotNo:'LOT-2'},
 ]}};
 
@@ -31,6 +31,8 @@ test('combines real pallet movements in date order and retains their location', 
   assert.equal(rows[0].zone,'A');
   assert.equal(rows[0].slot,'A-01');
   assert.equal(rows[0].lotNo,'LOT-1');
+  assert.equal(rows[0].supplierName,'','issue rows must not be attributed to the receipt supplier');
+  assert.equal(rows[1].supplierName,'บริษัท ผู้ส่งสินค้า');
   assert.deepEqual(collectMovements(pallets,'31-0002',() => ({rows:[]})),[]);
 });
 
