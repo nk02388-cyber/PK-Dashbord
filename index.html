@@ -15,6 +15,14 @@
     } catch (_) { /* Storage can be unavailable in private/restricted webviews. */ }
     document.documentElement.setAttribute('data-theme', theme);
   })();
+  try {
+    if (sessionStorage.getItem('pk-warehouse-tour-seen') !== '1')
+      document.documentElement.classList.add('tour-pending');
+  } catch (_) { document.documentElement.classList.add('tour-pending'); }
+  // If the intro controller cannot load, never leave the dashboard hidden.
+  window.setTimeout(() => {
+    if (!window.warehouseTour) document.documentElement.classList.remove('tour-pending');
+  }, 8000);
 </script>
 <style>
   :root { color-scheme: light; }
@@ -1944,8 +1952,34 @@ header.top .header-logo { border-radius: 14px; }
   #areaZoneTable { min-width: 520px; }
 }
 </style>
+<link rel="stylesheet" href="warehouse-intro.css?v=20260924-1">
 </head>
 <body class="viz-root">
+<section class="warehouse-intro" id="warehouseIntro" role="dialog" aria-modal="true" aria-labelledby="warehouseTourTitle" hidden>
+  <div class="warehouse-intro-scene" id="warehouseIntroScene" aria-hidden="true">
+    <div class="warehouse-intro-fallback"></div>
+  </div>
+  <div class="warehouse-intro-shade" aria-hidden="true"></div>
+  <div class="warehouse-intro-inner">
+    <div class="warehouse-intro-top">
+      <div class="warehouse-intro-brand"><span class="warehouse-intro-mark">BCL</span><span>PACKAGING STOCK<br>INVENTORY</span></div>
+      <span class="warehouse-intro-index">WAREHOUSE TOUR · 3D</span>
+    </div>
+    <div class="warehouse-intro-copy">
+      <span class="warehouse-intro-eyebrow" id="warehouseTourEyebrow">01 / 03 · ประตูคลัง</span>
+      <h2 id="warehouseTourTitle">สำรวจคลังสินค้า<br><em>ก่อนดูข้อมูลจริง</em></h2>
+      <p id="warehouseTourDescription">เดินผ่านทางเดินและชั้นวางพาเลต แล้วเข้าสู่แดชบอร์ดสินค้าคงคลัง</p>
+      <div class="warehouse-intro-actions">
+        <button class="warehouse-intro-primary" id="warehouseTourNext" type="button">เริ่มทัวร์ <span aria-hidden="true">→</span></button>
+        <button class="warehouse-intro-skip" id="warehouseTourSkip" type="button">ข้ามไปหน้าเว็บ</button>
+      </div>
+    </div>
+    <div class="warehouse-intro-bottom">
+      <div class="warehouse-intro-progress" role="progressbar" aria-label="ความคืบหน้าทัวร์คลังสินค้า" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="warehouseTourProgress"><span></span></div>
+      <div class="warehouse-intro-hint"><span class="warehouse-intro-wheel" aria-hidden="true"></span><span class="warehouse-intro-desktop-hint">เลื่อนลูกกลิ้งเมาส์เพื่อเดินผ่านคลัง</span><span class="warehouse-intro-touch-hint">ปัดขึ้นเพื่อเดินผ่านคลัง</span></div>
+    </div>
+  </div>
+</section>
 <a class="skip-link" href="#mainDashboard">ข้ามไปยังเนื้อหาหลัก</a>
 <div class="wrap" id="mainDashboard" tabindex="-1">
 
@@ -1959,6 +1993,7 @@ header.top .header-logo { border-radius: 14px; }
     </div>
     <div class="meta">
       <span id="reportDate">ข้อมูล ณ วันที่ 17 ส.ค. 69</span>
+      <button class="warehouse-tour-replay" id="warehouseTourReplay" type="button" aria-label="เปิดทัวร์คลังสินค้า 3D อีกครั้ง">ทัวร์คลัง 3D</button>
       <button class="theme-toggle" id="themeToggle" type="button" aria-pressed="false">โหมดมืด</button>
     </div>
   </header>
@@ -9808,6 +9843,8 @@ window.addEventListener('pageshow', () => {
 <script src="incoming-ui.js?v=20260923-8"></script>
 <script src="daily-movements.js"></script>
 <script src="receipt-plan.js"></script>
+<script src="warehouse-intro.js?v=20260924-1" defer></script>
+<script type="module" src="warehouse-scene.js?v=20260924-1"></script>
 
 
 </body></html>
