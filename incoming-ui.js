@@ -134,19 +134,20 @@
     $('incomingGoPutaway').hidden=false;
   }
   async function refreshList() {
-    if (!supabaseClient) { status('incomingListStatus','ยังไม่ได้เชื่อมต่อฐานข้อมูล',true); return; }
+    if (!supabaseClient) { status('incomingListStatus','ยังไม่ได้เชื่อมต่อฐานข้อมูล',true); window.PKNotifications?.refresh(); return; }
     const {data,error}=await supabaseClient.from('incoming_pallets').select('*').order('received_at',{ascending:false}).limit(100);
     if (error) {
       status('incomingListStatus',error.code==='42P01'||error.code==='PGRST205'
         ? 'ยังไม่มีตารางรับเข้าในฐานข้อมูล · ต้องติดตั้ง supabase-incoming.sql ก่อนใช้งาน'
         : 'โหลดรายการรับเข้าไม่ได้: '+error.message,true);
-      $('incomingList').replaceChildren(); return;
+      $('incomingList').replaceChildren(); window.PKNotifications?.refresh(); return;
     }
     const rows=data||[];
     $('tabBadgeIncoming').textContent=`${rows.filter(row=>row.status==='pending').length} รอจัดเก็บ`;
     status('incomingListStatus',`แสดง ${rows.length} ป้ายล่าสุด · รอจัดเก็บ ${rows.filter(row=>row.status==='pending').length} ป้าย`);
     $('incomingList').innerHTML=rows.length?rows.map(row=>`<article class="incoming-record"><div class="incoming-record-head"><strong>${esc(row.receiving_no)} · ป้าย ${esc(labelSequence(row))}</strong><span class="incoming-record-status" data-stored="${row.status==='stored'}">${row.status==='stored'?'จัดเก็บแล้ว':'รอจัดเก็บ'}</span></div><div class="incoming-record-name">${esc(row.product_code)} · ${esc(row.product_name)}</div><div class="incoming-record-meta"><span>${esc(row.quantity)} ${esc(row.unit)}</span><span>${row.status==='stored'?`ตำแหน่ง ${esc(row.zone)}/${esc(row.slot_code)}`:'ยังไม่มีตำแหน่ง'}</span></div><div class="incoming-record-actions">${row.status==='pending'?`<button type="button" data-select-tag="${esc(row.id)}">เลือกจัดเก็บ</button>`:''}<button type="button" data-print-tag="${esc(row.id)}">พิมพ์ป้ายนี้</button>${row.batch_id?`<button type="button" data-print-batch="${esc(row.batch_id)}">พิมพ์ทั้งชุด</button>`:''}</div></article>`).join(''):'ยังไม่มีป้ายรับเข้า';
     $('incomingList')._rows=rows;
+    window.PKNotifications?.refresh();
   }
   function updatePutaway() {
     const ready=selectedTag?.status==='pending'&&selectedLocation;

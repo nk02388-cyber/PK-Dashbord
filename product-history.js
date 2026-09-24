@@ -148,5 +148,8 @@
   document.getElementById('productHistoryClear').addEventListener('click', () => {
     queryInput.value = ''; selectedCode = ''; shown = 100; renderMatches(); queryInput.focus();
   });
-  window.PKProductHistory = {refresh() { if (queryInput.value.trim() || selectedCode) renderMatches(); }};
+  window.PKProductHistory = {
+    refresh() { if (queryInput.value.trim() || selectedCode) renderMatches(); },
+    open(code) { queryInput.value = String(code || '').trim(); selectedCode = codeKey(code); shown = 100; renderMatches(); }
+  };
 })();

@@ -1963,6 +1963,7 @@ header.top .header-logo { border-radius: 14px; }
 <link rel="stylesheet" href="warehouse-intro.css?v=20260924-2">
 <link rel="stylesheet" href="dashboard-shell.css?v=20260924-2">
 <link rel="stylesheet" href="product-history.css?v=20260924-4">
+<link rel="stylesheet" href="notifications.css?v=20260924-1">
 </head>
 <body class="viz-root">
 <section class="warehouse-intro" id="warehouseIntro" role="dialog" aria-modal="true" aria-labelledby="warehouseTourTitle" hidden>
@@ -2001,6 +2002,10 @@ header.top .header-logo { border-radius: 14px; }
     <div class="meta">
       <span id="reportDate">ข้อมูล ณ วันที่ 17 ส.ค. 69</span>
       <button class="warehouse-tour-replay" id="warehouseTourReplay" type="button" aria-label="เปิดทัวร์คลังสินค้า 3D อีกครั้ง">ทัวร์คลัง 3D</button>
+      <div class="notification-anchor">
+        <button class="notification-toggle" id="notificationToggle" type="button" aria-label="เปิดการแจ้งเตือน" aria-expanded="false" aria-controls="notificationPanel" title="การแจ้งเตือน"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="notification-badge" id="notificationBadge" hidden></span></button>
+        <section class="notification-panel" id="notificationPanel" aria-label="การแจ้งเตือน" hidden><div class="notification-panel-head"><h2>การแจ้งเตือน</h2><button id="notificationRefresh" type="button">รีเฟรช</button></div><div id="notificationItems" class="notification-items" aria-live="polite"></div></section>
+      </div>
       <button class="theme-toggle" id="themeToggle" type="button" aria-pressed="false" aria-label="เปลี่ยนเป็นโหมดมืด" title="เปลี่ยนเป็นโหมดมืด">
         <span class="theme-option theme-option-sun" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.8"/><path stroke-linecap="round" d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg></span>
         <span class="theme-option theme-option-moon" aria-hidden="true"><svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20.3 14.1A8.5 8.5 0 0 1 9.9 3.7 8.5 8.5 0 1 0 20.3 14.1Z"/></svg></span>
@@ -3758,6 +3763,7 @@ function setSyncStatus(state, text) {
   syncStatusBar.classList.remove('sync-connecting', 'sync-connected', 'sync-error', 'sync-unavailable');
   syncStatusBar.classList.add('sync-' + state);
   if (syncStatusText) syncStatusText.textContent = text;
+  globalThis.PKNotifications?.refreshStock();
 }
 
 if (!supabaseClient) {
@@ -6586,6 +6592,7 @@ function rebuildStockControls() {
   if (window.__bomUiReady) recalculateBomFromStock();
   if (fseAddCode.value.trim() && editingSlot) renderAddProductSuggestions(fseAddCode.value);
   window.PKProductHistory?.refresh();
+  globalThis.PKNotifications?.refreshStock();
 }
 
 let stockSnapshotState = 'loading';
@@ -6597,6 +6604,7 @@ function renderStockSnapshotNotice() {
     el.textContent = `สต็อกอ้างอิง: ${date} · ${messages[stockSnapshotState]}`;
     el.classList.toggle('snapshot-warning', stockSnapshotState !== 'latest');
   });
+  globalThis.PKNotifications?.refreshStock();
 }
 async function loadLatestStockFromSupabase() {
   if (!stockSupabaseClient) {
@@ -9787,9 +9795,10 @@ window.addEventListener('pageshow', () => {
 <script src="barcode-operations.js?v=20260923-3"></script>
 <script src="barcode-ui.js?v=20260923-3"></script>
 <script src="incoming-workflow.js?v=20260923-4"></script>
-<script src="incoming-ui.js?v=20260923-8"></script>
+<script src="incoming-ui.js?v=20260924-1"></script>
 <script src="daily-movements.js"></script>
-<script src="product-history.js?v=20260924-4"></script>
+<script src="product-history.js?v=20260924-5"></script>
+<script src="notifications.js?v=20260924-1"></script>
 <script src="receipt-plan.js"></script>
 <script src="welcome-greeting.js?v=20260924-1" defer></script>
 <script src="warehouse-intro.js?v=20260924-1" defer></script>
