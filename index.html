@@ -1390,75 +1390,75 @@
 
   /* DESIGN.md is the source of truth for these shared visual tokens. */
   .viz-root {
-    --brand-blue: #0f62fe;
-    --brand-blue-hover: #0050e6;
-    --radius-control: 4px;
-    --radius-panel: 8px;
+    --brand-blue: #214e63;
+    --brand-blue-hover: #183f51;
+    --radius-control: 12px;
+    --radius-panel: 20px;
     --space-xs: 4px;
     --space-sm: 8px;
     --space-md: 12px;
     --space-lg: 16px;
     --space-xl: 24px;
-    --surface-1: #ffffff;
-    --page-plane: #f4f4f4;
-    --text-primary: #161616;
-    --text-secondary: #525252;
-    --text-muted: #6f6f6f;
-    --gridline: #eeeeee;
-    --baseline: #bdbdbd;
-    --border: #d4d4d4;
+    --surface-1: #fffefa;
+    --page-plane: #ebede4;
+    --text-primary: #152b34;
+    --text-secondary: #52636a;
+    --text-muted: #6d7b7d;
+    --gridline: #f1f2eb;
+    --baseline: #cbd3cc;
+    --border: #dce3dc;
     --series-1: var(--brand-blue);
-    --series-1-wash: rgba(30,64,175,.09);
-    --series-1-light: #dbeafe;
-    --status-critical: #da1e28;
+    --series-1-wash: rgba(33,78,99,.09);
+    --series-1-light: #dceadf;
+    --status-critical: #b84c4c;
     --status-critical-wash: rgba(220,38,38,.09);
-    --status-warning: #f1c21b;
-    --status-good: #198038;
-    --status-good-wash: rgba(21,128,61,.10);
-    --shadow-card: none;
+    --status-warning: #e0ce9c;
+    --status-good: #2d7758;
+    --status-good-wash: rgba(50,135,101,.11);
+    --shadow-card: 0 8px 28px rgba(20,51,66,.045);
     --shadow-float: 0 20px 48px rgba(0,0,0,.28);
     --radius-card: var(--radius-panel);
   }
   @media (prefers-color-scheme: dark) {
     :root:where(:not([data-theme="light"])) .viz-root {
-      --surface-1: #262626;
-      --page-plane: #161616;
-      --text-primary: #f4f4f4;
-      --text-secondary: #c6c6c6;
-      --text-muted: #a8a8a8;
-      --gridline: #393939;
-      --baseline: #6f6f6f;
-      --border: #525252;
-      --series-1: #78a9ff;
-      --series-1-wash: rgba(120,169,255,.14);
-      --series-1-light: #1a3f78;
+      --surface-1: #1b303b;
+      --page-plane: #10232e;
+      --text-primary: #f6f4e9;
+      --text-secondary: #c5d3d0;
+      --text-muted: #a9bab8;
+      --gridline: #2b4651;
+      --baseline: #4b6269;
+      --border: #385360;
+      --series-1: #8fcaad;
+      --series-1-wash: rgba(143,202,173,.14);
+      --series-1-light: #234a43;
       --status-critical: #ff8389;
       --status-critical-wash: rgba(255,131,137,.12);
-      --status-warning: #f1c21b;
-      --status-good: #42be65;
+      --status-warning: #e0ce9c;
+      --status-good: #87c9a0;
       --status-good-wash: rgba(66,190,101,.14);
-      --shadow-card: none;
+      --shadow-card: 0 8px 28px rgba(0,0,0,.10);
       --shadow-float: 0 24px 70px rgba(0,0,0,.55);
     }
   }
   :root[data-theme="dark"] .viz-root {
-    --surface-1: #262626;
-    --page-plane: #161616;
-    --text-primary: #f4f4f4;
-    --text-secondary: #c6c6c6;
-    --text-muted: #a8a8a8;
-    --gridline: #393939;
-    --baseline: #6f6f6f;
-    --border: #525252;
-    --series-1: #78a9ff;
-    --series-1-wash: rgba(120,169,255,.14);
-    --series-1-light: #1a3f78;
+    --surface-1: #1b303b;
+    --page-plane: #10232e;
+    --text-primary: #f6f4e9;
+    --text-secondary: #c5d3d0;
+    --text-muted: #a9bab8;
+    --gridline: #2b4651;
+    --baseline: #4b6269;
+    --border: #385360;
+    --series-1: #8fcaad;
+    --series-1-wash: rgba(143,202,173,.14);
+    --series-1-light: #234a43;
     --status-critical: #ff8389;
     --status-critical-wash: rgba(255,131,137,.12);
-    --status-warning: #f1c21b;
-    --status-good: #42be65;
+    --status-warning: #e0ce9c;
+    --status-good: #87c9a0;
     --status-good-wash: rgba(66,190,101,.14);
-    --shadow-card: none;
+    --shadow-card: 0 8px 28px rgba(0,0,0,.10);
     --shadow-float: 0 24px 70px rgba(0,0,0,.55);
   }
 
@@ -1824,6 +1824,125 @@
 @media (prefers-reduced-motion: reduce) {
   .viz-root :where(button, input, select, textarea, .tab-btn, tbody tr) { transition: none; }
 }
+
+/* Warehouse overview: adapted from the reference's navy rail, warm work surface,
+   rounded inventory modules and a clear primary/secondary information hierarchy. */
+.viz-root { --nav-ink: #193e50; --nav-active: #f3d477; --nav-text: #edf4f0; }
+body.viz-root { padding: 16px; }
+header.top {
+  min-height: 82px; padding: 13px 20px; border-radius: var(--radius-panel);
+  background: var(--surface-1); box-shadow: var(--shadow-card);
+}
+header.top h1 { font-size: clamp(17px, 1.35vw, 22px); letter-spacing: -.025em; }
+header.top .header-logo { border-radius: 14px; }
+#reportDate, .theme-toggle { border-radius: 999px; }
+.tabs {
+  border: 0; border-radius: var(--radius-panel); padding: 12px;
+  background: var(--nav-ink); box-shadow: 0 12px 28px rgba(14,45,59,.11);
+}
+.viz-root .tab-btn { color: var(--nav-text); border-radius: 999px; }
+.viz-root .tab-btn:hover:not(.active) { color: #fff; background: rgba(255,255,255,.11); border-color: transparent; }
+.viz-root .tab-btn.active { color: #173845; background: var(--nav-active); border-color: var(--nav-active); }
+.viz-root .tab-btn .tab-badge { color: #143746; background: #e3eadd; }
+.viz-root .tab-btn.active .tab-badge { color: #173845; background: rgba(255,255,255,.58); }
+.viz-root .tab-btn .tab-badge.critical { color: #923d3d; background: #f8e8e5; }
+.stock-overview-heading { margin: 1px 0 18px; }
+.stock-overview-heading .eyebrow {
+  display: block; margin-bottom: 5px; color: #4a766b; font-size: 11px;
+  font-weight: 800; letter-spacing: .13em;
+}
+.stock-overview-heading h2 { margin: 0; color: var(--text-primary); font-size: clamp(25px, 2.1vw, 34px); line-height: 1.2; }
+.stock-overview-heading p { margin: 5px 0 0; color: var(--text-secondary); font-size: 13px; }
+.filter-bar { border-radius: 18px; padding: 12px 16px; box-shadow: var(--shadow-card); }
+.filter-bar select { border-radius: 999px; font-weight: 700; }
+.stock-update-btn { border-radius: 999px !important; background: var(--brand-blue); box-shadow: none; }
+.stock-update-btn:hover { background: var(--brand-blue-hover); }
+.table-scroll-hint { display: none; }
+.panel, .kpi, .speed-meter-card, .packaging-age-card {
+  border-radius: var(--radius-panel); box-shadow: var(--shadow-card);
+}
+.panel { padding: 20px; }
+.panel h2 { font-size: 16px; }
+.top-summary-row {
+  display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(330px, 1fr);
+  gap: 16px; align-items: stretch; margin-bottom: 16px;
+}
+.top-summary-row > .panel { min-width: 0; margin: 0; }
+.top-summary-row .kpi-side-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px; min-width: 0; margin: 0;
+}
+.top-summary-row .packaging-age-card,
+.top-summary-row .speed-meter-card,
+.top-summary-row .kpi-total-fixed { width: 100%; min-width: 0; }
+.top-summary-row .packaging-age-card { grid-column: 1 / -1; min-height: 0; padding: 16px 18px; }
+.top-summary-row .speed-meter-card,
+.top-summary-row .kpi-total-fixed { height: 160px; }
+.top-summary-row .speed-meter-card { justify-content: flex-start; padding: 12px 10px; overflow: hidden; }
+.top-summary-row .speed-meter-card .sm-gauge-wrap { width: 142px; height: 79px; flex: none; }
+.top-summary-row .speed-meter-card .sm-value { margin-top: -2px; }
+.top-summary-row .packaging-age-title { font-size: 14px; margin-bottom: 10px; }
+.top-summary-row .packaging-age-table th { background: #f1e6c8; }
+.kpi-total-fixed { background: #e0ce9c; border: 0; }
+.kpi-total-fixed .label, .kpi-total-fixed .value, .kpi-total-fixed .sub { color: #183847; }
+.kpi-total-fixed .value { font-size: clamp(22px, 1.8vw, 29px); }
+#areaZoneTable { width: 100%; margin-top: 12px; border-collapse: separate; border-spacing: 0; }
+#areaZoneTable th { background: #eff3ef; color: #52636a; border-bottom: 1px solid var(--border); }
+#areaZoneTable td { padding-block: 16px; }
+#areaZoneTable tbody tr:last-child td { background: #f7efd6; color: #183847; font-weight: 800; }
+.building-visual { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+.building-visual-title { margin: 0 0 12px; color: var(--text-secondary); font-size: 12px; font-weight: 800; }
+.building-visual-row { display: grid; grid-template-columns: 78px minmax(0, 1fr) 42px; align-items: center; gap: 11px; margin: 9px 0; font-size: 12px; }
+.building-visual-row strong { font-weight: 800; }
+.building-visual-row em { color: var(--text-secondary); font-style: normal; text-align: right; font-variant-numeric: tabular-nums; }
+.building-visual-cells { display: grid; grid-template-columns: repeat(20, minmax(0, 1fr)); gap: 4px; min-width: 0; }
+.building-visual-cells i { display: block; height: 25px; border-radius: 6px; background: #e9eee9; }
+.building-visual-cells i.is-used { background: #78b996; }
+.building-visual-row:nth-of-type(2) .building-visual-cells i.is-used { background: #d8bd72; }
+.two-col { gap: 16px; }
+.bar-track { border-radius: 999px; }
+.bar-fill, .barchart.vertical .bar-fill { background: #78b996; }
+#whChart .bar-fill { background: #d7b758; }
+.viz-root :where(.panel, .filter-bar, .incoming-step, .barcode-print-card) :where(input, select, textarea) { border-radius: 11px; }
+.viz-root :where(.incoming-step, .incoming-record-actions) :where(.incoming-primary, [data-select-tag]):hover:not(:disabled),
+.viz-root .incoming-view-nav button[aria-pressed="true"],
+.viz-root .incoming-step .incoming-primary,
+.viz-root .incoming-record-actions button[data-select-tag] { background: var(--brand-blue); border-color: var(--brand-blue); color: #fff; }
+:root[data-theme="dark"] .viz-root { --nav-ink: #0b1a23; --nav-active: #e0ce9c; }
+:root[data-theme="dark"] .filter-bar select { background-color: #24404b !important; color: #f6f4e9 !important; }
+:root[data-theme="dark"] #areaZoneTable th { background: #25414c; color: #d3dfd9; }
+:root[data-theme="dark"] #areaZoneTable tbody tr:last-child td { background: #4b4532; color: #f9edce; }
+:root[data-theme="dark"] .building-visual-cells i { background: #304b53; }
+:root[data-theme="dark"] .top-summary-row .packaging-age-table th { background: #e0ce9c; color: #173845; }
+:root[data-theme="dark"] .kpi-total-fixed { background: #d2bb7f; }
+@media (min-width: 1024px) {
+  .dashboard-layout { grid-template-columns: 268px minmax(0,1fr); gap: 18px; }
+  .tabs { padding: 14px 11px; }
+  .tabs .tab-btn { min-height: 48px; }
+}
+@media (max-width: 1430px) and (min-width: 1024px) {
+  .top-summary-row { grid-template-columns: 1fr; }
+  .top-summary-row .kpi-side-row { grid-template-columns: 1.35fr 1fr 1fr; }
+  .top-summary-row .packaging-age-card { grid-column: auto; }
+}
+@media (max-width: 1023px) {
+  .tabs { background: var(--nav-ink); border-radius: 18px; }
+  .top-summary-row { grid-template-columns: 1fr; }
+  .top-summary-row .kpi-side-row { grid-template-columns: 1.35fr 1fr 1fr; }
+  .top-summary-row .packaging-age-card { grid-column: auto; }
+}
+@media (max-width: 700px) {
+  body.viz-root { padding: 10px; }
+  header.top { padding: 12px; border-radius: 17px; }
+  .stock-overview-heading { margin-top: 8px; }
+  .stock-overview-heading h2 { font-size: 24px; }
+  .top-summary-row .kpi-side-row { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .top-summary-row .packaging-age-card { grid-column: 1 / -1; }
+  .top-summary-row .speed-meter-card, .top-summary-row .kpi-total-fixed { height: 160px; }
+  .top-summary-row .panel { overflow-x: auto; }
+  .table-scroll-hint { display: block; margin: 0 0 8px; color: var(--text-muted); font-size: 11px; }
+  #areaZoneTable { min-width: 520px; }
+}
 </style>
 </head>
 <body class="viz-root">
@@ -1863,6 +1982,12 @@
   <!-- ============ TAB: STOCK ============ -->
   <div class="tab-pane" id="pane-stock" role="tabpanel" aria-labelledby="tab-stock">
 
+    <div class="stock-overview-heading">
+      <span class="eyebrow">BCL / WAREHOUSE OVERVIEW</span>
+      <h2>ภาพรวมคลังสินค้า</h2>
+      <p>พื้นที่จัดเก็บ มูลค่าสต็อก และสถานะบรรจุภัณฑ์</p>
+    </div>
+
     <div class="filter-bar">
       <label for="whFilter">เลือกคลัง:</label>
       <select id="whFilter"><option value="all">ทุกคลัง</option><option value="202">202 (OEM) — BCL - OEM</option><option value="201">201 (BW) — BW - นครชัยศรี</option><option value="900">900 (Reject) — รอทำลาย</option><option value="300-S">300-S (Supplier) — PVC ชริ้ง (ซัพพลายเออร์)</option><option value="800">800 (Hold) — Hold</option><option value="200">200 (Preparation) — PD - งานระหว่างทำ BCL</option><option value="204">204 (Customer) — ลูกค้าฝาก</option><option value="401">401 (Re-work) — นำกลับมาใช้ใหม่</option></select>
@@ -1886,6 +2011,7 @@
     <div class="top-summary-row">
       <div class="panel">
         <h2>พื้นที่จัดเก็บตามอาคาร</h2>
+        <div class="table-scroll-hint">เลื่อนตารางเพื่อดูข้อมูลด้านขวา →</div>
         <table id="areaZoneTable">
           <thead>
             <tr>
@@ -1919,6 +2045,10 @@
       <td class="num" style="border-top:2px solid var(--baseline);">90.4%</td>
     </tr></tbody>
         </table>
+        <div class="building-visual" aria-label="สัดส่วนพื้นที่ใช้งานตามอาคาร">
+          <div class="building-visual-title">สัดส่วนพื้นที่ใช้งาน</div>
+          <div id="buildingVisualRows"></div>
+        </div>
       </div>
 
       <!-- Speed meter (PK Capacity Storage) + total-value card, side by side, right-aligned as
@@ -3947,6 +4077,18 @@ function renderAreaZoneTable() {
       <td class="num" style="border-top:2px solid var(--baseline);">${t.remainingPct.toFixed(1)}%</td>
     </tr>`;
   tbody.innerHTML = rows;
+  const visual = document.getElementById('buildingVisualRows');
+  if (visual) {
+    visual.innerHTML = AREA_BUILDINGS.map(b => {
+      const u = computeAreaBuildingUsage(b);
+      const usedPct = u.palletNo ? (u.used / u.palletNo) * 100 : 0;
+      const filled = Math.round(usedPct / 5);
+      const cells = Array.from({ length: 20 }, (_, i) => `<i class="${i < filled ? 'is-used' : ''}"></i>`).join('');
+      return `<div class="building-visual-row" role="img" aria-label="${b.label} ใช้งาน ${fmt0(u.used)} จาก ${fmt0(u.palletNo)} พาเลต คิดเป็น ${usedPct.toFixed(1)}%">
+        <strong>${b.label}</strong><div class="building-visual-cells" aria-hidden="true">${cells}</div><em>${usedPct.toFixed(0)}%</em>
+      </div>`;
+    }).join('');
+  }
 }
 
 // ---------- PK Capacity Storage speed meter (gauge), stock tab, beside the total-value card ----------

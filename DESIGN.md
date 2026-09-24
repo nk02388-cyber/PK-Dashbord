@@ -1,26 +1,26 @@
 ---
 version: alpha
 name: BCL Packaging Operations
-description: A structured, flat design system for warehouse stock, pallet maps, scanning and inventory workflows.
+description: A warm, modular warehouse design system for stock, pallet maps, scanning and inventory workflows.
 colors:
-  primary: "#0F62FE"
-  primary-hover: "#0050E6"
+  primary: "#214E63"
+  primary-hover: "#183F51"
   on-primary: "#FFFFFF"
-  surface: "#FFFFFF"
-  canvas: "#F4F4F4"
-  canvas-dark: "#161616"
-  surface-dark: "#262626"
-  ink: "#161616"
-  ink-dark: "#F4F4F4"
-  secondary: "#525252"
-  secondary-dark: "#C6C6C6"
-  muted: "#6F6F6F"
-  border: "#D4D4D4"
-  border-dark: "#525252"
-  success: "#198038"
-  warning: "#F1C21B"
-  danger: "#DA1E28"
-  focus: "#0F62FE"
+  surface: "#FFFEFA"
+  canvas: "#EBEDE4"
+  canvas-dark: "#10232E"
+  surface-dark: "#1B303B"
+  ink: "#152B34"
+  ink-dark: "#F6F4E9"
+  secondary: "#52636A"
+  secondary-dark: "#C5D3D0"
+  muted: "#6D7B7D"
+  border: "#DCE3DC"
+  border-dark: "#385360"
+  success: "#2D7758"
+  warning: "#E0CE9C"
+  danger: "#B84C4C"
+  focus: "#214E63"
 typography:
   page-title:
     fontFamily: Noto Sans Thai
@@ -48,9 +48,9 @@ typography:
     fontWeight: 500
     lineHeight: 1.4
 rounded:
-  sm: 4px
-  md: 6px
-  lg: 8px
+  sm: 11px
+  md: 12px
+  lg: 20px
   pill: 999px
 spacing:
   xs: 4px
@@ -111,27 +111,27 @@ components:
 
 ## Overview
 
-This is a working warehouse interface. Staff must distinguish actions, stock status, scanned locations and document numbers quickly on desktop and mobile. The structure is informed by the [IBM example in VoltAgent's awesome-design-md collection](https://github.com/VoltAgent/awesome-design-md/tree/main/design-md/ibm): flat surfaces, clear hairlines, compact spacing and one confident blue action color. It is adapted for BCL branding, Thai text and operational screens rather than copied as an IBM page.
+This is a working warehouse interface. Staff must distinguish actions, stock status, scanned locations and document numbers quickly on desktop and mobile. The visual direction is inspired by [Beadaptify's Warehouse Inventory Dashboard on Dribbble](https://dribbble.com/shots/26587734-Warehouse-Inventory-Dashboard): a deep navy navigation rail, warm off-white workspace, golden active state and modular operational cards. BCL's data, logo, Thai labels and task flows remain the source of content.
 
 ## Colors
 
-Blue identifies navigation and the main action. Green means successful or available, yellow means attention or a highlighted inventory total, and red means error or overdue. White cards sit on a neutral gray canvas; dark mode uses charcoal surfaces. Color accompanies text, never replaces it.
+Deep blue identifies navigation and the main action. Gold highlights the active destination and total value; green means successful or available, and red means error or overdue. Warm white cards sit on a pale stone canvas; dark mode uses deep blue surfaces. Color accompanies text, never replaces it.
 
 ## Typography
 
-Use Noto Sans Thai with system fallbacks instead of IBM's Latin-first typeface. Page and section titles identify place and task; labels stay close to their fields. Tabular numerals keep quantities, costs, document numbers and pallet counts easy to scan. Never shrink mobile form text below 16px, avoiding browser zoom on focus.
+Use Noto Sans Thai with system fallbacks. The dashboard overview title is large and calm; section titles remain compact. Labels stay close to their fields. Tabular numerals keep quantities, costs, document numbers and pallet counts easy to scan. Never shrink mobile form text below 16px, avoiding browser zoom on focus.
 
 ## Layout
 
-Use a 4px spacing grid. Desktop has a 300px navigation rail and a fluid content area. Narrow screens use a horizontal tab rail and single-column forms. Keep related controls inside one panel. Preserve full-width maps, responsive data tables and 44px minimum interactive targets.
+Use a 4px spacing grid. Desktop has a 268px navy navigation rail and a fluid content area. The stock overview groups the building table beside age, capacity and value cards. Narrow screens use a horizontal tab rail and single-column forms. Keep related controls inside one panel. Preserve full-width maps, responsive data tables and 44px minimum interactive targets.
 
 ## Elevation & Depth
 
-Use 1px hairlines and small surface changes to separate content. Regular cards and controls have no shadow. Only elevated dialogs may cast a shadow. Avoid gradients on ordinary cards and summary values.
+Use quiet 1px borders and a restrained soft shadow to lift white cards from the warm canvas. Dialogs may cast a stronger shadow. Avoid gradients on ordinary cards and summary values.
 
 ## Shapes
 
-Inputs and buttons use 4px corners; panels use 8px corners. Status badges may be pill-shaped when space is tight. Keep icon stroke weight and button heights consistent across workflows.
+Inputs use 11px corners and panels use 20px corners. Navigation tabs, filter controls and status badges use pill shapes. Keep icon stroke weight and button heights consistent across workflows.
 
 ## Components
 
@@ -144,4 +144,4 @@ Buttons have primary, secondary, danger and disabled states. Inputs, search, sel
 - Do preserve status text and keyboard focus when adding color.
 - Don't center narrow forms inside a wide page or let controls use inconsistent heights.
 - Don't apply decorative treatments to the CAD map, QR code or printed labels.
-- Don't add atmospheric gradients, glass effects or card shadows to routine work surfaces.
+- Don't copy decorative sample metrics or warehouse counts from the reference image.

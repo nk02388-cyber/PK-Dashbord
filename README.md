@@ -1,6 +1,6 @@
 # PK Dashboard
 
-แนวทางสี ตัวอักษร ระยะห่าง และคอมโพเนนต์ของเว็บอยู่ใน [DESIGN.md](DESIGN.md) ตามรูปแบบ [google-labs-code/design.md](https://github.com/google-labs-code/design.md) โดยปรับหลักการจาก [ตัวอย่าง IBM ใน VoltAgent/awesome-design-md](https://github.com/VoltAgent/awesome-design-md/tree/main/design-md/ibm) ให้เหมาะกับงานคลัง BCL การเปลี่ยนหน้าจอใหม่ควรใช้โทเคนและหลักการในไฟล์นี้ร่วมกับ CSS กลางใน `index.html`
+แนวทางสี ตัวอักษร ระยะห่าง และคอมโพเนนต์ของเว็บอยู่ใน [DESIGN.md](DESIGN.md) ตามรูปแบบ [google-labs-code/design.md](https://github.com/google-labs-code/design.md) โดยนำแนวทางภาพรวมจาก [Warehouse Inventory Dashboard ของ Beadaptify](https://dribbble.com/shots/26587734-Warehouse-Inventory-Dashboard) มาปรับให้เหมาะกับข้อมูลจริงและงานคลัง BCL การเปลี่ยนหน้าจอใหม่ควรใช้โทเคนและหลักการในไฟล์นี้ร่วมกับ CSS กลางใน `index.html`
 
 ## รับเข้าและจัดเก็บพาเลต
 
