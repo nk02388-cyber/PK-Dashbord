@@ -1965,6 +1965,7 @@ header.top .header-logo { border-radius: 14px; }
 <link rel="stylesheet" href="dashboard-shell.css?v=20260924-2">
 <link rel="stylesheet" href="product-history.css?v=20260924-7">
 <link rel="stylesheet" href="notifications.css?v=20260924-2">
+<link rel="stylesheet" href="event-calendar.css?v=20260924-1">
 <link rel="stylesheet" href="reorder-points.css?v=20260924-1">
 </head>
 <body class="viz-root">
@@ -2004,6 +2005,7 @@ header.top .header-logo { border-radius: 14px; }
     <div class="meta">
       <span id="reportDate">ข้อมูล ณ วันที่ 17 ส.ค. 69</span>
       <button class="warehouse-tour-replay" id="warehouseTourReplay" type="button" aria-label="เปิดทัวร์คลังสินค้า 3D อีกครั้ง">ทัวร์คลัง 3D</button>
+      <button class="event-calendar-toggle" id="eventCalendarToggle" type="button" aria-label="เปิดปฏิทินนัดหมาย" title="ปฏิทินนัดหมาย"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M7 3v4m10-4v4M3 10h18M8 14h2m4 0h2m-8 4h2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span class="event-calendar-badge" id="eventCalendarBadge" hidden></span></button>
       <div class="notification-anchor">
         <button class="notification-toggle" id="notificationToggle" type="button" aria-label="เปิดการแจ้งเตือน" aria-expanded="false" aria-controls="notificationPanel" title="การแจ้งเตือน"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="notification-badge" id="notificationBadge" hidden></span></button>
         <section class="notification-panel" id="notificationPanel" aria-label="การแจ้งเตือน" hidden><div class="notification-panel-head"><h2>การแจ้งเตือน</h2><div class="notification-panel-actions"><button id="notificationClear" type="button">ล้างทั้งหมด</button><button id="notificationRefresh" type="button">รีเฟรช</button></div></div><div id="notificationItems" class="notification-items" aria-live="polite"></div></section>
@@ -2014,6 +2016,14 @@ header.top .header-logo { border-radius: 14px; }
       </button>
     </div>
   </header>
+
+  <dialog class="event-calendar-dialog" id="eventCalendarDialog" aria-labelledby="eventCalendarTitle">
+    <div class="event-calendar-head"><div><h2 id="eventCalendarTitle">ปฏิทินนัดหมาย</h2><p>นัดหมายและกิจกรรมล่วงหน้า</p></div><button type="button" id="eventCalendarClose" aria-label="ปิดปฏิทิน">×</button></div>
+    <div class="event-calendar-content">
+      <section class="event-calendar-main" aria-label="ปฏิทินรายเดือน"><div class="event-calendar-month-nav"><button type="button" id="eventCalendarPrev" aria-label="เดือนก่อนหน้า">‹</button><strong id="eventCalendarMonth"></strong><button type="button" id="eventCalendarNext" aria-label="เดือนถัดไป">›</button><button type="button" id="eventCalendarToday">วันนี้</button></div><div class="event-calendar-grid" id="eventCalendarGrid"></div><h3 id="eventCalendarSelectedHeading"></h3><div class="event-calendar-agenda" id="eventCalendarAgenda"></div></section>
+      <form class="event-calendar-form" id="eventCalendarForm"><h3 id="eventCalendarFormHeading">เพิ่มกิจกรรม</h3><input type="hidden" id="eventCalendarId"><label>ชื่อกิจกรรม *<input id="eventCalendarName" type="text" maxlength="120" required placeholder="เช่น ประชุมวางแผนรับสินค้า"></label><label>วันที่ *<input id="eventCalendarDate" type="date" required></label><label>เวลา *<input id="eventCalendarTime" type="time" required></label><label>เตือนล่วงหน้า<select id="eventCalendarLead"><option value="0">เมื่อถึงเวลา</option><option value="15">15 นาที</option><option value="60">1 ชั่วโมง</option><option value="1440" selected>1 วัน</option><option value="10080">7 วัน</option></select></label><label>รายละเอียด<textarea id="eventCalendarDetails" rows="3" maxlength="500" placeholder="รายละเอียดเพิ่มเติม (ถ้ามี)"></textarea></label><p class="event-calendar-form-note">บันทึกในเบราว์เซอร์เครื่องนี้ · เปิดเว็บไว้เพื่อรับการเตือนในกระดิ่ง</p><p class="event-calendar-error" id="eventCalendarError" role="alert" hidden></p><div class="event-calendar-form-actions"><button type="submit" class="event-calendar-save">บันทึกกิจกรรม</button><button type="button" id="eventCalendarCancel" hidden>ยกเลิกแก้ไข</button></div></form>
+    </div>
+  </dialog>
 
   <div class="dashboard-layout" id="dashboardLayout">
   <nav class="tabs" id="tabs" role="tablist" aria-label="ส่วนข้อมูลแดชบอร์ด">
@@ -9820,7 +9830,8 @@ window.addEventListener('pageshow', () => {
 <script src="product-history.js?v=20260924-7"></script>
 <script src="reorder-points-data.js?v=20260924-1"></script>
 <script src="reorder-points.js?v=20260924-1"></script>
-<script src="notifications.js?v=20260924-3"></script>
+<script src="event-calendar.js?v=20260924-1"></script>
+<script src="notifications.js?v=20260924-4"></script>
 <script src="receipt-plan.js"></script>
 <script src="welcome-greeting.js?v=20260924-1" defer></script>
 <script src="warehouse-intro.js?v=20260924-1" defer></script>

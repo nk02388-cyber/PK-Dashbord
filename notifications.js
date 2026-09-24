@@ -80,6 +80,7 @@
     const actions = [];
     if (pending.count > 0) actions.push({kind:'pending',tone:'warning',title:`${fmt(pending.count)} พาเลตรอจัดเก็บ`,detail:[...new Set(pending.rows.map(row => row.product_code).filter(Boolean))].join(' · ') || 'เปิดรายการรับเข้าและจัดเก็บ'});
     if (reorderRows.length) actions.push({kind:'reorder',tone:'warning',title:`ถึงจุดสั่งซื้อ ${fmt(reorderRows.length)} รหัส`,detail:`${reorderRows[0].code} · คงเหลือ ${fmt(reorderRows[0].available)} ${reorderRows[0].unit} / ROP ${fmt(reorderRows[0].rop)}`});
+    for (const event of window.PKEvents?.getDue?.() || []) actions.push({kind:`event:${event.id}`,tone:'warning',title:`นัดหมาย: ${event.name}`,detail:`${event.date} เวลา ${event.time}${event.details ? ` · ${event.details}` : ''}`});
     if (negative.length) actions.push({kind:'negative',tone:'critical',title:`สต็อกติดลบ ${fmt(negative.length)} รายการ`,detail:`เริ่มตรวจที่รหัส ${negative[0].code}`});
     if (bomCount > 0) actions.push({kind:'bom',tone:'critical',title:`บรรจุภัณฑ์ไม่พร้อม ${fmt(bomCount)} FG`,detail:'เปิดหน้าความพร้อมบรรจุภัณฑ์เพื่อตรวจสอบ'});
     if (stockSnapshotState === 'fallback') actions.push({kind:'stock',tone:'warning',title:'โหลดสต็อกล่าสุดไม่ได้',detail:'กำลังแสดงข้อมูลสำรองในไฟล์'});
@@ -90,7 +91,7 @@
     badge.hidden = !currentActions.length;
     badge.textContent = currentActions.length > 9 ? '9+' : String(currentActions.length);
     toggle.setAttribute('aria-label',currentActions.length ? `เปิดการแจ้งเตือน ${currentActions.length} ประเภท` : 'เปิดการแจ้งเตือน');
-    list.innerHTML = currentActions.length ? currentActions.map(action => `<button type="button" class="notification-item" data-action="${action.kind}" data-tone="${action.tone}"><strong>${escape(action.title)}</strong><small>${escape(action.detail)}</small></button>`).join('') : `<p class="notification-empty">${actions.length ? 'ล้างการแจ้งเตือนวันนี้แล้ว · รายการใหม่จะแสดงเมื่อข้อมูลเปลี่ยน' : 'ไม่มีรายการที่ต้องดำเนินการ'}</p>`;
+    list.innerHTML = currentActions.length ? currentActions.map(action => `<button type="button" class="notification-item" data-action="${escape(action.kind)}" data-tone="${action.tone}"><strong>${escape(action.title)}</strong><small>${escape(action.detail)}</small></button>`).join('') : `<p class="notification-empty">${actions.length ? 'ล้างการแจ้งเตือนวันนี้แล้ว · รายการใหม่จะแสดงเมื่อข้อมูลเปลี่ยน' : 'ไม่มีรายการที่ต้องดำเนินการ'}</p>`;
     if (pending.count == null && !pending.error) list.insertAdjacentHTML('beforeend','<p class="notification-empty">กำลังตรวจรายการรอจัดเก็บ…</p>');
   }
 
@@ -148,6 +149,7 @@
       document.querySelector('[data-incoming-view="history"]')?.click();
     } else if (action === 'bom') document.getElementById('tab-bompk')?.click();
     else if (action === 'reorder') document.getElementById('tab-reorder')?.click();
+    else if (action.startsWith('event:')) window.PKEvents?.open(action.slice(6));
     else if (action === 'negative') {
       const item = negativeStock(STOCK.items)[0];
       if (item) { document.getElementById('tab-product-history')?.click(); window.PKProductHistory?.open(item.code); }
