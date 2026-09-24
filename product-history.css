@@ -37,7 +37,6 @@
 .product-history-table-wrap th, .product-history-table-wrap td { padding: 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
 .product-history-table-wrap th { position: sticky; top: 0; z-index: 1; background: var(--page-plane); color: var(--text-primary); white-space: nowrap; }
 .product-history-table-wrap .num { text-align: right; font-variant-numeric: tabular-nums; }
-.product-history-supplier-source { display: block; margin-top: 3px; color: var(--text-secondary); font-size: 10px; line-height: 1.35; }
 .product-history-type { font-weight: 700; }
 .product-history-type-receive, .product-history-type-return, .product-history-type-transfer_in { color: var(--status-good); }
 .product-history-type-withdraw, .product-history-type-transfer_out { color: var(--status-critical); }
