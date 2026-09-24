@@ -164,12 +164,7 @@
      .kpi-side-row wrapper it shares with the speed meter (added same day, just below), so the
      two sit side by side as one right-aligned group. */
   .kpi-side-row { display: flex; align-items: stretch; justify-content: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
-  /* 21 Aug 2026: "ZONE แสดงพื้นที่การจัดเก็บ" table moved up to sit in the same top row as the
-     speed meter + total-value card group, instead of its own full-width panel further down the
-     page. The zone table gets the remaining width (flex:1, with a sensible min so it doesn't
-     get crushed next to the fixed-width kpi-side-row); .kpi-side-row keeps its natural width on
-     the right. Both children's own bottom margins are zeroed here (the row itself carries the
-     spacing) so nothing doubles up. */
+  /* Building usage and KPI cards share the first dashboard row. */
   .top-summary-row { display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap; margin-bottom: 20px; }
   .top-summary-row .panel { flex: 1 1 420px; margin-bottom: 0; }
   .top-summary-row .kpi-side-row { flex: 0 0 auto; margin-bottom: 0; }
@@ -190,7 +185,7 @@
 
   /* PK Capacity Storage speed meter (gauge) -- added 21 Aug 2026, sits beside the total-value
      card inside .kpi-side-row. Plain surface-1 card (not yellow) so the two cards stay visually
-     distinct at a glance. See renderSpeedMeter() near renderAreaZoneTable() for the SVG build. */
+     distinct at a glance. See renderSpeedMeter() for the SVG build. */
   .speed-meter-card {
     width: 208px; height: 172px; box-sizing: border-box;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -1883,7 +1878,6 @@ header.top .header-logo { border-radius: 14px; }
 .filter-bar select { border-radius: 999px; font-weight: 700; }
 .stock-update-btn { border-radius: 999px !important; background: var(--brand-blue); box-shadow: none; }
 .stock-update-btn:hover { background: var(--brand-blue-hover); }
-.table-scroll-hint { display: none; }
 .panel, .kpi, .speed-meter-card, .packaging-age-card {
   border-radius: var(--radius-panel); box-shadow: var(--shadow-card);
 }
@@ -1911,19 +1905,23 @@ header.top .header-logo { border-radius: 14px; }
 .kpi-total-fixed { background: #e0ce9c; border: 0; }
 .kpi-total-fixed .label, .kpi-total-fixed .value, .kpi-total-fixed .sub { color: #183847; }
 .kpi-total-fixed .value { font-size: clamp(22px, 1.8vw, 29px); }
-#areaZoneTable { width: 100%; margin-top: 12px; border-collapse: separate; border-spacing: 0; }
-#areaZoneTable th { background: #eff3ef; color: #52636a; border-bottom: 1px solid var(--border); }
-#areaZoneTable td { padding-block: 16px; }
-#areaZoneTable tbody tr:last-child td { background: #f7efd6; color: #183847; font-weight: 800; }
-.building-visual { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
-.building-visual-title { margin: 0 0 12px; color: var(--text-secondary); font-size: 12px; font-weight: 800; }
-.building-visual-row { display: grid; grid-template-columns: 78px minmax(0, 1fr) 42px; align-items: center; gap: 11px; margin: 9px 0; font-size: 12px; }
-.building-visual-row strong { font-weight: 800; }
-.building-visual-row em { color: var(--text-secondary); font-style: normal; text-align: right; font-variant-numeric: tabular-nums; }
-.building-visual-cells { display: grid; grid-template-columns: repeat(20, minmax(0, 1fr)); gap: 4px; min-width: 0; }
-.building-visual-cells i { display: block; height: 25px; border-radius: 6px; background: #e9eee9; }
-.building-visual-cells i.is-used { background: #78b996; }
-.building-visual-row:nth-of-type(2) .building-visual-cells i.is-used { background: #d8bd72; }
+.building-usage-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+.building-usage-card { min-width: 0; padding: 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--page-plane); }
+.building-usage-card.is-good { --building-accent: var(--status-good); }
+.building-usage-card.is-warning { --building-accent: var(--status-warning); }
+.building-usage-card.is-critical { --building-accent: var(--status-critical); }
+.building-usage-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.building-usage-name { color: var(--text-primary); font-size: 14px; font-weight: 800; }
+.building-usage-percent { color: var(--building-accent); font-size: 21px; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.building-usage-count { margin: 9px 0 12px; color: var(--text-secondary); font-size: 13px; }
+.building-usage-count strong { color: var(--text-primary); font-size: 17px; font-variant-numeric: tabular-nums; }
+.building-usage-track { height: 12px; overflow: hidden; border-radius: 999px; background: var(--gridline); }
+.building-usage-fill { display: block; width: var(--building-used); height: 100%; border-radius: inherit; background: var(--building-accent); }
+.building-usage-free { margin-top: 10px; color: var(--text-secondary); font-size: 12px; }
+.building-usage-free strong { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.building-usage-total { display: flex; align-items: baseline; justify-content: space-between; gap: 8px 16px; flex-wrap: wrap; margin-top: 14px; padding: 14px 16px; border-radius: 12px; background: var(--series-1-wash); color: var(--text-primary); font-size: 13px; }
+.building-usage-total strong { font-size: 16px; font-variant-numeric: tabular-nums; }
+.building-usage-total small { color: var(--text-secondary); font-size: 12px; }
 .two-col { gap: 16px; }
 .bar-track { border-radius: 999px; }
 .bar-fill, .barchart.vertical .bar-fill { background: #78b996; }
@@ -1935,9 +1933,6 @@ header.top .header-logo { border-radius: 14px; }
 .viz-root .incoming-record-actions button[data-select-tag] { background: var(--brand-blue); border-color: var(--brand-blue); color: #fff; }
 :root[data-theme="dark"] .viz-root { --nav-ink: #0b1a23; --nav-active: #e0ce9c; }
 :root[data-theme="dark"] .filter-bar select { background-color: #24404b !important; color: #f6f4e9 !important; }
-:root[data-theme="dark"] #areaZoneTable th { background: #25414c; color: #d3dfd9; }
-:root[data-theme="dark"] #areaZoneTable tbody tr:last-child td { background: #4b4532; color: #f9edce; }
-:root[data-theme="dark"] .building-visual-cells i:not(.is-used) { background: #304b53; }
 :root[data-theme="dark"] .kpi-total-fixed { background: #d2bb7f; }
 @media (min-width: 1024px) {
   .dashboard-layout { grid-template-columns: 268px minmax(0,1fr); gap: 18px; }
@@ -1962,8 +1957,7 @@ header.top .header-logo { border-radius: 14px; }
   .top-summary-row .packaging-age-card { grid-column: 1 / -1; }
   .top-summary-row .speed-meter-card, .top-summary-row .kpi-total-fixed { height: 160px; }
   .top-summary-row .panel { overflow-x: auto; }
-  .table-scroll-hint { display: block; margin: 0 0 8px; color: var(--text-muted); font-size: 11px; }
-  #areaZoneTable { min-width: 520px; }
+  .building-usage-list { grid-template-columns: 1fr; }
 }
 </style>
 <link rel="stylesheet" href="warehouse-intro.css?v=20260924-2">
@@ -2045,56 +2039,13 @@ header.top .header-logo { border-radius: 14px; }
       </div>
     </div>
 
-    <!-- 21 Aug 2026: "ZONE แสดงพื้นที่การจัดเก็บ" table moved up here to share one top row with
-         the speed meter (PK Capacity Storage) + total-value card group, per Pornchai's request
-         ("ย้ายตำแหน่ง ZONE แสดงพื้นที่การจัดเก็บ ไปอยู่ด้านบนแถวเดียวกันกับ Speed meter") --
-         previously the table sat in its own full-width panel further down, after the two
-         value-by-warehouse/category charts. The table panel takes the remaining width; the KPI
-         group keeps its natural width on the right (see .top-summary-row CSS). The KPI group's
-         own contents/behavior are completely unchanged from the previous turn -- only its
-         wrapping position on the page moved. -->
+    <!-- Building usage cards and warehouse KPIs share the first dashboard row. -->
     <div class="top-summary-row">
-      <div class="panel">
-        <h2>พื้นที่จัดเก็บตามอาคาร</h2>
-        <div class="table-scroll-hint">เลื่อนตารางเพื่อดูข้อมูลด้านขวา →</div>
-        <table id="areaZoneTable">
-          <thead>
-            <tr>
-              <th>อาคาร</th>
-              <th class="num">ความจุ (พาเลต)</th>
-              <th class="num">ใช้งาน</th>
-              <th class="num">ว่าง</th>
-              <th class="num">พื้นที่ว่าง (%)</th>
-            </tr>
-          </thead>
-          <tbody>
-      <tr>
-        <td>อาคารเดิม</td>
-        <td class="num">503</td>
-        <td class="num">2</td>
-        <td class="num">501</td>
-        <td class="num">99.6%</td>
-      </tr>
-      <tr>
-        <td>อาคารใหม่</td>
-        <td class="num">489</td>
-        <td class="num">93</td>
-        <td class="num">396</td>
-        <td class="num">81.0%</td>
-      </tr>
-    <tr style="font-weight:700; background:var(--status-warning); color:#000000;">
-      <td style="border-top:2px solid var(--baseline);">รวม</td>
-      <td class="num" style="border-top:2px solid var(--baseline);">992</td>
-      <td class="num" style="border-top:2px solid var(--baseline);">95</td>
-      <td class="num" style="border-top:2px solid var(--baseline);">897</td>
-      <td class="num" style="border-top:2px solid var(--baseline);">90.4%</td>
-    </tr></tbody>
-        </table>
-        <div class="building-visual" aria-label="สัดส่วนพื้นที่ใช้งานตามอาคาร">
-          <div class="building-visual-title">สัดส่วนพื้นที่ใช้งาน</div>
-          <div id="buildingVisualRows"></div>
-        </div>
-      </div>
+      <section class="panel" aria-labelledby="buildingUsageTitle">
+        <h2 id="buildingUsageTitle">พื้นที่จัดเก็บตามอาคาร</h2>
+        <div class="building-usage-list" id="buildingUsageList"></div>
+        <div class="building-usage-total" id="buildingUsageTotal"></div>
+      </section>
 
       <!-- Speed meter (PK Capacity Storage) + total-value card, side by side, right-aligned as
            one group. The total-value card lives inside the stock tab pane only (so it is
@@ -4027,7 +3978,7 @@ async function pushFullGeometryToRemote(slots, dates) {
   return savePalletBatch(slots,dates,{action:'import'});
 }
 
-// ---------- Zone -> building-area grouping ("ZONE แสดงพื้นที่การจัดเก็บ" table, stock tab) ----------
+// ---------- Zone -> building-area grouping (stock dashboard) ----------
 // Added 21 Aug 2026 per Pornchai's request, mockup: Area | Pallet No. | ใช้งานไป | คงเหลือ |
 // % คงเหลือ, rows อาคารเดิม / อาคารใหม่ / รวม. Two things were confirmed with him via
 // AskUserQuestion before building this:
@@ -4072,7 +4023,7 @@ function computeAreaBuildingUsage(building) {
   return { used, remaining, pct, palletNo };
 }
 // Sums computeAreaBuildingUsage() across every AREA_BUILDINGS entry -- shared by
-// renderAreaZoneTable()'s "รวม" row and renderSpeedMeter() (added same day, just below), so
+// the building cards' total and renderSpeedMeter() (added same day, just below), so
 // both stay numerically consistent by construction (same underlying computation, not two
 // independently-written sums that could drift apart).
 function computeTotalCapacity() {
@@ -4086,43 +4037,23 @@ function computeTotalCapacity() {
   return { totalPallet, totalUsed, totalRemaining, usedPct, remainingPct };
 }
 
-function renderAreaZoneTable() {
-  const tbody = document.querySelector('#areaZoneTable tbody');
-  if (!tbody) return;
-  let rows = '';
-  AREA_BUILDINGS.forEach(b => {
+function renderBuildingUsage() {
+  const list = document.getElementById('buildingUsageList');
+  const total = document.getElementById('buildingUsageTotal');
+  if (!list || !total) return;
+  list.innerHTML = AREA_BUILDINGS.map(b => {
     const u = computeAreaBuildingUsage(b);
-    rows += `
-      <tr>
-        <td>${b.label}</td>
-        <td class="num">${fmt0(u.palletNo)}</td>
-        <td class="num">${fmt0(u.used)}</td>
-        <td class="num">${fmt0(u.remaining)}</td>
-        <td class="num">${u.pct.toFixed(1)}%</td>
-      </tr>`;
-  });
+    const usedPct = u.palletNo > 0 ? (u.used / u.palletNo) * 100 : 0;
+    const level = usedPct >= 85 ? 'critical' : usedPct >= 75 ? 'warning' : 'good';
+    return `<article class="building-usage-card is-${level}" style="--building-used:${Math.min(100, Math.max(0, usedPct)).toFixed(1)}%">
+      <div class="building-usage-head"><span class="building-usage-name">${b.label}</span><span class="building-usage-percent">${usedPct.toFixed(1)}%</span></div>
+      <p class="building-usage-count">ใช้งาน <strong>${fmt0(u.used)} / ${fmt0(u.palletNo)}</strong> พาเลต</p>
+      <div class="building-usage-track" role="meter" aria-label="${b.label} พื้นที่ใช้งาน" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${usedPct.toFixed(1)}" aria-valuetext="${fmt0(u.used)} จาก ${fmt0(u.palletNo)} พาเลต"><span class="building-usage-fill"></span></div>
+      <div class="building-usage-free">ว่าง <strong>${fmt0(u.remaining)}</strong> พาเลต</div>
+    </article>`;
+  }).join('');
   const t = computeTotalCapacity();
-  rows += `
-    <tr style="font-weight:700; background:var(--status-warning); color:#000000;">
-      <td style="border-top:2px solid var(--baseline);">รวม</td>
-      <td class="num" style="border-top:2px solid var(--baseline);">${fmt0(t.totalPallet)}</td>
-      <td class="num" style="border-top:2px solid var(--baseline);">${fmt0(t.totalUsed)}</td>
-      <td class="num" style="border-top:2px solid var(--baseline);">${fmt0(t.totalRemaining)}</td>
-      <td class="num" style="border-top:2px solid var(--baseline);">${t.remainingPct.toFixed(1)}%</td>
-    </tr>`;
-  tbody.innerHTML = rows;
-  const visual = document.getElementById('buildingVisualRows');
-  if (visual) {
-    visual.innerHTML = AREA_BUILDINGS.map(b => {
-      const u = computeAreaBuildingUsage(b);
-      const usedPct = u.palletNo ? (u.used / u.palletNo) * 100 : 0;
-      const filled = Math.round(usedPct / 5);
-      const cells = Array.from({ length: 20 }, (_, i) => `<i class="${i < filled ? 'is-used' : ''}"></i>`).join('');
-      return `<div class="building-visual-row" role="img" aria-label="${b.label} ใช้งาน ${fmt0(u.used)} จาก ${fmt0(u.palletNo)} พาเลต คิดเป็น ${usedPct.toFixed(1)}%">
-        <strong>${b.label}</strong><div class="building-visual-cells" aria-hidden="true">${cells}</div><em>${usedPct.toFixed(0)}%</em>
-      </div>`;
-    }).join('');
-  }
+  total.innerHTML = `<span>รวมทั้งสองอาคาร</span><strong>ใช้งาน ${fmt0(t.totalUsed)} / ${fmt0(t.totalPallet)} พาเลต</strong><small>ว่าง ${fmt0(t.totalRemaining)} พาเลต · ${t.usedPct.toFixed(1)}% ใช้งาน</small>`;
 }
 
 // ---------- PK Capacity Storage speed meter (gauge), stock tab, beside the total-value card ----------
@@ -4130,7 +4061,7 @@ function renderAreaZoneTable() {
 // (ปริมาณรวมที่ใช้งานไป / รวม Pallet No.) * 100%, with 3 fixed color bands -- 0-45% green,
 // 45-75% yellow, 75-100% red -- and a needle pointing at the current live value. Reuses
 // computeTotalCapacity() (just above), so this stays numerically identical to the
-// "ZONE แสดงพื้นที่การจัดเก็บ" table's own "รวม" row by construction.
+// building usage cards' combined total by construction.
 const SPEED_METER_BANDS = [
   { from: 0, to: 45, color: 'var(--status-good)' },
   { from: 45, to: 75, color: 'var(--status-warning)' },
@@ -4284,10 +4215,8 @@ function renderOverviewSlotStatus() {
     });
   });
   floorplanSlotStatus.innerHTML = html;
-  // Keep the stock tab's "ZONE แสดงพื้นที่การจัดเก็บ" table and PK Capacity Storage speed
-  // meter (renderAreaZoneTable()/renderSpeedMeter(), both defined above near setOccupied())
-  // live-synced with every occupancy change, same as this function.
-  renderAreaZoneTable();
+  // Keep building usage cards and the capacity gauge synced with occupancy changes.
+  renderBuildingUsage();
   renderSpeedMeter();
   renderPackagingAgeStatus();
 }
