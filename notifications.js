@@ -30,8 +30,18 @@
     return (items || []).filter(item => item.qty != null && String(item.qty).trim() !== '' && Number(item.qty) < 0);
   }
 
+  const dayKey = date => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+  const actionSignature = action => JSON.stringify([action.kind,action.title,action.detail]);
+  function restoredDismissals(raw, day) {
+    try {
+      const saved = JSON.parse(raw);
+      return new Set(saved?.day === day && Array.isArray(saved.signatures) ? saved.signatures.filter(value => typeof value === 'string') : []);
+    } catch { return new Set(); }
+  }
+  const visibleActions = (actions, dismissed) => actions.filter(action => !dismissed.has(actionSignature(action)));
+
   if (typeof module !== 'undefined' && module.exports) {
-    module.exports = {findLowStock, negativeStock};
+    module.exports = {findLowStock, negativeStock, dayKey, actionSignature, restoredDismissals, visibleActions};
     return;
   }
 
@@ -39,12 +49,29 @@
   const panel = document.getElementById('notificationPanel');
   const badge = document.getElementById('notificationBadge');
   const list = document.getElementById('notificationItems');
-  if (!toggle || !panel || !badge || !list) return;
+  const clearButton = document.getElementById('notificationClear');
+  if (!toggle || !panel || !badge || !list || !clearButton) return;
   const escape = value => escapeHtml(String(value ?? ''));
   const fmt = value => Number(value).toLocaleString('en-US',{maximumFractionDigits:3});
   let pending = {count:null,rows:[],error:''}, requestId = 0;
+  const storageKey = 'pk-notifications-dismissed-v1';
+  let activeDay = dayKey(new Date());
+  let dismissed = (() => { try { return restoredDismissals(localStorage.getItem(storageKey),activeDay); } catch { return new Set(); } })();
+  let currentActions = [];
+  function saveDismissed() {
+    try { localStorage.setItem(storageKey,JSON.stringify({day:activeDay,signatures:[...dismissed]})); } catch { /* storage may be unavailable */ }
+  }
+  function ensureCurrentDay() {
+    const today = dayKey(new Date());
+    if (today === activeDay) return false;
+    activeDay = today;
+    dismissed.clear();
+    saveDismissed();
+    return true;
+  }
 
   function render() {
+    ensureCurrentDay();
     const stockReady = stockSnapshotState === 'latest';
     const low = stockReady ? findLowStock(STOCK.items) : {configured:0,rows:[]};
     const negative = stockReady ? negativeStock(STOCK.items) : [];
@@ -58,10 +85,12 @@
     if (stockSnapshotState === 'fallback') actions.push({kind:'stock',tone:'warning',title:'โหลดสต็อกล่าสุดไม่ได้',detail:'กำลังแสดงข้อมูลสำรองในไฟล์'});
     if (syncProblem) actions.push({kind:'sync',tone:'critical',title:'การซิงค์ข้อมูลพาเลตมีปัญหา',detail:'รีเฟรชหน้าเว็บหรือตรวจการเชื่อมต่อ'});
     if (pending.error) actions.push({kind:'pending-error',tone:'warning',title:'ตรวจรายการรอจัดเก็บไม่ได้',detail:'กดรีเฟรชเพื่อลองอีกครั้ง'});
-    badge.hidden = !actions.length;
-    badge.textContent = actions.length > 9 ? '9+' : String(actions.length);
-    toggle.setAttribute('aria-label',actions.length ? `เปิดการแจ้งเตือน ${actions.length} ประเภท` : 'เปิดการแจ้งเตือน');
-    list.innerHTML = actions.length ? actions.map(action => `<button type="button" class="notification-item" data-action="${action.kind}" data-tone="${action.tone}"><strong>${escape(action.title)}</strong><small>${escape(action.detail)}</small></button>`).join('') : '<p class="notification-empty">ไม่มีรายการที่ต้องดำเนินการ</p>';
+    currentActions = visibleActions(actions,dismissed);
+    clearButton.disabled = !currentActions.length;
+    badge.hidden = !currentActions.length;
+    badge.textContent = currentActions.length > 9 ? '9+' : String(currentActions.length);
+    toggle.setAttribute('aria-label',currentActions.length ? `เปิดการแจ้งเตือน ${currentActions.length} ประเภท` : 'เปิดการแจ้งเตือน');
+    list.innerHTML = currentActions.length ? currentActions.map(action => `<button type="button" class="notification-item" data-action="${action.kind}" data-tone="${action.tone}"><strong>${escape(action.title)}</strong><small>${escape(action.detail)}</small></button>`).join('') : `<p class="notification-empty">${actions.length ? 'ล้างการแจ้งเตือนวันนี้แล้ว · รายการใหม่จะแสดงเมื่อข้อมูลเปลี่ยน' : 'ไม่มีรายการที่ต้องดำเนินการ'}</p>`;
     if (pending.count == null && !pending.error) list.insertAdjacentHTML('beforeend','<p class="notification-empty">กำลังตรวจรายการรอจัดเก็บ…</p>');
     if (stockReady && !low.configured) list.insertAdjacentHTML('beforeend','<p class="notification-hint">ยังไม่มีเกณฑ์ขั้นต่ำรายสินค้า จึงยังไม่แจ้งเตือนสินค้าเหลือต่ำ</p>');
   }
@@ -91,9 +120,26 @@
     if (open) refreshPending();
   });
   document.getElementById('notificationRefresh').addEventListener('click',refreshPending);
+  clearButton.addEventListener('click',() => {
+    if (ensureCurrentDay()) render();
+    for (const action of currentActions) dismissed.add(actionSignature(action));
+    saveDismissed();
+    render();
+  });
   document.addEventListener('click',event => { if (!panel.hidden && !event.target.closest('.notification-anchor')) close(); });
   document.addEventListener('keydown',event => { if (event.key === 'Escape' && !panel.hidden) { close(); toggle.focus(); } });
   document.addEventListener('visibilitychange',() => { if (!document.hidden) refreshPending(); });
+  window.addEventListener('storage',event => {
+    if (event.key !== storageKey) return;
+    ensureCurrentDay();
+    dismissed = restoredDismissals(event.newValue,activeDay);
+    render();
+  });
+  function scheduleNextDay() {
+    const now = new Date(), next = new Date(now.getFullYear(),now.getMonth(),now.getDate()+1);
+    setTimeout(() => { render(); refreshPending(); scheduleNextDay(); },Math.max(1000,next.getTime()-now.getTime()+100));
+  }
+  scheduleNextDay();
   list.addEventListener('click',event => {
     const action = event.target.closest('[data-action]')?.dataset.action;
     if (!action) return;

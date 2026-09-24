@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
-const {findLowStock,negativeStock} = require('../notifications.js');
+const {findLowStock,negativeStock,dayKey,actionSignature,restoredDismissals,visibleActions} = require('../notifications.js');
 
 test('low-stock alert needs a per-product minimum and sums all warehouses in the same unit', () => {
   const data = [
@@ -19,4 +19,16 @@ test('low-stock alert needs a per-product minimum and sums all warehouses in the
 test('unknown balances are not reported as low stock', () => {
   assert.deepEqual(findLowStock([{code:'A',unit:'ชิ้น',qty:null,min_qty:20}]).rows,[]);
   assert.deepEqual(findLowStock([{code:'A',unit:'ชิ้น',qty:4}]).rows,[]);
+});
+
+test('cleared alerts stay hidden today, changed alerts reappear, and a new day resets them', () => {
+  const day = dayKey(new Date(2026,8,24,23,59));
+  const tomorrow = dayKey(new Date(2026,8,25,0,1));
+  const pending = {kind:'pending',title:'9 พาเลตรอจัดเก็บ',detail:'รหัส A'};
+  const changed = {...pending,title:'10 พาเลตรอจัดเก็บ'};
+  const signature = actionSignature(pending);
+  const saved = JSON.stringify({day,signatures:[signature]});
+  assert.deepEqual(visibleActions([pending,changed],restoredDismissals(saved,day)),[changed]);
+  assert.deepEqual(visibleActions([pending],restoredDismissals(saved,tomorrow)),[pending]);
+  assert.equal(restoredDismissals('invalid',day).size,0);
 });
