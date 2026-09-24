@@ -1962,6 +1962,7 @@ header.top .header-logo { border-radius: 14px; }
 </style>
 <link rel="stylesheet" href="warehouse-intro.css?v=20260924-2">
 <link rel="stylesheet" href="dashboard-shell.css?v=20260924-2">
+<link rel="stylesheet" href="product-history.css?v=20260924-1">
 </head>
 <body class="viz-root">
 <section class="warehouse-intro" id="warehouseIntro" role="dialog" aria-modal="true" aria-labelledby="warehouseTourTitle" hidden>
@@ -2011,6 +2012,7 @@ header.top .header-logo { border-radius: 14px; }
   <nav class="tabs" id="tabs" role="tablist" aria-label="ส่วนข้อมูลแดชบอร์ด">
     <div class="dashboard-nav-brand" aria-hidden="true"><img src="assets/bcl-logo.png" alt=""><span>BIO-COSLAB</span></div>
     <button class="tab-btn active" id="tab-stock" data-tab="stock" type="button" role="tab" aria-selected="true" aria-controls="pane-stock"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m4 7 8-4 8 4-8 4-8-4Z" stroke-width="1.8"/><path d="m4 7v10l8 4 8-4V7M12 11v10" stroke-width="1.8"/></svg><span>DASHBORD</span><span class="tab-badge" id="tabBadgeStock">฿32.41M</span></button>
+    <button class="tab-btn" id="tab-product-history" data-tab="product-history" type="button" role="tab" aria-selected="false" aria-controls="pane-product-history" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" stroke-width="1.8"/><path d="m15.5 15.5 5 5M7.5 10.5h6m-3-3v6" stroke-width="1.8" stroke-linecap="round"/></svg><span>ค้นหาการเคลื่อนไหวสินค้า</span></button>
     <button class="tab-btn" id="tab-floorplan" data-tab="floorplan" type="button" role="tab" aria-selected="false" aria-controls="pane-floorplan" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z" stroke-width="1.8"/><path d="M9 3v15m6-12v15" stroke-width="1.8"/></svg><span>เบิกและรับคืนเบิก</span><span class="tab-badge" id="tabBadgeFloorplan">46 โซน</span></button>
     <button class="tab-btn" id="tab-incoming" data-tab="incoming" type="button" role="tab" aria-selected="false" aria-controls="pane-incoming" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 17v4h16v-4M4 7h4m8 0h4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>รับเข้าและจัดเก็บ</span><span class="tab-badge" id="tabBadgeIncoming">—</span></button>
     <button class="tab-btn" id="tab-bompk" data-tab="bompk" type="button" role="tab" aria-selected="false" aria-controls="pane-bompk" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 21V9l6 3V8l6 4V5h6v16H3Z" stroke-width="1.8"/><path d="M7 17h2m3 0h2m3 0h2" stroke-width="1.8"/></svg><span>ความพร้อมบรรจุภัณฑ์ (BOM PK)</span><span class="tab-badge critical" id="tabBadgeBompk">612 ติดขัด</span></button>
@@ -2023,6 +2025,20 @@ header.top .header-logo { border-radius: 14px; }
     <button class="tab-btn" id="tab-audit" data-tab="audit" type="button" role="tab" aria-selected="false" aria-controls="pane-audit" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9M12 7v5l3 2M17 3h4v4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>ประวัติการแก้ไขพาเลต</span></button>
   </nav>
   <main class="dashboard-content" id="dashboardContent" aria-label="แดชบอร์ดสินค้าคงคลัง">
+
+  <div class="tab-pane" id="pane-product-history" role="tabpanel" aria-labelledby="tab-product-history" hidden>
+    <section class="panel product-history-panel" aria-labelledby="productHistoryTitle">
+      <h2 id="productHistoryTitle">ค้นหาการเคลื่อนไหวสินค้า</h2>
+      <label class="product-history-search-label" for="productHistoryQuery">ชื่อสินค้า รหัส หรือ Keyword</label>
+      <div class="product-history-search-row">
+        <input id="productHistoryQuery" type="search" autocomplete="off" placeholder="พิมพ์ชื่อ รหัส หรือคำสำคัญ" aria-controls="productHistoryMatches">
+        <button id="productHistoryClear" type="button">ล้างคำค้น</button>
+      </div>
+      <p id="productHistorySearchStatus" class="product-history-status" role="status" aria-live="polite">พิมพ์เพื่อค้นหาสินค้า</p>
+      <div id="productHistoryMatches" class="product-history-matches"></div>
+      <div id="productHistoryDetail" class="product-history-detail" hidden></div>
+    </section>
+  </div>
 
   <!-- ============ TAB: STOCK ============ -->
   <div class="tab-pane" id="pane-stock" role="tabpanel" aria-labelledby="tab-stock">
@@ -3882,6 +3898,7 @@ function refreshAfterRemoteChange(zoneCode, slotCode) {
   if (selectedPin) renderFloorZoneDetail(selectedPin.dataset.zone, selectedPin.dataset.wh);
   if (typeof renderStockReconciliation === 'function') renderStockReconciliation();
   window.PKDaily?.refresh();
+  window.PKProductHistory?.refresh();
 }
 
 // initSupabaseSync(): initial full fetch -- Supabase's stored state overrides the Excel-seeded
@@ -6568,6 +6585,7 @@ function rebuildStockControls() {
   // manual update recalculates BOM immediately.
   if (window.__bomUiReady) recalculateBomFromStock();
   if (fseAddCode.value.trim() && editingSlot) renderAddProductSuggestions(fseAddCode.value);
+  window.PKProductHistory?.refresh();
 }
 
 let stockSnapshotState = 'loading';
@@ -9771,6 +9789,7 @@ window.addEventListener('pageshow', () => {
 <script src="incoming-workflow.js?v=20260923-4"></script>
 <script src="incoming-ui.js?v=20260923-8"></script>
 <script src="daily-movements.js"></script>
+<script src="product-history.js?v=20260924-1"></script>
 <script src="receipt-plan.js"></script>
 <script src="welcome-greeting.js?v=20260924-1" defer></script>
 <script src="warehouse-intro.js?v=20260924-1" defer></script>
