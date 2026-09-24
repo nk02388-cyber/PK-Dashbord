@@ -37,6 +37,27 @@
     return STOCK.items||[];
   }
   const productInput=$('incomingProductCode'),productSuggestions=$('incomingProductSuggestions');
+  const supplierInput=$('incomingSupplier'),supplierOptions=$('incomingSupplierOptions');
+  let supplierProductCode='';
+  function showSupplierOptions(code) {
+    const key=String(code||'').trim().toUpperCase();
+    if (supplierProductCode!==key) supplierInput.value='';
+    supplierProductCode=key;
+    const names=PKSupplier.forProduct(key,PK_SUPPLIER_OPTIONS);
+    if (names.length===1 && !supplierInput.value.trim()) supplierInput.value=names[0];
+    supplierOptions.hidden=!names.length;
+    supplierOptions.innerHTML=names.map((name,index)=>`<button type="button" data-supplier-index="${index}" aria-pressed="${supplierInput.value.trim()===name}">${esc(name)}</button>`).join('');
+    return names.length;
+  }
+  supplierOptions.addEventListener('click',event=>{
+    const button=event.target.closest('[data-supplier-index]');
+    if (!button) return;
+    supplierInput.value=button.textContent.trim();
+    supplierOptions.querySelectorAll('button').forEach(option=>option.setAttribute('aria-pressed',String(option===button)));
+  });
+  supplierInput.addEventListener('input',()=>{
+    supplierOptions.querySelectorAll('button').forEach(option=>option.setAttribute('aria-pressed',String(option.textContent.trim()===supplierInput.value.trim())));
+  });
   let suggestionItems=[],activeSuggestion=-1;
   function hideProductSuggestions() {
     suggestionItems=[];activeSuggestion=-1;
@@ -61,6 +82,7 @@
     productInput.value=selectedProduct.code;
     $('incomingProductName').value=selectedProduct.name||'';
     $('incomingUnit').value=selectedProduct.unit||'';
+    showSupplierOptions(selectedProduct.code);
     hideProductSuggestions();
     if (rawScan) playScanSuccess(`product:${selectedProduct.code}`);
     status('incomingReceiveStatus',`เลือกสินค้า ${selectedProduct.code} · ${selectedProduct.name||''}`);
@@ -82,7 +104,13 @@
     if (raw) status('incomingReceiveStatus','เลือกรายการจากผลค้นหา หรือสแกนรหัสสินค้าในสต็อกที่อัปเดต',true);
     return selectedProduct;
   }
-  productInput.addEventListener('input',()=>{selectedProduct=null;$('incomingProductName').value='';$('incomingUnit').value='';showProductSuggestions();});
+  productInput.addEventListener('input',()=>{
+    selectedProduct=null;$('incomingProductName').value='';$('incomingUnit').value='';
+    supplierProductCode='';supplierInput.value='';supplierOptions.hidden=true;supplierOptions.replaceChildren();
+    const exact=PKIncoming.exactProduct(productInput.value.trim(),products());
+    if (exact) chooseProduct(exact);
+    else showProductSuggestions();
+  });
   productInput.addEventListener('focus',showProductSuggestions);
   productInput.addEventListener('change',()=>{if(!selectedProduct)identifyProduct();});
   productInput.addEventListener('keydown',event=>{
@@ -92,13 +120,13 @@
       event.preventDefault();armScanAudio();
       if(activeSuggestion>=0) chooseProduct(suggestionItems[activeSuggestion]);
       else identifyProduct(true);
-      if(selectedProduct)$('incomingQuantity').focus();
+      if(selectedProduct)(supplierInput.value.trim()?$('incomingQuantity'):supplierInput).focus();
     }
   });
   productSuggestions.addEventListener('pointerdown',event=>{if(event.target.closest('[data-index]'))event.preventDefault();});
   productSuggestions.addEventListener('click',event=>{
     const option=event.target.closest('[data-index]');
-    if(option){chooseProduct(suggestionItems[Number(option.dataset.index)]);$('incomingQuantity').focus();}
+    if(option){chooseProduct(suggestionItems[Number(option.dataset.index)]);(supplierInput.value.trim()?$('incomingQuantity'):supplierInput).focus();}
   });
   productInput.addEventListener('blur',()=>setTimeout(hideProductSuggestions,150));
   function updateAllocation(reset=false) {
@@ -217,6 +245,7 @@
       pendingCreateRequestId=null;
       status('incomingReceiveStatus',`บันทึก FM-ST-011 แล้ว · สร้างป้าย FM-ST-019 ${data.length} ป้าย · รอจัดเก็บ`);
       $('incomingProductCode').value='';$('incomingProductName').value='';$('incomingLot').value='';$('incomingQuantity').value='';
+      supplierInput.value='';supplierProductCode='';supplierOptions.hidden=true;supplierOptions.replaceChildren();
       $('incomingPalletCount').value='1';updateAllocation(true);
       selectedProduct=null;
       $('incomingTagReady').scrollIntoView({block:'center',behavior:'smooth'});
