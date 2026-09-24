@@ -1,14 +1,14 @@
 /* A continuous navy navigation rail beside the light inventory work area. */
 .dashboard-nav-brand { display: none; }
 .welcome-greeting {
-  margin: 4px 0 0;
-  color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 500;
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 700;
   line-height: 1.4;
 }
 @media (max-width: 700px) {
-  .welcome-greeting { font-size: 12px; }
+  .welcome-greeting { font-size: 13px; }
 }
 
 @media (min-width: 1024px) {
