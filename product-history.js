@@ -44,14 +44,19 @@
     }).sort((a,b) => a.rank-b.rank || a.code.localeCompare(b.code,'th',{numeric:true}));
   }
 
-  function collectMovements(slotItems, productCode, getLedger) {
+  function collectMovements(slotItems, productCode, getLedger, latestSuppliers = {}) {
     const code = codeKey(productCode), rows = [];
+    const latestName = String(latestSuppliers[code]?.supplier || '').trim();
     for (const [zone, slots] of Object.entries(slotItems || {})) {
       for (const [slot, items] of Object.entries(slots || {})) {
         for (const item of items || []) {
           if (codeKey(item.code) !== code) continue;
-          for (const movement of getLedger(item).rows) rows.push({...movement, zone, slot, code, name:item.name || '', lotNo:movement.lotNo || item.lotNo || '',
-            supplierName:movement.type === 'receive' ? String(item.supplierName || item.supplier_name || '').trim() : ''});
+          for (const movement of getLedger(item).rows) {
+            const recordedName = String(movement.supplierName || movement.supplier_name || item.supplierName || item.supplier_name || '').trim();
+            rows.push({...movement, zone, slot, code, name:item.name || '', lotNo:movement.lotNo || item.lotNo || '',
+              supplierName:movement.type === 'receive' ? recordedName || latestName : '',
+              supplierSource:movement.type === 'receive' ? recordedName ? 'recorded' : latestName ? 'latest' : '' : ''});
+          }
         }
       }
     }
@@ -112,25 +117,21 @@
     const product = buildCatalog(STOCK.items, SLOT_ITEMS, PK_LATEST_SUPPLIERS).find(row => row.code === selectedCode);
     if (!product) { selectedCode = ''; renderDetail(); return; }
     const stock = summarizeStock(STOCK.items, selectedCode);
-    const movements = collectMovements(SLOT_ITEMS, selectedCode, getStockMovement);
+    const movements = collectMovements(SLOT_ITEMS, selectedCode, getStockMovement, PK_LATEST_SUPPLIERS);
     const balances = summarizeBalances(stock);
     const loading = !palletDataReady;
     const syncFailed = document.getElementById('syncStatusBar')?.classList.contains('sync-error');
     const stockLabel = stockSnapshotState === 'latest' ? 'สต็อกล่าสุดจากระบบ' : 'สต็อกสำรองในไฟล์';
     const stockDate = String(STOCK.report_date || 'ไม่ระบุวันที่').replace(/^ณ วันที่:\s*/, '');
-    const latestSupplier = PK_LATEST_SUPPLIERS[selectedCode];
-    const supplierDetails = latestSupplier
-      ? `<strong>${escape(latestSupplier.supplier)}</strong><span>รับล่าสุด ${escape(latestSupplier.receivedOn || 'ไม่ระบุวันที่')}${latestSupplier.receipt && latestSupplier.receipt !== '-' ? ` · เอกสาร ${escape(latestSupplier.receipt)}` : ''}</span>`
-      : '<span>ไม่มีข้อมูลผู้ส่งสินค้าล่าสุดสำหรับรหัสนี้ในไฟล์ที่ได้รับ</span>';
     const balanceValues = balances.length ? balances.map(row => `<p><strong>${row.known ? fmt(row.qty) : '—'}</strong><small>${escape(row.unit)}</small></p>`).join('') : '<p><strong>—</strong></p>';
     detailEl.hidden = false;
     detailEl.innerHTML = `<div class="product-history-product"><div><strong>${escape(product.code)}</strong><h3>${escape(product.name || 'ไม่ระบุชื่อสินค้า')}</h3></div><span>${escape(stockLabel)}</span></div>
-      <section class="product-history-latest-supplier" aria-label="ผู้ส่งสินค้ารับเข้าล่าสุด"><div><h3>ผู้ส่งสินค้ารับเข้าล่าสุด</h3><small>อ้างอิงไฟล์ข้อมูลรับเข้า ณ 24 ก.ย. 69</small></div><div>${supplierDetails}</div></section>
       <section class="product-history-balance" aria-label="ยอดคงเหลือในสต็อก"><span>คงเหลือในสต็อก · ${escape(stockDate)}</span><div>${balanceValues}</div></section>
       <section class="product-history-section"><h3>ยอดคงเหลือตามคลัง</h3><p class="product-history-note">${escape(String(STOCK.report_date || 'ไม่ระบุวันที่สต็อก'))}</p>
         <div class="product-history-stock">${stock.length ? stock.map(row => `<div><span>คลัง ${escape(row.wh)} · ${escape(row.unit)}</span><strong>${row.known ? fmt(row.qty) : 'ไม่ทราบจำนวน'}</strong></div>`).join('') : '<p>ไม่มีรหัสนี้ในสต็อกที่อัปเดต</p>'}</div></section>
       <section class="product-history-section"><div class="product-history-section-head"><h3>ประวัติการเคลื่อนไหวบนพาเลต</h3><span>${loading ? (syncFailed ? 'โหลดข้อมูลไม่สำเร็จ' : 'กำลังโหลดข้อมูลพาเลต…') : `${fmt(movements.length)} รายการ`}</span></div>
-        ${loading ? `<p class="product-history-empty">${syncFailed ? 'โหลดข้อมูลพาเลตไม่สำเร็จ กรุณารีเฟรชหน้าเว็บ' : 'กำลังโหลดข้อมูลพาเลต กรุณารอสักครู่'}</p>` : movements.length ? `<div class="product-history-table-wrap"><table><thead><tr><th>วันที่</th><th>รายการ</th><th>โซน / ตำแหน่ง</th><th>Lot / PK No.</th><th class="num">จำนวน</th><th>หน่วย</th><th>ผู้ส่งสินค้า</th><th>ผู้ทำรายการ</th><th>เลขเอกสาร</th></tr></thead><tbody>${movements.slice(0,shown).map(row => `<tr><td>${escape(formatMovementDate(row.date))}</td><td><span class="product-history-type product-history-type-${escape(row.type)}">${escape(row.label)}</span></td><td>${escape(row.zone)} / ${escape(row.slot)}</td><td>${escape(row.lotNo || '—')}</td><td class="num">${row.qty == null ? 'ไม่ระบุ' : fmt(row.qty)}</td><td>${escape(row.unit || '—')}</td><td>${escape(row.supplierName || '—')}</td><td>${escape(row.by || '—')}</td><td>${escape(row.reference || '—')}</td></tr>`).join('')}</tbody></table></div>${movements.length > shown ? `<button class="product-history-more" type="button">แสดงเพิ่มเติม (${fmt(movements.length-shown)} รายการ)</button>` : ''}` : '<p class="product-history-empty">ยังไม่มีประวัติการเคลื่อนไหวบนพาเลตสำหรับรหัสนี้</p>'}
+        ${loading ? `<p class="product-history-empty">${syncFailed ? 'โหลดข้อมูลพาเลตไม่สำเร็จ กรุณารีเฟรชหน้าเว็บ' : 'กำลังโหลดข้อมูลพาเลต กรุณารอสักครู่'}</p>` : movements.length ? `<div class="product-history-table-wrap"><table><thead><tr><th>วันที่</th><th>รายการ</th><th>โซน / ตำแหน่ง</th><th>Lot / PK No.</th><th class="num">จำนวน</th><th>หน่วย</th><th>ผู้ส่งสินค้า</th><th>ผู้ทำรายการ</th><th>เลขเอกสาร</th></tr></thead><tbody>${movements.slice(0,shown).map(row => `<tr><td>${escape(formatMovementDate(row.date))}</td><td><span class="product-history-type product-history-type-${escape(row.type)}">${escape(row.label)}</span></td><td>${escape(row.zone)} / ${escape(row.slot)}</td><td>${escape(row.lotNo || '—')}</td><td class="num">${row.qty == null ? 'ไม่ระบุ' : fmt(row.qty)}</td><td>${escape(row.unit || '—')}</td><td>${escape(row.supplierName || '—')}${row.supplierSource === 'latest' ? '<small class="product-history-supplier-source">อ้างอิงล่าสุด*</small>' : ''}</td><td>${escape(row.by || '—')}</td><td>${escape(row.reference || '—')}</td></tr>`).join('')}</tbody></table></div>${movements.length > shown ? `<button class="product-history-more" type="button">แสดงเพิ่มเติม (${fmt(movements.length-shown)} รายการ)</button>` : ''}` : '<p class="product-history-empty">ยังไม่มีประวัติการเคลื่อนไหวบนพาเลตสำหรับรหัสนี้</p>'}
+        ${movements.some(row => row.supplierSource === 'latest') ? '<p class="product-history-note">* ชื่ออ้างอิงจากผู้ส่งสินค้าที่รับเข้าล่าสุดรายรหัส ไม่ได้ยืนยันผู้ส่งสินค้าของรายการย้อนหลัง</p>' : ''}
         <p class="product-history-note">รายการรับเข้า เบิก รับคืน และย้าย อ้างอิงบันทึกพาเลตในระบบ; สต็อกที่อัปเดตเป็นยอดคงเหลือ ไม่ใช่ประวัติรายการ</p></section>`;
     detailEl.querySelector('.product-history-more')?.addEventListener('click', () => { shown += 100; renderDetail(); });
   }

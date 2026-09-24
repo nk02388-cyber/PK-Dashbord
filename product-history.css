@@ -18,11 +18,6 @@
 .product-history-product strong { color: var(--series-1); font-size: 13px; }
 .product-history-product h3 { margin: 3px 0 0; color: var(--text-primary); font-size: 18px; }
 .product-history-product > span { color: var(--text-secondary); font-size: 12px; }
-.product-history-latest-supplier { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px 18px; padding: 15px 17px; border: 1px solid var(--border); border-radius: 12px; background: var(--page-plane); }
-.product-history-latest-supplier > div { display: grid; gap: 3px; }
-.product-history-latest-supplier h3 { margin: 0; color: var(--text-primary); font-size: 14px; }
-.product-history-latest-supplier small, .product-history-latest-supplier span { color: var(--text-secondary); font-size: 12px; }
-.product-history-latest-supplier strong { color: var(--text-primary); font-size: 14px; }
 .product-history-section { display: grid; gap: 10px; min-width: 0; }
 .product-history-balance { min-width: 0; padding: 16px; border: 1px solid var(--border); border-top: 3px solid var(--series-1); border-radius: 12px; background: var(--page-plane); }
 .product-history-balance > span { display: block; color: var(--text-secondary); font-size: 12px; font-weight: 700; }
@@ -42,6 +37,7 @@
 .product-history-table-wrap th, .product-history-table-wrap td { padding: 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
 .product-history-table-wrap th { position: sticky; top: 0; z-index: 1; background: var(--page-plane); color: var(--text-primary); white-space: nowrap; }
 .product-history-table-wrap .num { text-align: right; font-variant-numeric: tabular-nums; }
+.product-history-supplier-source { display: block; margin-top: 3px; color: var(--text-secondary); font-size: 10px; line-height: 1.35; }
 .product-history-type { font-weight: 700; }
 .product-history-type-receive, .product-history-type-return, .product-history-type-transfer_in { color: var(--status-good); }
 .product-history-type-withdraw, .product-history-type-transfer_out { color: var(--status-critical); }

@@ -51,6 +51,24 @@ test('combines real pallet movements in date order and retains their location', 
   assert.deepEqual(collectMovements(pallets,'31-0002',() => ({rows:[]})),[]);
 });
 
+test('shows the latest supplier only as a marked fallback on receipt rows', () => {
+  const items = {A:{'A-01':[
+    {code:'X',name:'สินค้า X',lotNo:'L1'},
+    {code:'X',name:'สินค้า X',lotNo:'L2',supplierName:'ผู้ส่งที่บันทึกจริง'},
+  ]}};
+  const rows = collectMovements(items,'X',item => ({rows:[
+    {date:'2026-09-18',type:'receive',label:'รับเข้า',lotNo:item.lotNo},
+    {date:'2026-09-19',type:'withdraw',label:'เบิก',lotNo:item.lotNo},
+  ]}),{'X':{supplier:'ผู้ส่งล่าสุด'}});
+  const fallback = rows.find(row => row.lotNo === 'L1' && row.type === 'receive');
+  const recorded = rows.find(row => row.lotNo === 'L2' && row.type === 'receive');
+  assert.equal(fallback.supplierName,'ผู้ส่งล่าสุด');
+  assert.equal(fallback.supplierSource,'latest');
+  assert.equal(recorded.supplierName,'ผู้ส่งที่บันทึกจริง');
+  assert.equal(recorded.supplierSource,'recorded');
+  assert.ok(rows.filter(row => row.type === 'withdraw').every(row => !row.supplierName));
+});
+
 test('summarizes current balances separately by warehouse and unit', () => {
   assert.deepEqual(summarizeStock(stock,'31-0001').map(({wh,qty}) => [wh,qty]),[['201',20],['202',12]]);
 });
