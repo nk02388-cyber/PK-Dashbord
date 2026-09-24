@@ -2879,7 +2879,7 @@ header.top .header-logo { border-radius: 14px; }
               <div class="incoming-supplier-field"><label>ผู้ส่งสินค้า *<input id="incomingSupplier" required maxlength="200" autocomplete="off" aria-controls="incomingSupplierOptions"></label><div id="incomingSupplierOptions" class="incoming-supplier-options" role="group" aria-label="เลือกผู้ส่งสินค้าของรหัสนี้" hidden></div></div>
               <div class="incoming-product-field"><label for="incomingProductCode">รหัสสินค้า *</label><input id="incomingProductCode" required autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="incomingProductSuggestions" placeholder="ค้นหาชื่อหรือรหัสสินค้า"><div id="incomingProductSuggestions" class="incoming-product-suggestions" role="listbox" aria-label="เลือกสินค้าจากสต็อกที่อัปเดต" hidden></div></div>
               <label>ชื่อสินค้า<input id="incomingProductName" readonly></label>
-              <label>Lot<input id="incomingLot" maxlength="120"></label>
+              <label>Lot *<input id="incomingLot" required maxlength="120"></label>
               </div>
               <div class="incoming-scan-actions"><button type="button" class="incoming-camera-button" id="incomingProductCamera"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8V5h3m10 0h3v3M4 16v3h3m10 0h3v-3M8 12h8m-4-4v8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>เปิดกล้องสแกน</button></div>
             </div>
@@ -9825,7 +9825,7 @@ window.addEventListener('pageshow', () => {
 <script src="incoming-workflow.js?v=20260923-4"></script>
 <script src="supplier-options-data.js?v=20260924-1"></script>
 <script src="supplier-options.js?v=20260924-1"></script>
-<script src="incoming-ui.js?v=20260924-2"></script>
+<script src="incoming-ui.js?v=20260924-3"></script>
 <script src="daily-movements.js"></script>
 <script src="latest-suppliers.js?v=20260924-1"></script>
 <script src="product-history.js?v=20260924-7"></script>

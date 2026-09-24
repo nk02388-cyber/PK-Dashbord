@@ -221,9 +221,19 @@
   $('incomingLocationScan').addEventListener('change',event=>{armScanAudio();selectLocation(event.target.value,true);});
   $('incomingLocationScan').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();armScanAudio();selectLocation(event.target.value,true);}});
   $('incomingStorer').addEventListener('input',updatePutaway);
+  $('incomingLot').addEventListener('input',event=>event.target.setCustomValidity(''));
   $('incomingReceiveForm').addEventListener('submit',async event=>{
     event.preventDefault();
     if (saving) return;
+    const lotInput=$('incomingLot');
+    const lotNo=lotInput.value.trim();
+    if (!lotNo) {
+      lotInput.setCustomValidity('กรุณากรอก Lot');
+      lotInput.reportValidity();
+      lotInput.focus();
+      return;
+    }
+    lotInput.setCustomValidity('');
     const product=identifyProduct(),qty=Number($('incomingQuantity').value),palletCount=Number($('incomingPalletCount').value);
     const quantities=[...$('incomingAllocation').querySelectorAll('[data-pallet-qty]')].map(input=>input.value);
     if (!product||!PKIncoming.validAllocation(qty,quantities)||quantities.length!==palletCount) {status('incomingReceiveStatus','กรุณาตรวจรหัสสินค้า จำนวนรวม จำนวนพาเลต และยอดในแต่ละป้ายให้ตรงกัน',true);return;}
@@ -235,7 +245,7 @@
       pendingCreateRequestId ||= crypto.randomUUID();
       const {data,error}=await supabaseClient.rpc('create_incoming_batch',{
         p_receiving_no:$('incomingReceiptNo').value.trim(),p_supplier_name:$('incomingSupplier').value.trim(),
-        p_product_code:product.code,p_product_name:product.name,p_lot_no:$('incomingLot').value.trim(),
+        p_product_code:product.code,p_product_name:product.name,p_lot_no:lotNo,
         p_unit:$('incomingUnit').value.trim(),p_total_quantity:qty,p_pallet_count:palletCount,p_quantities:quantities.map(Number),p_received_on:$('incomingReceivedOn').value,
         p_manufactured_on:$('incomingManufacturedOn').value||null,p_expires_on:$('incomingExpiresOn').value||null,
         p_actor:$('incomingReceiver').value.trim(),p_request_id:pendingCreateRequestId});
