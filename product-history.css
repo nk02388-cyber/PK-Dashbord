@@ -19,6 +19,16 @@
 .product-history-product h3 { margin: 3px 0 0; color: var(--text-primary); font-size: 18px; }
 .product-history-product > span { color: var(--text-secondary); font-size: 12px; }
 .product-history-section { display: grid; gap: 10px; min-width: 0; }
+.product-history-quantities { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.product-history-quantity-card { min-width: 0; padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--page-plane); }
+.product-history-quantity-card > span { display: block; color: var(--text-secondary); font-size: 12px; font-weight: 700; }
+.product-history-quantity-card > div { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 8px; }
+.product-history-quantity-card p { display: flex; align-items: baseline; gap: 5px; margin: 0; color: var(--text-primary); }
+.product-history-quantity-card strong { font-size: 23px; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.product-history-quantity-card small { color: var(--text-secondary); font-size: 12px; }
+.product-history-quantity-card.is-received { border-top: 3px solid var(--status-good); }
+.product-history-quantity-card.is-issued { border-top: 3px solid var(--status-critical); }
+.product-history-quantity-card.is-balance { border-top: 3px solid var(--series-1); }
 .product-history-section h3 { margin: 0; color: var(--text-primary); font-size: 15px; }
 .product-history-section-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .product-history-section-head span { color: var(--text-secondary); font-size: 12px; }
@@ -37,6 +47,7 @@
 .product-history-more { justify-self: start; }
 @media (max-width: 700px) {
   .product-history-panel { padding: 16px; }
+  .product-history-quantities { grid-template-columns: 1fr; }
   .product-history-search-row { flex-wrap: wrap; }
   .product-history-search-row input { flex-basis: 100%; font-size: 16px; }
   .product-history-search-row button { width: 100%; }

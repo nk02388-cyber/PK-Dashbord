@@ -72,8 +72,36 @@
     return [...groups.values()].sort((a,b) => a.wh.localeCompare(b.wh,'th',{numeric:true}) || a.unit.localeCompare(b.unit,'th'));
   }
 
+  function summarizeQuantities(movements, stock) {
+    const units = new Map();
+    const entry = unit => {
+      const key = String(unit || '').trim() || 'ไม่ระบุหน่วย';
+      if (!units.has(key)) units.set(key,{unit:key,received:0,issued:0,hasHistory:false,receivedKnown:true,issuedKnown:true,balance:0,hasStock:false,balanceKnown:true});
+      return units.get(key);
+    };
+    for (const row of movements || []) {
+      if (!['receive','return','withdraw'].includes(row.type)) continue;
+      const group = entry(row.unit);
+      const qty = Number(row.qty);
+      group.hasHistory = true;
+      if (!Number.isFinite(qty) || qty < 0 || row.qty == null || row.qty === '') {
+        group[row.type === 'withdraw' ? 'issuedKnown' : 'receivedKnown'] = false;
+        continue;
+      }
+      if (row.type === 'withdraw') group.issued += qty;
+      else group.received += qty;
+    }
+    for (const row of stock || []) {
+      const group = entry(row.unit);
+      group.hasStock = true;
+      if (!row.known) group.balanceKnown = false;
+      else group.balance += row.qty;
+    }
+    return [...units.values()].sort((a,b) => a.unit.localeCompare(b.unit,'th'));
+  }
+
   if (typeof module !== 'undefined' && module.exports) {
-    module.exports = {buildCatalog, searchCatalog, collectMovements, summarizeStock};
+    module.exports = {buildCatalog, searchCatalog, collectMovements, summarizeStock, summarizeQuantities};
     return;
   }
 
@@ -92,11 +120,22 @@
     if (!product) { selectedCode = ''; renderDetail(); return; }
     const stock = summarizeStock(STOCK.items, selectedCode);
     const movements = collectMovements(SLOT_ITEMS, selectedCode, getStockMovement);
+    const quantities = summarizeQuantities(movements, stock);
     const loading = !palletDataReady;
     const syncFailed = document.getElementById('syncStatusBar')?.classList.contains('sync-error');
     const stockLabel = stockSnapshotState === 'latest' ? 'สต็อกล่าสุดจากระบบ' : 'สต็อกสำรองในไฟล์';
+    const stockDate = String(STOCK.report_date || 'ไม่ระบุวันที่').replace(/^ณ วันที่:\s*/, '');
+    const quantityCard = (label, field, className) => `<div class="product-history-quantity-card ${className}"><span>${label}</span><div>${quantities.length ? quantities.map(row => {
+      const available = field === 'balance' ? row.hasStock && row.balanceKnown : !loading && row.hasHistory && row[`${field}Known`];
+      return `<p><strong>${available ? fmt(row[field]) : '—'}</strong><small>${escape(row.unit)}</small></p>`;
+    }).join('') : '<p><strong>—</strong></p>'}</div></div>`;
     detailEl.hidden = false;
     detailEl.innerHTML = `<div class="product-history-product"><div><strong>${escape(product.code)}</strong><h3>${escape(product.name || 'ไม่ระบุชื่อสินค้า')}</h3></div><span>${escape(stockLabel)}</span></div>
+      <section class="product-history-section" aria-label="สรุปปริมาณสินค้า"><div class="product-history-quantities">
+        ${quantityCard('รับเข้า + รับคืน', 'received', 'is-received')}
+        ${quantityCard('จ่ายออก (เบิก)', 'issued', 'is-issued')}
+        ${quantityCard(`คงเหลือในสต็อก · ${escape(stockDate)}`, 'balance', 'is-balance')}
+      </div><p class="product-history-note">รับ/จ่าย: บันทึกพาเลต · คงเหลือ: สต็อกตามวันที่ระบุ · ไม่นับการย้ายพาเลตเป็นรับ/จ่าย</p></section>
       <section class="product-history-section"><h3>ยอดคงเหลือตามคลัง</h3><p class="product-history-note">${escape(String(STOCK.report_date || 'ไม่ระบุวันที่สต็อก'))}</p>
         <div class="product-history-stock">${stock.length ? stock.map(row => `<div><span>คลัง ${escape(row.wh)} · ${escape(row.unit)}</span><strong>${row.known ? fmt(row.qty) : 'ไม่ทราบจำนวน'}</strong></div>`).join('') : '<p>ไม่มีรหัสนี้ในสต็อกที่อัปเดต</p>'}</div></section>
       <section class="product-history-section"><div class="product-history-section-head"><h3>ประวัติการเคลื่อนไหวบนพาเลต</h3><span>${loading ? (syncFailed ? 'โหลดข้อมูลไม่สำเร็จ' : 'กำลังโหลดข้อมูลพาเลต…') : `${fmt(movements.length)} รายการ`}</span></div>
