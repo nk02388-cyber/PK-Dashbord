@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
-const {buildCatalog, searchCatalog, collectMovements, summarizeStock, summarizeBalances} = require('../product-history.js');
+const {buildCatalog, searchCatalog, collectMovements, summarizeStock, summarizeBalances, stockCardRows} = require('../product-history.js');
 
 const stock = [
   {code:'31-0001', name:'ขวด JABS Lotion', search_name:'ขวด โลชั่น', wh:'201', unit:'ขวด', qty:20},
@@ -81,4 +81,31 @@ test('shows only current balances, keeping units separate and unknown stock expl
   assert.equal(bottles.known,true);
   assert.equal(boxes.known,false);
   assert.deepEqual(summarizeBalances([]),[]);
+});
+
+test('stock card reverses recorded movements from the dated stock snapshot by unit', () => {
+  const movements = [
+    {date:'2026-09-20', type:'withdraw', qty:3, unit:'ขวด'},
+    {date:'2026-09-19', type:'transfer_out', qty:2, unit:'ขวด'},
+    {date:'2026-09-19', type:'transfer_in', qty:2, unit:'ขวด'},
+    {date:'2026-09-18', type:'return', qty:1, unit:'ขวด'},
+    {date:'2026-09-17', type:'receive', qty:7, unit:'ขวด'},
+    {date:'2026-09-17', type:'receive', qty:4, unit:'กล่อง'},
+  ];
+  const card = stockCardRows(movements,[{unit:'ขวด',qty:10,known:true},{unit:'กล่อง',qty:4,known:true}], 'ณ วันที่: 24 ก.ย. 69');
+  assert.deepEqual(card.map(row => [row.received,row.issued,row.calculatedBalance]),[
+    [null,3,10],[null,2,13],[2,null,15],[1,null,13],[7,null,12],[4,null,4],
+  ]);
+});
+
+test('stock card leaves balances unknown for later, undated and incomplete records', () => {
+  const card = stockCardRows([
+    {date:'2026-09-25',type:'receive',qty:2,unit:'ขวด'},
+    {date:'2026-09-24',type:'withdraw',qty:1,unit:'ขวด'},
+    {date:'2026-09-23',type:'receive',qty:null,unit:'ขวด'},
+    {date:'2026-09-22',type:'receive',qty:3,unit:'ขวด'},
+    {date:'',type:'receive',qty:1,unit:'ขวด'},
+  ],[{unit:'ขวด',qty:5,known:true}], '24/09/2569');
+  assert.deepEqual(card.map(row => row.calculatedBalance),[null,5,6,null,null]);
+  assert.equal(stockCardRows([{date:'2026-09-24',type:'receive',qty:1,unit:'ชิ้น'}],[], '24/09/2569')[0].calculatedBalance,null);
 });
