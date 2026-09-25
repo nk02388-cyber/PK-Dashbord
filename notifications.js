@@ -30,6 +30,13 @@
     return (items || []).filter(item => item.qty != null && String(item.qty).trim() !== '' && Number(item.qty) < 0);
   }
 
+  function stockPalletMismatch(rows, cutoffStatus) {
+    const mismatches = (rows || []).filter(row => row.status === 'ยอดไม่ตรง');
+    if (!mismatches.length) return null;
+    return {count:mismatches.length, example:mismatches[0],
+      differentTimes:/พาเลตแก้หลังบันทึกสต็อก/.test(String(cutoffStatus || ''))};
+  }
+
   const dayKey = date => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
   const actionSignature = action => JSON.stringify([action.kind,action.title,action.detail]);
   function restoredDismissals(raw, day) {
@@ -41,7 +48,7 @@
   const visibleActions = (actions, dismissed) => actions.filter(action => !dismissed.has(actionSignature(action)));
 
   if (typeof module !== 'undefined' && module.exports) {
-    module.exports = {findLowStock, negativeStock, dayKey, actionSignature, restoredDismissals, visibleActions};
+    module.exports = {findLowStock, negativeStock, stockPalletMismatch, dayKey, actionSignature, restoredDismissals, visibleActions};
     return;
   }
 
@@ -77,11 +84,15 @@
     const negative = stockReady ? negativeStock(STOCK.items) : [];
     const bomCount = stockReady ? Number(/^\s*([\d,]+)/.exec(document.getElementById('tabBadgeBompk')?.textContent || '')?.[1].replace(/,/g,'')) || 0 : 0;
     const syncProblem = document.getElementById('syncStatusBar')?.classList.contains('sync-error') || document.getElementById('syncStatusBar')?.classList.contains('sync-unavailable');
+    const cutoff = stockReady && palletDataReady && !syncProblem ? reconciliationCutoff() : null;
+    const mismatch = cutoff ? stockPalletMismatch(buildStockReconciliation(STOCK.items,[...palletRemoteRows.values()]),cutoff.cutoffStatus) : null;
     const actions = [];
     if (pending.count > 0) actions.push({kind:'pending',tone:'warning',title:`${fmt(pending.count)} พาเลตรอจัดเก็บ`,detail:[...new Set(pending.rows.map(row => row.product_code).filter(Boolean))].join(' · ') || 'เปิดรายการรับเข้าและจัดเก็บ'});
     if (reorderRows.length) actions.push({kind:'reorder',tone:'warning',title:`ถึงจุดสั่งซื้อ ${fmt(reorderRows.length)} รหัส`,detail:`${reorderRows[0].code} · คงเหลือ ${fmt(reorderRows[0].available)} ${reorderRows[0].unit} / ROP ${fmt(reorderRows[0].rop)}`});
     for (const event of window.PKEvents?.getDue?.() || []) actions.push({kind:`event:${event.id}`,tone:'warning',title:`นัดหมาย: ${event.name}`,detail:`${event.date} เวลา ${event.time}${event.details ? ` · ${event.details}` : ''}`});
     if (negative.length) actions.push({kind:'negative',tone:'critical',title:`สต็อกติดลบ ${fmt(negative.length)} รายการ`,detail:`เริ่มตรวจที่รหัส ${negative[0].code}`});
+    if (mismatch) actions.push({kind:'reconcile',tone:'warning',title:`ยอดสต็อกกับพาเลตไม่ตรง ${fmt(mismatch.count)} รหัส/หน่วย`,
+      detail:`ตัวอย่าง ${mismatch.example.code} · ${mismatch.differentTimes ? 'พาเลตแก้หลังบันทึกสต็อก ยอดอาจมาจากคนละเวลา' : 'ตรวจวันเวลาอ้างอิงก่อนสรุปผลต่าง'}`});
     if (bomCount > 0) actions.push({kind:'bom',tone:'critical',title:`บรรจุภัณฑ์ไม่พร้อม ${fmt(bomCount)} FG`,detail:'เปิดหน้าความพร้อมบรรจุภัณฑ์เพื่อตรวจสอบ'});
     if (stockSnapshotState === 'fallback') actions.push({kind:'stock',tone:'warning',title:'โหลดสต็อกล่าสุดไม่ได้',detail:'กำลังแสดงข้อมูลสำรองในไฟล์'});
     if (syncProblem) actions.push({kind:'sync',tone:'critical',title:'การซิงค์ข้อมูลพาเลตมีปัญหา',detail:'รีเฟรชหน้าเว็บหรือตรวจการเชื่อมต่อ'});
@@ -149,6 +160,12 @@
       document.querySelector('[data-incoming-view="history"]')?.click();
     } else if (action === 'bom') document.getElementById('tab-bompk')?.click();
     else if (action === 'reorder') document.getElementById('tab-reorder')?.click();
+    else if (action === 'reconcile') {
+      document.getElementById('stockReconcileFilter').value = 'mismatch';
+      document.getElementById('stockReconcileSearch').value = '';
+      document.getElementById('tab-reconcile')?.click();
+      renderStockReconciliation();
+    }
     else if (action.startsWith('event:')) window.PKEvents?.open(action.slice(6));
     else if (action === 'negative') {
       const item = negativeStock(STOCK.items)[0];

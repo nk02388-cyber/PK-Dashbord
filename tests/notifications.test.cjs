@@ -1,6 +1,21 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
-const {findLowStock,negativeStock,dayKey,actionSignature,restoredDismissals,visibleActions} = require('../notifications.js');
+const {findLowStock,negativeStock,stockPalletMismatch,dayKey,actionSignature,restoredDismissals,visibleActions} = require('../notifications.js');
+
+test('stock and pallet alert counts only quantity mismatches and flags differing snapshot times', () => {
+  const rows = [
+    {code:'A',unit:'ขวด',status:'ยอดไม่ตรง',difference:-5},
+    {code:'B',unit:'ขวด',status:'ไม่มีในพาเลต'},
+    {code:'C',unit:'ชิ้น',status:'ตรงกัน'},
+    {code:'D',unit:'ใบ',status:'ยอดไม่ตรง',difference:12},
+  ];
+  const alert = stockPalletMismatch(rows,'พาเลตแก้หลังบันทึกสต็อก 2 ตำแหน่ง');
+  assert.equal(alert.count,2);
+  assert.equal(alert.example.code,'A');
+  assert.equal(alert.differentTimes,true);
+  assert.equal(stockPalletMismatch(rows,'ยังยืนยันเวลาตัดยอดร่วมกันไม่ได้').differentTimes,false);
+  assert.equal(stockPalletMismatch([{code:'C',status:'ตรงกัน'}],''),null);
+});
 
 test('low-stock alert needs a per-product minimum and sums all warehouses in the same unit', () => {
   const data = [

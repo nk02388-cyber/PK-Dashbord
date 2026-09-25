@@ -3932,6 +3932,7 @@ function refreshAfterRemoteChange(zoneCode, slotCode) {
   if (typeof renderStockReconciliation === 'function') renderStockReconciliation();
   window.PKDaily?.refresh();
   window.PKProductHistory?.refresh();
+  window.PKNotifications?.refreshStock();
   window.PKTopWithdrawals?.refresh();
 }
 
@@ -5636,6 +5637,7 @@ function syncAfterSlotEdit() {
   renderSlotEdit();
   renderOverviewSlotStatus();
   window.PKDaily?.refresh();
+  window.PKNotifications?.refreshStock();
   window.PKTopWithdrawals?.refresh();
 }
 
@@ -9819,7 +9821,7 @@ window.addEventListener('pageshow', () => {
 <script src="reorder-points-data.js?v=20260924-1"></script>
 <script src="reorder-points.js?v=20260924-1"></script>
 <script src="event-calendar.js?v=20260924-1"></script>
-<script src="notifications.js?v=20260924-4"></script>
+<script src="notifications.js?v=20260925-1"></script>
 <script src="receipt-plan.js"></script>
 <script src="welcome-greeting.js?v=20260924-1" defer></script>
 <script src="warehouse-intro.js?v=20260924-1" defer></script>
