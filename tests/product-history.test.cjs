@@ -113,7 +113,9 @@ test('stock card exposes the gap instead of forcing the stock snapshot into move
     {date:'14/08/2026',type:'receive',qty:480,unit:'ใบ'},
   ];
   assert.deepEqual(stockCardRows(movements).map(row => row.calculatedBalance),[90,570,1050]);
-  assert.deepEqual(reconcileStockCard(movements,[{unit:'ใบ',qty:558,known:true}], '24 ก.ย. 69').map(row => row.difference),[-492]);
+  assert.deepEqual(reconcileStockCard(movements,[{unit:'ใบ',qty:558,known:true}], '24 ก.ย. 69').map(row => row.difference),[492]);
+  assert.equal(reconcileStockCard([{date:'2026-09-24',type:'receive',qty:46092,unit:'ขวด'}],
+    [{unit:'ขวด',qty:82171,known:true}], '24 ก.ย. 69')[0].difference,-36079);
 });
 
 test('stock card leaves balances unknown after incomplete records and compares only through snapshot date', () => {
