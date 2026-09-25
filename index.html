@@ -1965,6 +1965,7 @@ header.top .header-logo { border-radius: 14px; }
 <link rel="stylesheet" href="warehouse-intro.css?v=20260924-2">
 <link rel="stylesheet" href="dashboard-shell.css?v=20260924-3">
 <link rel="stylesheet" href="product-history.css?v=20260925-3">
+<link rel="stylesheet" href="top-withdrawals.css?v=20260925-1">
 <link rel="stylesheet" href="notifications.css?v=20260924-2">
 <link rel="stylesheet" href="event-calendar.css?v=20260924-1">
 <link rel="stylesheet" href="reorder-points.css?v=20260924-1">
@@ -2310,6 +2311,18 @@ header.top .header-logo { border-radius: 14px; }
          detail tables (and catTable's own "จับคู่ได้ N/M แถว" sub-line, catMatchSub) are gone.
          See renderWarehouseTable() (deleted) and renderCategories() (trimmed to stop touching
          #catTable/#catMatchSub, still builds #catChart as before) further below. -->
+
+    <section class="panel top-withdrawals-panel" aria-labelledby="topWithdrawalsTitle">
+      <div class="top-withdrawals-head">
+        <div><h2 id="topWithdrawalsTitle">รายการที่มีการเบิกใช้สูงสุด</h2><p id="topWithdrawalsStatus" class="panel-sub" role="status">กำลังโหลดข้อมูลการเบิก…</p></div>
+        <div class="top-withdrawals-filters">
+          <label for="topWithdrawalsPeriod">ช่วงเวลา<select id="topWithdrawalsPeriod"><option value="7">7 วัน</option><option value="30" selected>30 วัน</option><option value="90">90 วัน</option><option value="all">ทั้งหมดที่มีบันทึก</option></select></label>
+          <label for="topWithdrawalsUnit">หน่วยนับ<select id="topWithdrawalsUnit"></select></label>
+        </div>
+      </div>
+      <div id="topWithdrawalsList" class="top-withdrawals-list" aria-live="polite"></div>
+      <p class="top-withdrawals-note">รวมจำนวนเบิกจากบันทึกพาเลตตามรหัสและหน่วยนับ · ไม่หักรับคืน และไม่รวมการย้ายพาเลต · อันดับแยกตามหน่วยนับ</p>
+    </section>
 
     <div class="panel">
       <h2>รายการที่มีมูลค่าคงเหลือสูงสุด 15 อันดับ</h2>
@@ -3931,6 +3944,7 @@ function refreshAfterRemoteChange(zoneCode, slotCode) {
   if (typeof renderStockReconciliation === 'function') renderStockReconciliation();
   window.PKDaily?.refresh();
   window.PKProductHistory?.refresh();
+  window.PKTopWithdrawals?.refresh();
 }
 
 // initSupabaseSync(): initial full fetch -- Supabase's stored state overrides the Excel-seeded
@@ -5634,6 +5648,7 @@ function syncAfterSlotEdit() {
   renderSlotEdit();
   renderOverviewSlotStatus();
   window.PKDaily?.refresh();
+  window.PKTopWithdrawals?.refresh();
 }
 
 function openSlotEdit(zoneCode, slotCode) {
@@ -9829,6 +9844,7 @@ window.addEventListener('pageshow', () => {
 <script src="daily-movements.js"></script>
 <script src="latest-suppliers.js?v=20260924-1"></script>
 <script src="product-history.js?v=20260925-4"></script>
+<script src="top-withdrawals.js?v=20260925-1"></script>
 <script src="reorder-points-data.js?v=20260924-1"></script>
 <script src="reorder-points.js?v=20260924-1"></script>
 <script src="event-calendar.js?v=20260924-1"></script>

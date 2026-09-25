@@ -1,0 +1,28 @@
+.top-withdrawals-panel { display: grid; gap: 16px; }
+.top-withdrawals-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; flex-wrap: wrap; }
+.top-withdrawals-head h2 { margin: 0; }
+.top-withdrawals-head .panel-sub { margin: 5px 0 0; }
+.top-withdrawals-filters { display: flex; gap: 10px; flex-wrap: wrap; }
+.top-withdrawals-filters label { display: grid; gap: 4px; color: var(--text-secondary); font-size: 12px; font-weight: 700; }
+.top-withdrawals-filters select { min-height: 38px; padding: 6px 28px 6px 10px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface-1); color: var(--text-primary); font: inherit; }
+.top-withdrawals-filters select:focus-visible, .top-withdrawals-item button:focus-visible { outline: 3px solid var(--focus-ring, #e0ce9c); outline-offset: 2px; }
+.top-withdrawals-list { display: grid; gap: 8px; }
+.top-withdrawals-row { display: grid; grid-template-columns: 34px minmax(0,1fr) auto; align-items: center; gap: 12px; padding: 11px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--page-plane); }
+.top-withdrawals-rank { color: var(--series-1); font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.top-withdrawals-item { display: grid; gap: 4px; min-width: 0; }
+.top-withdrawals-item strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-primary); font-size: 13px; }
+.top-withdrawals-item button { justify-self: start; padding: 0; border: 0; background: none; color: var(--series-1); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.top-withdrawals-track { height: 7px; overflow: hidden; border-radius: 99px; background: var(--surface-1); }
+.top-withdrawals-track span { display: block; height: 100%; border-radius: inherit; background: var(--series-1); }
+.top-withdrawals-amount { display: grid; gap: 3px; justify-items: end; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.top-withdrawals-amount strong { color: var(--text-primary); font-size: 14px; }
+.top-withdrawals-amount small, .top-withdrawals-note { color: var(--text-secondary); font-size: 11px; }
+.top-withdrawals-note, .top-withdrawals-empty { margin: 0; }
+.top-withdrawals-empty { padding: 20px; color: var(--text-secondary); text-align: center; }
+@media (max-width: 600px) {
+  .top-withdrawals-filters { width: 100%; }
+  .top-withdrawals-filters label { flex: 1 1 130px; }
+  .top-withdrawals-filters select { width: 100%; }
+  .top-withdrawals-row { grid-template-columns: 28px minmax(0,1fr); }
+  .top-withdrawals-amount { grid-column: 2; justify-items: start; }
+}
