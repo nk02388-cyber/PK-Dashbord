@@ -2445,18 +2445,6 @@ header.top .header-logo { border-radius: 14px; }
       </table>
     </div>
 
-    <div class="panel">
-      <div class="callout">
-        <div class="dot"></div>
-        <div>
-          <b>คุณภาพข้อมูล</b>
-          <p id="dqText">พบมูลค่าคงเหลือติดลบ 26 รายการ รวม -6,939 บาท กรุณาตรวจสอบการปรับปรุง Stock หรือต้นทุนย้อนหลัง · คลัง <b>204</b> ไม่มีข้อมูลมูลค่าต่อหน่วย จึงไม่รวมในยอดมูลค่ารวม</p>
-          <ul id="dqList"><li>ม้วน Bio Nutrients Hair Color 30 ml  รวม 8 SKU(แคนนาดา) (330-2-0701-5701, คลัง 201) — -6,918 บาท</li><li>ม้วนพิพม์ แจ๊บส์  วอเตอร์ รีซิสแตนท์ ยูวี บอดี้ ครีม 10 มล (31-0001-38-58, คลัง 202) — -11 บาท</li><li>ซองตั้งติดจุกขาว8 MM ไดคัท แจ๊บส์ วอเตอร์เมล่อน สมูทตี้ไบร์ทเทนสกิน 30 มล. (31-0001-22-58, คลัง 200) — -2 บาท</li><li>ซองใส ซีล 3 ด้าน ใช้ร่วม BT นิวเทรียนท์ แชมพูปิดผมขาว 30มล (1 ม้วน = 5,700  ซอง) (313-2-0701-5702, คลัง 200) — -1 บาท</li><li>ซองซีลกลาง เมจิค คัลเลอร์ครีม BM-02 น้ำตาลประกายแดง 30 มล125X185 MM (311-2-0864-58, คลัง 200) — -1 บาท</li><li>กล่องฟอยล์ 300 แกรม KOTA COSMETICS COLOR CREAM RAVEN (BLACK) 100 ml พิมพ์ 6-8 สี เคลือบอิ๊ปออฟ (31-0021-12-62, คลัง 800) — -1 บาท</li><li>ม้วนนอกใช้ร่วม BT นิวเทรียนท์ แชมพูปิดผมขาว 30 ml. (313-2-0701-5701, คลัง 200) — -1 บาท</li><li>ชริ้งค์ฟิล์ม PVC  ขนาด6นิ้ว x 10นิ้ว กล่องยูนิต JABS บอดี้โลชั้น 30 MLร่วม เค้กพาย PSPH (SSHF-064/1, คลัง 200) — -1 บาท</li></ul>
-        </div>
-      </div>
-      <div class="panel-sub" style="margin-top:14px;">ปริมาณรวมมีหลายหน่วยนับ จึงควรใช้วิเคราะห์แนวโน้มภายในหมวดเดียวกัน</div>
-    </div>
-
   </div>
 
   <!-- ============ TAB: BOM PK ============ -->
@@ -6483,29 +6471,12 @@ function renderStockKpis(view, whCode) {
   `;
 }
 
-function renderDataQuality(view, whCode) {
-  const dq = view.data_quality;
-  let extra = '';
-  if (whCode === 'all') {
-    extra = ` · คลัง <b>${STOCK.data_quality.no_value_warehouses.join(', ')}</b> ไม่มีข้อมูลมูลค่าต่อหน่วย จึงไม่รวมในยอดมูลค่ารวม`;
-  } else {
-    const w = STOCK.warehouses.find(x => x.code === whCode);
-    if (w && !w.has_value) extra = ` · ${warehouseLabel(whCode)} ไม่มีข้อมูลมูลค่าต่อหน่วย จึงแสดงมูลค่าเป็น ฿0`;
-  }
-  document.getElementById('dqText').innerHTML =
-    `พบมูลค่าคงเหลือติดลบ ${dq.neg_count} รายการ รวม ${fmt0(dq.neg_sum)} บาท กรุณาตรวจสอบการปรับปรุงสต็อก หรือต้นทุนย้อนหลัง${extra}`;
-  document.getElementById('dqList').innerHTML = dq.neg_items.map(it =>
-    `<li>${it.name} (${it.code}, คลัง ${it.wh}) — ${fmt0(it.value)} บาท</li>`
-  ).join('');
-}
-
 function renderStockAll(whCode) {
   const view = getView(whCode);
   renderStockKpis(view, whCode);
   renderWarehouseChart(whCode);
   renderCategories(view, whCode);
   renderTopItems(view, whCode);
-  renderDataQuality(view, whCode);
   document.getElementById('filterStatus').innerHTML = whCode === 'all'
     ? `กำลังแสดง: <b>ทุกคลัง</b> · มูลค่ารวม ฿${fmtCompact(view.kpis.total_value)}`
     : `กำลังแสดง: <b>${warehouseLabel(whCode)}</b> · มูลค่า ฿${fmtCompact(view.kpis.total_value)}`;
