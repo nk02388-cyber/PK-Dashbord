@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
-const {buildCatalog, searchCatalog, collectMovements, summarizeStock, summarizeBalances, stockCardRows} = require('../product-history.js');
+const {buildCatalog, searchCatalog, collectMovements, summarizeStock, summarizeBalances, stockCardRows, reconcileStockCard} = require('../product-history.js');
 
 const stock = [
   {code:'31-0001', name:'ขวด JABS Lotion', search_name:'ขวด โลชั่น', wh:'201', unit:'ขวด', qty:20},
@@ -89,7 +89,7 @@ test('shows only current balances, keeping units separate and unknown stock expl
   assert.deepEqual(summarizeBalances([]),[]);
 });
 
-test('stock card reverses recorded movements from the dated stock snapshot by unit', () => {
+test('stock card accumulates recorded receipts and issues in date order by unit', () => {
   const movements = [
     {date:'2026-09-17', type:'receive', qty:4, unit:'กล่อง'},
     {date:'2026-09-17', type:'receive', qty:7, unit:'ขวด'},
@@ -98,20 +98,37 @@ test('stock card reverses recorded movements from the dated stock snapshot by un
     {date:'2026-09-19', type:'transfer_out', qty:2, unit:'ขวด'},
     {date:'2026-09-20', type:'withdraw', qty:3, unit:'ขวด'},
   ];
-  const card = stockCardRows(movements,[{unit:'ขวด',qty:10,known:true},{unit:'กล่อง',qty:4,known:true}], 'ณ วันที่: 24 ก.ย. 69');
+  const card = stockCardRows(movements);
   assert.deepEqual(card.map(row => [row.received,row.issued,row.calculatedBalance]),[
-    [4,null,4],[7,null,12],[1,null,13],[2,null,15],[null,2,13],[null,3,10],
+    [4,null,4],[7,null,7],[1,null,8],[2,null,10],[null,2,8],[null,3,5],
   ]);
+  const comparison = reconcileStockCard(movements,[{unit:'ขวด',qty:5,known:true},{unit:'กล่อง',qty:4,known:true}], 'ณ วันที่: 24 ก.ย. 69');
+  assert.deepEqual(comparison.map(row => [row.unit,row.recordedNet,row.difference]),[['กล่อง',4,0],['ขวด',5,0]]);
 });
 
-test('stock card leaves balances unknown for later, undated and incomplete records', () => {
+test('stock card exposes the gap instead of forcing the stock snapshot into movement balances', () => {
+  const movements = [
+    {date:'14/08/2026',type:'receive',qty:90,unit:'ใบ'},
+    {date:'14/08/2026',type:'receive',qty:480,unit:'ใบ'},
+    {date:'14/08/2026',type:'receive',qty:480,unit:'ใบ'},
+  ];
+  assert.deepEqual(stockCardRows(movements).map(row => row.calculatedBalance),[90,570,1050]);
+  assert.deepEqual(reconcileStockCard(movements,[{unit:'ใบ',qty:558,known:true}], '24 ก.ย. 69').map(row => row.difference),[-492]);
+});
+
+test('stock card leaves balances unknown after incomplete records and compares only through snapshot date', () => {
   const card = stockCardRows([
     {date:'2026-09-22',type:'receive',qty:3,unit:'ขวด'},
     {date:'2026-09-23',type:'receive',qty:null,unit:'ขวด'},
     {date:'2026-09-24',type:'withdraw',qty:1,unit:'ขวด'},
     {date:'2026-09-25',type:'receive',qty:2,unit:'ขวด'},
     {date:'',type:'receive',qty:1,unit:'ขวด'},
+  ]);
+  assert.deepEqual(card.map(row => row.calculatedBalance),[3,null,null,null,null]);
+  const comparison = reconcileStockCard([
+    {date:'2026-09-24',type:'receive',qty:5,unit:'ขวด'},
+    {date:'2026-09-25',type:'receive',qty:2,unit:'ขวด'},
   ],[{unit:'ขวด',qty:5,known:true}], '24/09/2569');
-  assert.deepEqual(card.map(row => row.calculatedBalance),[null,6,5,null,null]);
-  assert.equal(stockCardRows([{date:'2026-09-24',type:'receive',qty:1,unit:'ชิ้น'}],[], '24/09/2569')[0].calculatedBalance,null);
+  assert.equal(comparison[0].difference,0);
+  assert.equal(reconcileStockCard([{date:'',type:'receive',qty:1,unit:'ขวด'}],[{unit:'ขวด',qty:5,known:true}], '24/09/2569')[0].difference,null);
 });

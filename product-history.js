@@ -4,6 +4,22 @@
   const normalize = value => String(value ?? '').trim().replace(/\s+/g, ' ').toLocaleLowerCase('th-TH').replace(/[\u0e48-\u0e4b]/g, '');
   const codeKey = value => String(value ?? '').trim().toUpperCase();
 
+  function movementDateNumber(value) {
+    const text = String(value || '').trim().replace(/^ณ วันที่:\s*/, '');
+    const iso = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(text);
+    const slash = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/.exec(text);
+    const thai = /^(\d{1,2})\s+(ม\.ค\.|ก\.พ\.|มี\.ค\.|เม\.ย\.|พ\.ค\.|มิ\.ย\.|ก\.ค\.|ส\.ค\.|ก\.ย\.|ต\.ค\.|พ\.ย\.|ธ\.ค\.)\s+(\d{2,4})/.exec(text);
+    if (!iso && !slash && !thai) return null;
+    const month = iso ? Number(iso[2]) : slash ? Number(slash[2]) : ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'].indexOf(thai[2]) + 1;
+    const day = Number(iso ? iso[3] : slash ? slash[1] : thai[1]);
+    let year = Number(iso ? iso[1] : slash ? slash[3] : thai[3]);
+    if (year < 100) year += 1957;
+    else if (year >= 2400) year -= 543;
+    const timestamp = Date.UTC(year, month - 1, day);
+    const date = new Date(timestamp);
+    return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day ? timestamp : null;
+  }
+
   function buildCatalog(stockItems, slotItems, latestSuppliers = {}) {
     const catalog = new Map();
     const add = (item, source) => {
@@ -106,48 +122,55 @@
     return [...units.values()].sort((a,b) => a.unit.localeCompare(b.unit,'th'));
   }
 
-  function stockCardRows(movements, balances, reportDate) {
-    const dateNumber = value => {
-      const text = String(value || '').trim().replace(/^ณ วันที่:\s*/, '');
-      const iso = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(text);
-      const slash = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/.exec(text);
-      const thai = /^(\d{1,2})\s+(ม\.ค\.|ก\.พ\.|มี\.ค\.|เม\.ย\.|พ\.ค\.|มิ\.ย\.|ก\.ค\.|ส\.ค\.|ก\.ย\.|ต\.ค\.|พ\.ย\.|ธ\.ค\.)\s+(\d{2,4})/.exec(text);
-      if (!iso && !slash && !thai) return null;
-      const month = iso ? Number(iso[2]) : slash ? Number(slash[2]) : ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'].indexOf(thai[2]) + 1;
-      const day = Number(iso ? iso[3] : slash ? slash[1] : thai[1]);
-      let year = Number(iso ? iso[1] : slash ? slash[3] : thai[3]);
-      if (year < 100) year += 1957;
-      else if (year >= 2400) year -= 543;
-      const timestamp = Date.UTC(year, month - 1, day);
-      const date = new Date(timestamp);
-      return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day ? timestamp : null;
-    };
-    const cutoff = dateNumber(reportDate);
-    const running = new Map((balances || []).map(row => [String(row.unit || '').trim() || 'ไม่ระบุหน่วย', row.known && Number.isFinite(row.qty) ? row.qty : null]));
-    const ready = new Set(running.keys());
-    return [...(movements || [])].reverse().map(row => {
+  function stockCardRows(movements) {
+    const running = new Map();
+    return (movements || []).map(row => {
       const unit = String(row.unit || '').trim() || 'ไม่ระบุหน่วย';
       const qty = row.qty == null || String(row.qty).trim() === '' ? null : Number(row.qty);
       const validQty = Number.isFinite(qty) && qty >= 0 ? qty : null;
       const inbound = row.type === 'receive' || row.type === 'return' || row.type === 'transfer_in';
       const outbound = row.type === 'withdraw' || row.type === 'transfer_out';
-      const movementDate = dateNumber(row.date);
-      if (cutoff == null || movementDate == null || movementDate > cutoff) return {...row, received:inbound ? validQty : null, issued:outbound ? validQty : null, calculatedBalance:null};
-      if (!ready.has(unit)) running.set(unit, null);
-      ready.add(unit);
-      const balance = running.get(unit);
-      const calculatedBalance = balance == null ? null : Number(balance.toFixed(8));
-      if (validQty == null || (!inbound && !outbound && row.type !== 'move')) running.set(unit, null);
-      else if (balance != null) {
-        const previous = Number((balance - (inbound ? validQty : outbound ? -validQty : 0)).toFixed(8));
-        running.set(unit, previous < 0 ? null : previous);
+      const dated = movementDateNumber(row.date) != null;
+      const previous = running.get(unit) ?? 0;
+      let calculatedBalance = null;
+      if (!dated || validQty == null || (!inbound && !outbound && row.type !== 'move')) running.set(unit, null);
+      else if (running.get(unit) !== null) {
+        calculatedBalance = Number((previous + (inbound ? validQty : outbound ? -validQty : 0)).toFixed(8));
+        running.set(unit, calculatedBalance < 0 ? null : calculatedBalance);
+        if (calculatedBalance < 0) calculatedBalance = null;
       }
       return {...row, received:inbound ? validQty : null, issued:outbound ? validQty : null, calculatedBalance};
-    }).reverse();
+    });
+  }
+
+  function reconcileStockCard(movements, balances, reportDate) {
+    const cutoff = movementDateNumber(reportDate);
+    const units = new Map((balances || []).map(row => [String(row.unit || '').trim() || 'ไม่ระบุหน่วย', {
+      unit:String(row.unit || '').trim() || 'ไม่ระบุหน่วย', stockQty:row.known && Number.isFinite(row.qty) ? row.qty : null,
+      recordedNet:0, complete:cutoff != null,
+    }]));
+    for (const row of movements || []) {
+      const unit = String(row.unit || '').trim() || 'ไม่ระบุหน่วย';
+      if (!units.has(unit)) units.set(unit,{unit,stockQty:null,recordedNet:0,complete:cutoff != null});
+      const summary = units.get(unit);
+      const date = movementDateNumber(row.date);
+      if (date == null) { summary.complete = false; continue; }
+      if (cutoff == null || date > cutoff) continue;
+      const qty = row.qty == null || String(row.qty).trim() === '' ? null : Number(row.qty);
+      if (!Number.isFinite(qty) || qty < 0) { summary.complete = false; continue; }
+      if (row.type === 'receive' || row.type === 'return' || row.type === 'transfer_in') summary.recordedNet += qty;
+      else if (row.type === 'withdraw' || row.type === 'transfer_out') summary.recordedNet -= qty;
+      else if (row.type !== 'move') summary.complete = false;
+    }
+    return [...units.values()].map(row => {
+      const recordedNet = Number(row.recordedNet.toFixed(8));
+      return {...row, recordedNet,
+        difference:row.complete && row.stockQty != null ? Number((row.stockQty - recordedNet).toFixed(8)) : null};
+    }).sort((a,b) => a.unit.localeCompare(b.unit,'th'));
   }
 
   if (typeof module !== 'undefined' && module.exports) {
-    module.exports = {buildCatalog, searchCatalog, collectMovements, summarizeStock, summarizeBalances, stockCardRows};
+    module.exports = {buildCatalog, searchCatalog, collectMovements, summarizeStock, summarizeBalances, stockCardRows, reconcileStockCard};
     return;
   }
 
@@ -167,7 +190,8 @@
     const stock = summarizeStock(STOCK.items, selectedCode);
     const movements = collectMovements(SLOT_ITEMS, selectedCode, getStockMovement, PK_LATEST_SUPPLIERS);
     const balances = summarizeBalances(stock);
-    const cardRows = stockCardRows(movements, balances, STOCK.report_date);
+    const cardRows = stockCardRows(movements);
+    const reconciliation = reconcileStockCard(movements, balances, STOCK.report_date);
     const loading = !palletDataReady;
     const syncFailed = document.getElementById('syncStatusBar')?.classList.contains('sync-error');
     const stockLabel = stockSnapshotState === 'latest' ? 'สต็อกล่าสุดจากระบบ' : 'สต็อกสำรองในไฟล์';
@@ -177,8 +201,8 @@
       <section class="product-history-section"><h3>ยอดคงเหลือตามคลัง</h3><p class="product-history-note">${escape(String(STOCK.report_date || 'ไม่ระบุวันที่สต็อก'))}</p>
         <div class="product-history-stock">${stock.length ? stock.map(row => `<div><span>คลัง ${escape(row.wh)} · ${escape(row.unit)}</span><strong>${row.known ? fmt(row.qty) : 'ไม่ทราบจำนวน'}</strong></div>`).join('') : '<p>ไม่มีรหัสนี้ในสต็อกที่อัปเดต</p>'}</div></section>
       <section class="product-history-section"><div class="product-history-section-head"><h3>ประวัติการเคลื่อนไหวบนพาเลต</h3><span>${loading ? (syncFailed ? 'โหลดข้อมูลไม่สำเร็จ' : 'กำลังโหลดข้อมูลพาเลต…') : `${fmt(movements.length)} รายการ`}</span></div>
-        ${loading ? `<p class="product-history-empty">${syncFailed ? 'โหลดข้อมูลพาเลตไม่สำเร็จ กรุณารีเฟรชหน้าเว็บ' : 'กำลังโหลดข้อมูลพาเลต กรุณารอสักครู่'}</p>` : movements.length ? `<div class="product-history-table-wrap"><table><thead><tr><th>วันที่</th><th>รายการ</th><th>โซน / ตำแหน่ง</th><th>Lot / PK No.</th><th class="num">รับเข้า</th><th class="num">จ่ายออก</th><th class="num">คงเหลือคำนวณ</th><th>หน่วย</th><th>ผู้ส่งสินค้า</th><th>ผู้ทำรายการ</th><th>เลขเอกสาร</th></tr></thead><tbody>${cardRows.slice(0,shown).map(row => `<tr><td>${escape(formatMovementDate(row.date))}</td><td><span class="product-history-type product-history-type-${escape(row.type)}">${escape(row.label)}</span></td><td>${escape(row.zone)} / ${escape(row.slot)}</td><td>${escape(row.lotNo || '—')}</td><td class="num">${row.received == null ? '—' : fmt(row.received)}</td><td class="num">${row.issued == null ? '—' : fmt(row.issued)}</td><td class="num product-history-running">${row.calculatedBalance == null ? '—' : fmt(row.calculatedBalance)}</td><td>${escape(row.unit || '—')}</td><td>${escape(row.supplierName || '—')}</td><td>${escape(row.by || '—')}</td><td>${escape(row.reference || '—')}</td></tr>`).join('')}</tbody></table></div>${movements.length > shown ? `<button class="product-history-more" type="button">แสดงเพิ่มเติม (${fmt(movements.length-shown)} รายการ)</button>` : ''}` : '<p class="product-history-empty">ยังไม่มีประวัติการเคลื่อนไหวบนพาเลตสำหรับรหัสนี้</p>'}
-        ${!loading && movements.length ? `<p class="product-history-note">คงเหลือคำนวณย้อนจากสต็อก ณ ${escape(stockDate)} ตามรายการพาเลตที่บันทึกไว้ แยกตามหน่วย · ข้อมูลย้อนหลังอาจไม่ครบ จึงไม่ใช่ยอดยืนยัน ณ วันทำรายการ; แสดง — เมื่อคำนวณไม่ได้</p>` : ''}
+        ${loading ? `<p class="product-history-empty">${syncFailed ? 'โหลดข้อมูลพาเลตไม่สำเร็จ กรุณารีเฟรชหน้าเว็บ' : 'กำลังโหลดข้อมูลพาเลต กรุณารอสักครู่'}</p>` : movements.length ? `<div class="product-history-table-wrap"><table><thead><tr><th>วันที่</th><th>รายการ</th><th>โซน / ตำแหน่ง</th><th>Lot / PK No.</th><th class="num">รับเข้า</th><th class="num">จ่ายออก</th><th class="num">ยอดสะสมตามบันทึก</th><th>หน่วย</th><th>ผู้ส่งสินค้า</th><th>ผู้ทำรายการ</th><th>เลขเอกสาร</th></tr></thead><tbody>${cardRows.slice(0,shown).map(row => `<tr><td>${escape(formatMovementDate(row.date))}</td><td><span class="product-history-type product-history-type-${escape(row.type)}">${escape(row.label)}</span></td><td>${escape(row.zone)} / ${escape(row.slot)}</td><td>${escape(row.lotNo || '—')}</td><td class="num">${row.received == null ? '—' : fmt(row.received)}</td><td class="num">${row.issued == null ? '—' : fmt(row.issued)}</td><td class="num product-history-running">${row.calculatedBalance == null ? '—' : fmt(row.calculatedBalance)}</td><td>${escape(row.unit || '—')}</td><td>${escape(row.supplierName || '—')}</td><td>${escape(row.by || '—')}</td><td>${escape(row.reference || '—')}</td></tr>`).join('')}</tbody></table></div>${movements.length > shown ? `<button class="product-history-more" type="button">แสดงเพิ่มเติม (${fmt(movements.length-shown)} รายการ)</button>` : ''}` : '<p class="product-history-empty">ยังไม่มีประวัติการเคลื่อนไหวบนพาเลตสำหรับรหัสนี้</p>'}
+        ${!loading && movements.length ? `<div class="product-history-reconcile"><strong>เทียบกับสต็อก ณ ${escape(stockDate)}</strong>${reconciliation.map(row => `<p>หน่วย ${escape(row.unit)} · สุทธิตามบันทึก ${row.complete ? fmt(row.recordedNet) : 'คำนวณไม่ได้'} · สต็อก ${row.stockQty == null ? 'ไม่ทราบ' : fmt(row.stockQty)} · <span class="${row.difference == null ? '' : row.difference === 0 ? 'is-matched' : 'is-different'}">ผลต่าง ${row.difference == null ? 'คำนวณไม่ได้' : `${row.difference > 0 ? '+' : ''}${fmt(row.difference)}`}</span></p>`).join('')}</div><p class="product-history-note">ยอดสะสมเริ่มจาก 0 ตามรายการพาเลตที่ยังมีบันทึกเท่านั้น; หากผลต่างไม่เป็น 0 แปลว่าบันทึกเหล่านี้อธิบายยอดสต็อก ณ วันอ้างอิงได้ไม่ครบ ไม่ควรใช้ยอดสะสมแทนยอดสต็อกจริง</p>` : ''}
         ${movements.some(row => row.supplierSource === 'latest') ? '<p class="product-history-note">ชื่อผู้ส่งสินค้าบางรายการอ้างอิงจากการรับเข้าล่าสุดของรหัสสินค้า ไม่ได้ยืนยันผู้ส่งสินค้าของรายการย้อนหลัง</p>' : ''}
         <p class="product-history-note">รายการรับเข้า เบิก รับคืน และย้าย อ้างอิงบันทึกพาเลตในระบบ; สต็อกที่อัปเดตเป็นยอดคงเหลือ ไม่ใช่ประวัติรายการ</p></section>`;
     detailEl.querySelector('.product-history-more')?.addEventListener('click', () => { shown += 100; renderDetail(); });

@@ -32,6 +32,10 @@
 .product-history-table-wrap th { position: sticky; top: 0; z-index: 1; background: var(--page-plane); color: var(--text-primary); white-space: nowrap; }
 .product-history-table-wrap .num { text-align: right; font-variant-numeric: tabular-nums; }
 .product-history-running { font-weight: 700; background: var(--page-plane); }
+.product-history-reconcile { display: grid; gap: 5px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--page-plane); font-size: 12px; }
+.product-history-reconcile p { margin: 0; font-variant-numeric: tabular-nums; }
+.product-history-reconcile .is-different { color: var(--status-critical); font-weight: 700; }
+.product-history-reconcile .is-matched { color: var(--status-good); font-weight: 700; }
 .product-history-type { font-weight: 700; }
 .product-history-type-receive, .product-history-type-return, .product-history-type-transfer_in { color: var(--status-good); }
 .product-history-type-withdraw, .product-history-type-transfer_out { color: var(--status-critical); }
