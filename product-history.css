@@ -27,7 +27,7 @@
 .product-history-stock strong { font-variant-numeric: tabular-nums; }
 .product-history-empty { margin: 0; padding: 22px; border: 1px dashed var(--border); border-radius: 12px; color: var(--text-secondary); text-align: center; }
 .product-history-table-wrap { max-height: 550px; overflow: auto; border: 1px solid var(--border); border-radius: 12px; }
-.product-history-table-wrap table { width: 100%; min-width: 1100px; border-collapse: collapse; font-size: 12px; }
+.product-history-table-wrap table { width: 100%; min-width: 1200px; border-collapse: collapse; font-size: 12px; }
 .product-history-table-wrap th, .product-history-table-wrap td { padding: 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
 .product-history-table-wrap th { position: sticky; top: 0; z-index: 1; background: var(--page-plane); color: var(--text-primary); white-space: nowrap; }
 .product-history-table-wrap .num { text-align: right; font-variant-numeric: tabular-nums; }

@@ -1,6 +1,14 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
-const {buildCatalog, searchCatalog, collectMovements, summarizeStock, summarizeBalances, stockCardRows, reconcileStockCard} = require('../product-history.js');
+const {buildCatalog, searchCatalog, collectMovements, summarizeStock, summarizeBalances, stockCardRows, reconcileStockCard, formatRecordedTime} = require('../product-history.js');
+
+test('shows recorded time in Bangkok and leaves missing historical times unknown', () => {
+  assert.equal(formatRecordedTime('2026-09-25T08:31:00Z'), '25/09/2026 15:31 น.');
+  assert.equal(formatRecordedTime('2026-09-25T08:31:00+07:00'), '25/09/2026 08:31 น.');
+  assert.equal(formatRecordedTime(''), '—');
+  assert.equal(formatRecordedTime('2026-09-25'), '—');
+  assert.equal(formatRecordedTime('invalid'), '—');
+});
 
 const stock = [
   {code:'31-0001', name:'ขวด JABS Lotion', search_name:'ขวด โลชั่น', wh:'201', unit:'ขวด', qty:20},
