@@ -81,7 +81,7 @@
     unitSelect.value = summary.unit;
     unitSelect.disabled = !summary.units.length;
     const periodLabel = periodSelect.options[periodSelect.selectedIndex].textContent;
-    status.textContent = `ข้อมูลเบิกจากพาเลต · ${periodLabel} · ${summary.unit ? `${number(summary.transactions)} รายการเบิก · หน่วย ${summary.unit}` : 'ไม่มีรายการเบิกในช่วงนี้'}`;
+    status.textContent = `ข้อมูลเบิกจากพาเลตทุกโซน · ${periodLabel} · ${summary.unit ? `${number(summary.transactions)} รายการเบิก · หน่วย ${summary.unit}` : 'ไม่มีรายการเบิกในช่วงนี้'}`;
     const top = summary.rows.slice(0,10);
     const max = top[0]?.qty || 1;
     list.innerHTML = top.length ? top.map((row,index) => `<div class="top-withdrawals-row">
