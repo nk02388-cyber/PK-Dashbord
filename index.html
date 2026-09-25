@@ -16,14 +16,6 @@
     } catch (_) { /* Storage can be unavailable in private/restricted webviews. */ }
     document.documentElement.setAttribute('data-theme', theme);
   })();
-  try {
-    if (sessionStorage.getItem('pk-warehouse-tour-seen') !== '1')
-      document.documentElement.classList.add('tour-pending');
-  } catch (_) { document.documentElement.classList.add('tour-pending'); }
-  // If the intro controller cannot load, never leave the dashboard hidden.
-  window.setTimeout(() => {
-    if (!window.warehouseTour) document.documentElement.classList.remove('tour-pending');
-  }, 8000);
 </script>
 <style>
   :root { color-scheme: light; }
@@ -1962,7 +1954,6 @@ header.top .header-logo { border-radius: 14px; }
   .building-usage-list { grid-template-columns: 1fr; }
 }
 </style>
-<link rel="stylesheet" href="warehouse-intro.css?v=20260925-2">
 <link rel="stylesheet" href="dashboard-shell.css?v=20260924-3">
 <link rel="stylesheet" href="product-history.css?v=20260925-3">
 <link rel="stylesheet" href="top-withdrawals.css?v=20260925-1">
@@ -1972,31 +1963,6 @@ header.top .header-logo { border-radius: 14px; }
 <link rel="stylesheet" href="wms-operations.css?v=20260925-2">
 </head>
 <body class="viz-root">
-<section class="warehouse-intro" id="warehouseIntro" role="dialog" aria-modal="true" aria-labelledby="warehouseTourTitle" hidden>
-  <div class="warehouse-intro-scene" id="warehouseIntroScene" aria-hidden="true">
-    <div class="warehouse-intro-fallback"></div>
-    <video class="warehouse-intro-video" id="warehouseIntroVideo" src="assets/warehouse-elevator-intro.mp4" poster="assets/warehouse-elevator-intro.jpg" preload="auto" muted playsinline></video>
-  </div>
-  <div class="warehouse-intro-shade" aria-hidden="true"></div>
-  <div class="warehouse-intro-inner">
-    <div class="warehouse-intro-top">
-      <div class="warehouse-intro-brand"><img class="warehouse-intro-mark" src="assets/bcl-logo-monochrome.png?v=2" alt="โลโก้ BCL"><span>BCL WMS<br><small>BIO-COSLAB .,CO LTD.</small></span></div>
-    </div>
-    <div class="warehouse-intro-copy">
-      <span class="warehouse-intro-eyebrow" id="warehouseTourEyebrow">01 / 03 · เตรียมขึ้นชั้น 2</span>
-      <h2 id="warehouseTourTitle">จากกล่องลูกฟูก<br><em>สู่ชั้นสอง</em></h2>
-      <p id="warehouseTourDescription">ตามคนเข็นกล่องเข้าลิฟต์สินค้า กดส่งขึ้นชั้น 2 แล้วเข้าสู่ข้อมูลคลังใน BCL WMS</p>
-      <div class="warehouse-intro-actions">
-        <button class="warehouse-intro-primary" id="warehouseTourNext" type="button">เริ่มขนย้าย <span aria-hidden="true">→</span></button>
-        <button class="warehouse-intro-skip" id="warehouseTourSkip" type="button">ข้ามไปหน้าเว็บ</button>
-      </div>
-    </div>
-    <div class="warehouse-intro-bottom">
-      <div class="warehouse-intro-progress" role="progressbar" aria-label="ความคืบหน้าการขนกล่องขึ้นชั้น 2" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="warehouseTourProgress"><span></span></div>
-      <div class="warehouse-intro-hint"><span class="warehouse-intro-wheel" aria-hidden="true"></span><span class="warehouse-intro-desktop-hint">เลื่อนลูกกลิ้งเมาส์เพื่อพากล่องขึ้นชั้น 2</span><span class="warehouse-intro-touch-hint">ปัดขึ้นเพื่อพากล่องขึ้นชั้น 2</span></div>
-    </div>
-  </div>
-</section>
 <a class="skip-link" href="#mainDashboard">ข้ามไปยังเนื้อหาหลัก</a>
 <div class="wrap" id="mainDashboard" tabindex="-1">
 
@@ -2007,7 +1973,6 @@ header.top .header-logo { border-radius: 14px; }
     </div>
     <div class="meta">
       <span id="reportDate">ข้อมูล ณ วันที่ 17 ส.ค. 69</span>
-      <button class="warehouse-tour-replay" id="warehouseTourReplay" type="button" aria-label="เปิดวิดีโอขนกล่องขึ้นชั้น 2 อีกครั้ง">ชมการขนย้าย</button>
       <button class="event-calendar-toggle" id="eventCalendarToggle" type="button" aria-label="เปิดปฏิทินนัดหมาย" title="ปฏิทินนัดหมาย"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M7 3v4m10-4v4M3 10h18M8 14h2m4 0h2m-8 4h2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span class="event-calendar-badge" id="eventCalendarBadge" hidden></span></button>
       <div class="notification-anchor">
         <button class="notification-toggle" id="notificationToggle" type="button" aria-label="เปิดการแจ้งเตือน" aria-expanded="false" aria-controls="notificationPanel" title="การแจ้งเตือน"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="notification-badge" id="notificationBadge" hidden></span></button>
@@ -9825,8 +9790,6 @@ window.addEventListener('pageshow', () => {
 <script src="notifications.js?v=20260925-1"></script>
 <script src="receipt-plan.js"></script>
 <script src="welcome-greeting.js?v=20260924-1" defer></script>
-<script src="warehouse-intro.js?v=20260925-2" defer></script>
-<script src="warehouse-video.js?v=20260925-4" defer></script>
 
 
 </body></html>
