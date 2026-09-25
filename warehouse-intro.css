@@ -17,14 +17,15 @@ body.tour-open { overflow: hidden; }
   opacity: 1; transition: opacity .55s ease;
 }
 .warehouse-intro.is-closing { opacity: 0; pointer-events: none; }
-.warehouse-intro-scene, .warehouse-intro-scene canvas,
+.warehouse-intro-scene, .warehouse-intro-video,
 .warehouse-intro-fallback, .warehouse-intro-shade { position: absolute; inset: 0; width: 100%; height: 100%; }
-.warehouse-intro-scene canvas { display: block; object-fit: cover; }
+.warehouse-intro-video { display: block; object-fit: cover; opacity: 0; transition: opacity .35s ease; }
+.warehouse-intro-video.is-ready { opacity: 1; }
 .warehouse-intro-fallback {
   background:
-    linear-gradient(90deg, rgba(13,39,50,.55), transparent 45%),
-    repeating-linear-gradient(91deg, transparent 0 11%, rgba(224,206,156,.24) 11.2% 11.7%, transparent 12% 22%),
-    linear-gradient(165deg, #365f6b 0%, #102c39 55%, #081a22 100%);
+    linear-gradient(90deg, rgba(13,39,50,.55), transparent 55%),
+    url('assets/warehouse-elevator-intro.jpg') center / cover no-repeat,
+    #102c39;
 }
 .warehouse-intro-shade {
   z-index: 1; pointer-events: none;
@@ -67,6 +68,8 @@ body.tour-open { overflow: hidden; }
 .warehouse-tour-replay:focus-visible { outline: 3px solid #f3d477; outline-offset: 3px; }
 
 @media (max-width: 760px) {
+  .warehouse-intro-video { object-position: 72% center; }
+  .warehouse-intro-fallback { background-position: center, 72% center; }
   .warehouse-intro-shade { background: linear-gradient(180deg, rgba(6,24,32,.79) 0%, rgba(6,24,32,.32) 46%, rgba(6,24,32,.91) 100%); }
   .warehouse-intro-inner { padding: 20px; }
   .warehouse-intro-copy { width: 100%; margin-top: auto; margin-bottom: 18px; padding: 36px 0; }
@@ -85,6 +88,6 @@ body.tour-open { overflow: hidden; }
   .warehouse-intro-actions button { flex: 1 1 auto; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .warehouse-intro, .warehouse-intro-progress span, .warehouse-intro-actions button { transition: none; }
+  .warehouse-intro, .warehouse-intro-video, .warehouse-intro-progress span, .warehouse-intro-actions button { transition: none; }
   .warehouse-intro-wheel::after { animation: none; }
 }

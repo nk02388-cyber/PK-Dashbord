@@ -1,5 +1,5 @@
 (() => {
-  const KEY = 'pk-warehouse-tour-seen';
+  const KEY = 'pk-warehouse-elevator-intro-seen';
   const intro = document.getElementById('warehouseIntro');
   const main = document.getElementById('mainDashboard');
   const skipLink = document.querySelector('.skip-link');
@@ -19,21 +19,21 @@
 
   const stages = [
     {
-      eyebrow: '01 / 03 · ประตูคลัง',
-      title: 'สำรวจคลังสินค้า<br><em>ก่อนดูข้อมูลจริง</em>',
-      description: 'เดินผ่านทางเดินและชั้นวางพาเลต แล้วเข้าสู่แดชบอร์ดสินค้าคงคลัง',
-      action: 'เริ่มทัวร์ →',
+      eyebrow: '01 / 03 · เตรียมขึ้นชั้น 2',
+      title: 'จากกล่องลูกฟูก<br><em>สู่ชั้นสอง</em>',
+      description: 'ตามคนเข็นกล่องเข้าลิฟต์สินค้า กดส่งขึ้นชั้น 2 แล้วเข้าสู่ข้อมูลคลังใน BCL WMS',
+      action: 'เริ่มขนย้าย →',
     },
     {
-      eyebrow: '02 / 03 · ชั้นวางสินค้า',
-      title: 'ผ่านชั้นวาง<br><em>และพาเลต</em>',
-      description: 'พื้นที่จัดเก็บแต่ละโซนเชื่อมกับข้อมูลพาเลตที่ใช้งานอยู่',
-      action: 'เดินต่อ →',
+      eyebrow: '02 / 03 · ลิฟต์สินค้า',
+      title: 'เข็นกล่องเข้าลิฟต์<br><em>กดชั้นสอง</em>',
+      description: 'จากจุดรับสินค้า กล่องลูกฟูกถูกส่งต่อไปยังพื้นที่จัดเก็บชั้น 2',
+      action: 'ส่งขึ้นชั้น 2 →',
     },
     {
-      eyebrow: '03 / 03 · เข้าสู่แดชบอร์ด',
-      title: 'พร้อมดูสต็อก<br><em>ในคลังของคุณ</em>',
-      description: 'ตรวจพื้นที่ว่าง มูลค่าสต็อก และงานรับเข้าได้จากหน้าหลัก',
+      eyebrow: '03 / 03 · ถึงชั้นสอง',
+      title: 'ถึงจุดจัดเก็บ<br><em>พร้อมดูข้อมูลจริง</em>',
+      description: 'เปิด BCL WMS เพื่อตรวจสถานะพื้นที่ สต็อก และงานรับเข้าในคลัง',
       action: 'เข้าสู่หน้าเว็บ →',
     },
   ];
