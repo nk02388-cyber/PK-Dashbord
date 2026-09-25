@@ -42,13 +42,19 @@ test('combines real pallet movements in date order and retains their location', 
     {date:'31/08/2026',label:'รับเข้า',type:'receive',qty:20},
     {date:'2026-09-02',label:'เบิก',type:'withdraw',qty:4},
   ]}));
-  assert.deepEqual(rows.map(row => row.label),['เบิก','รับเข้า']);
+  assert.deepEqual(rows.map(row => row.label),['รับเข้า','เบิก']);
   assert.equal(rows[0].zone,'A');
   assert.equal(rows[0].slot,'A-01');
   assert.equal(rows[0].lotNo,'LOT-1');
-  assert.equal(rows[0].supplierName,'','issue rows must not be attributed to the receipt supplier');
-  assert.equal(rows[1].supplierName,'บริษัท ผู้ส่งสินค้า');
+  assert.equal(rows[0].supplierName,'บริษัท ผู้ส่งสินค้า');
+  assert.equal(rows[1].supplierName,'','issue rows must not be attributed to the receipt supplier');
   assert.deepEqual(collectMovements(pallets,'31-0002',() => ({rows:[]})),[]);
+});
+
+test('sorts movement dates oldest first across day, month and Buddhist year formats', () => {
+  const dates = ['10/09/2026','02/09/2026','2026-08-31','01/09/2026','03/09/2569','', '09/09/2026'];
+  const rows = collectMovements(pallets,'31-0001',() => ({rows:dates.map(date => ({date,type:'receive',label:date}))}));
+  assert.deepEqual(rows.map(row => row.date), ['2026-08-31','01/09/2026','02/09/2026','03/09/2569','09/09/2026','10/09/2026','']);
 });
 
 test('shows the latest supplier only as a marked fallback on receipt rows', () => {
@@ -85,27 +91,27 @@ test('shows only current balances, keeping units separate and unknown stock expl
 
 test('stock card reverses recorded movements from the dated stock snapshot by unit', () => {
   const movements = [
-    {date:'2026-09-20', type:'withdraw', qty:3, unit:'ขวด'},
-    {date:'2026-09-19', type:'transfer_out', qty:2, unit:'ขวด'},
-    {date:'2026-09-19', type:'transfer_in', qty:2, unit:'ขวด'},
-    {date:'2026-09-18', type:'return', qty:1, unit:'ขวด'},
-    {date:'2026-09-17', type:'receive', qty:7, unit:'ขวด'},
     {date:'2026-09-17', type:'receive', qty:4, unit:'กล่อง'},
+    {date:'2026-09-17', type:'receive', qty:7, unit:'ขวด'},
+    {date:'2026-09-18', type:'return', qty:1, unit:'ขวด'},
+    {date:'2026-09-19', type:'transfer_in', qty:2, unit:'ขวด'},
+    {date:'2026-09-19', type:'transfer_out', qty:2, unit:'ขวด'},
+    {date:'2026-09-20', type:'withdraw', qty:3, unit:'ขวด'},
   ];
   const card = stockCardRows(movements,[{unit:'ขวด',qty:10,known:true},{unit:'กล่อง',qty:4,known:true}], 'ณ วันที่: 24 ก.ย. 69');
   assert.deepEqual(card.map(row => [row.received,row.issued,row.calculatedBalance]),[
-    [null,3,10],[null,2,13],[2,null,15],[1,null,13],[7,null,12],[4,null,4],
+    [4,null,4],[7,null,12],[1,null,13],[2,null,15],[null,2,13],[null,3,10],
   ]);
 });
 
 test('stock card leaves balances unknown for later, undated and incomplete records', () => {
   const card = stockCardRows([
-    {date:'2026-09-25',type:'receive',qty:2,unit:'ขวด'},
-    {date:'2026-09-24',type:'withdraw',qty:1,unit:'ขวด'},
-    {date:'2026-09-23',type:'receive',qty:null,unit:'ขวด'},
     {date:'2026-09-22',type:'receive',qty:3,unit:'ขวด'},
+    {date:'2026-09-23',type:'receive',qty:null,unit:'ขวด'},
+    {date:'2026-09-24',type:'withdraw',qty:1,unit:'ขวด'},
+    {date:'2026-09-25',type:'receive',qty:2,unit:'ขวด'},
     {date:'',type:'receive',qty:1,unit:'ขวด'},
   ],[{unit:'ขวด',qty:5,known:true}], '24/09/2569');
-  assert.deepEqual(card.map(row => row.calculatedBalance),[null,5,6,null,null]);
+  assert.deepEqual(card.map(row => row.calculatedBalance),[null,6,5,null,null]);
   assert.equal(stockCardRows([{date:'2026-09-24',type:'receive',qty:1,unit:'ชิ้น'}],[], '24/09/2569')[0].calculatedBalance,null);
 });

@@ -63,12 +63,20 @@
     const dateKey = value => {
       const date = String(value || '').trim();
       const iso = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(date);
-      const local = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(date);
-      if (iso) return `${iso[1]}${iso[2].padStart(2,'0')}${iso[3].padStart(2,'0')}`;
-      if (local) return `${local[3]}${local[2].padStart(2,'0')}${local[1].padStart(2,'0')}`;
-      return '';
+      const local = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/.exec(date);
+      if (!iso && !local) return '';
+      let year = Number(iso ? iso[1] : local[3]);
+      if (year < 100) year += 1957;
+      else if (year >= 2400) year -= 543;
+      const month = Number(iso ? iso[2] : local[2]);
+      const day = Number(iso ? iso[3] : local[1]);
+      return `${year.toString().padStart(4,'0')}${String(month).padStart(2,'0')}${String(day).padStart(2,'0')}`;
     };
-    return rows.sort((a,b) => dateKey(b.date).localeCompare(dateKey(a.date)) || String(b.recordedAt || '').localeCompare(String(a.recordedAt || '')));
+    return rows.sort((a,b) => {
+      const aDate = dateKey(a.date), bDate = dateKey(b.date);
+      if (!aDate || !bDate) return aDate ? -1 : bDate ? 1 : 0;
+      return aDate.localeCompare(bDate) || String(a.recordedAt || '').localeCompare(String(b.recordedAt || ''));
+    });
   }
 
   function summarizeStock(stockItems, productCode) {
@@ -117,7 +125,7 @@
     const cutoff = dateNumber(reportDate);
     const running = new Map((balances || []).map(row => [String(row.unit || '').trim() || 'ไม่ระบุหน่วย', row.known && Number.isFinite(row.qty) ? row.qty : null]));
     const ready = new Set(running.keys());
-    return (movements || []).map(row => {
+    return [...(movements || [])].reverse().map(row => {
       const unit = String(row.unit || '').trim() || 'ไม่ระบุหน่วย';
       const qty = row.qty == null || String(row.qty).trim() === '' ? null : Number(row.qty);
       const validQty = Number.isFinite(qty) && qty >= 0 ? qty : null;
@@ -135,7 +143,7 @@
         running.set(unit, previous < 0 ? null : previous);
       }
       return {...row, received:inbound ? validQty : null, issued:outbound ? validQty : null, calculatedBalance};
-    });
+    }).reverse();
   }
 
   if (typeof module !== 'undefined' && module.exports) {
