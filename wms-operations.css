@@ -1,139 +1,167 @@
-/* BCL operations ledger: structured data, quiet surfaces, unmistakable status. */
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap");
+
+/* IBM Carbon-inspired operations UI. BCL data, logo and status meanings stay intact. */
 @media screen {
   .viz-root {
-    --brand-blue: #205943;
-    --brand-blue-hover: #164532;
-    --nav-ink: #123c32;
-    --nav-active: #e2ec75;
-    --nav-text: #edf4ed;
-    --surface-1: #ffffff;
-    --page-plane: #f2f5f0;
-    --text-primary: #18342d;
-    --text-secondary: #50675e;
-    --text-muted: #667a70;
-    --gridline: #e8eee8;
-    --baseline: #cad8cd;
-    --border: #d5e1d6;
-    --series-1: #205943;
-    --series-1-wash: #e8f2e9;
-    --series-1-light: #d2e6d3;
-    --status-critical: #ad4448;
-    --status-critical-wash: #f9eeee;
-    --status-warning: #b47724;
-    --status-good: #286b4d;
-    --status-good-wash: #e6f2e8;
-    --radius-control: 8px;
-    --radius-panel: 12px;
-    --radius-card: 12px;
-    --shadow-card: 0 1px 2px rgba(16, 56, 40, .035);
-    --shadow-float: 0 18px 50px rgba(8, 40, 29, .2);
-    --focus-ring: #a1c952;
+    --brand-blue: #0f62fe;
+    --brand-blue-hover: #0050e6;
+    --nav-ink: #161616;
+    --nav-active: #0f62fe;
+    --nav-text: #f4f4f4;
+    --surface-1: #f4f4f4;
+    --page-plane: #ffffff;
+    --text-primary: #161616;
+    --text-secondary: #525252;
+    --text-muted: #6f6f6f;
+    --gridline: #ededed;
+    --baseline: #c6c6c6;
+    --border: #d7d7d7;
+    --series-1: #0f62fe;
+    --series-1-wash: #edf4ff;
+    --series-1-light: #d0e2ff;
+    --status-critical: #b81922;
+    --status-critical-wash: #fff1f1;
+    --status-warning: #806000;
+    --status-good: #198038;
+    --status-good-wash: #e9f6eb;
+    --radius-control: 0px;
+    --radius-panel: 0px;
+    --radius-card: 0px;
+    --shadow-card: none;
+    --shadow-float: 0 12px 34px rgba(0, 0, 0, .18);
+    --focus-ring: #0f62fe;
   }
   :root[data-theme="dark"] .viz-root {
-    --brand-blue: #286b4d;
-    --brand-blue-hover: #348260;
-    --nav-ink: #0b211c;
-    --nav-active: #d8e77a;
-    --nav-text: #e0eee4;
-    --surface-1: #19372e;
-    --page-plane: #10261f;
-    --text-primary: #f2f8f1;
-    --text-secondary: #c5d8ca;
-    --text-muted: #a9c1b1;
-    --gridline: #26463a;
-    --baseline: #416457;
-    --border: #365748;
-    --series-1: #a3dcb4;
-    --series-1-wash: #274b3b;
-    --series-1-light: #365d46;
-    --status-critical: #f29291;
-    --status-critical-wash: #493033;
-    --status-warning: #f1c67f;
-    --status-good: #96d5ad;
-    --status-good-wash: #244a38;
+    --brand-blue: #0f62fe;
+    --brand-blue-hover: #0050e6;
+    --nav-ink: #0d0d0d;
+    --nav-active: #0f62fe;
+    --nav-text: #f4f4f4;
+    --surface-1: #262626;
+    --page-plane: #161616;
+    --text-primary: #f4f4f4;
+    --text-secondary: #c6c6c6;
+    --text-muted: #a8a8a8;
+    --gridline: #2f2f2f;
+    --baseline: #6f6f6f;
+    --border: #474747;
+    --series-1: #78a9ff;
+    --series-1-wash: #1b3052;
+    --series-1-light: #243f68;
+    --status-critical: #ff8389;
+    --status-critical-wash: #482b2e;
+    --status-warning: #f1c21b;
+    --status-good: #7bd296;
+    --status-good-wash: #1e3b29;
     --shadow-card: none;
-    --shadow-float: 0 18px 50px rgba(0, 0, 0, .38);
-    --focus-ring: #d8e77a;
+    --shadow-float: 0 12px 34px rgba(0, 0, 0, .46);
+    --focus-ring: #78a9ff;
   }
-  body.viz-root { color: var(--text-primary); }
+  body.viz-root {
+    color: var(--text-primary);
+    font-family: "IBM Plex Sans Thai", "IBM Plex Sans", "Noto Sans Thai", system-ui, sans-serif;
+    letter-spacing: .01em;
+  }
   .viz-root .dashboard-content { background: var(--page-plane); }
   .viz-root header.top {
+    background: var(--page-plane);
     border: 1px solid var(--border);
-    border-radius: var(--radius-panel);
-    box-shadow: var(--shadow-card);
+    border-radius: 0;
+    box-shadow: none;
   }
-  .header-product-name { font-size: 18px; font-weight: 800; letter-spacing: -.035em; }
-  .welcome-greeting { color: var(--text-secondary); font-size: 12px; font-weight: 500; }
-  .viz-root #reportDate { border-radius: 8px; background: var(--page-plane); }
-  .viz-root #reportDate::before { box-shadow: none; }
-  .viz-root .tabs { border-radius: var(--radius-panel); box-shadow: none; }
+  .header-product-name { font-size: 21px; font-weight: 400; letter-spacing: -.025em; }
+  .welcome-greeting { color: var(--text-secondary); font-size: 12px; font-weight: 400; }
+  .viz-root #reportDate {
+    background: var(--surface-1);
+    border: 0;
+    border-radius: 0;
+    font-weight: 500;
+  }
+  .viz-root #reportDate::before { background: var(--series-1); box-shadow: none; }
+  .viz-root .tabs { background: var(--nav-ink); border: 0; border-radius: 0; box-shadow: none; }
   .viz-root .tab-btn {
-    border-radius: 8px;
-    font-weight: 650;
-    letter-spacing: 0;
-    transition: background-color .15s ease, color .15s ease;
+    border-radius: 0;
+    border-left: 3px solid transparent;
+    font-weight: 500;
+    letter-spacing: .01em;
   }
-  .viz-root .tab-btn:hover:not(.active) { background: rgba(226, 236, 117, .13); color: #fff; }
-  .viz-root .tab-btn.active { background: var(--nav-active); border-color: var(--nav-active); color: #173a2e; }
-  .viz-root .tab-btn .tab-badge { background: rgba(255, 255, 255, .13); color: #ecf6e9; }
-  .viz-root .tab-btn.active .tab-badge { background: rgba(19, 60, 50, .12); color: #173a2e; }
-  .viz-root .tab-btn .tab-badge.critical { background: #ffe6df; color: #893e35; }
+  .viz-root .tab-btn:hover:not(.active) { color: #fff; background: #353535; border-color: transparent; }
+  .viz-root .tab-btn.active { color: #fff; background: var(--nav-active); border-color: #a6c8ff; }
+  .viz-root .tab-btn .tab-badge { color: #f4f4f4; background: #393939; }
+  .viz-root .tab-btn.active .tab-badge { color: #161616; background: #fff; }
+  .viz-root .tab-btn .tab-badge.critical { color: #a21921; background: #fff1f1; }
+  .viz-root .dashboard-nav-brand { color: #fff; font-weight: 600; }
   .viz-root :where(.panel, .kpi, .speed-meter-card, .packaging-age-card, .incoming-step, .incoming-record, .barcode-print-card, .daily-kpi, .filter-bar) {
+    background: var(--surface-1);
     border: 1px solid var(--border);
-    border-radius: var(--radius-panel);
-    box-shadow: var(--shadow-card);
+    border-radius: 0;
+    box-shadow: none;
   }
   .viz-root .panel { padding: clamp(16px, 1.6vw, 24px); }
-  .viz-root .panel h2 { font-size: 17px; font-weight: 750; letter-spacing: -.02em; }
-  .viz-root .kpi { border-left: 4px solid var(--series-1); }
+  .viz-root .panel h2 { font-size: 18px; font-weight: 500; letter-spacing: -.015em; }
+  .viz-root .kpi { border-top: 2px solid var(--series-1); }
   .viz-root .kpi::before { display: none; }
-  .viz-root .kpi.good { border-left-color: var(--status-good); }
-  .viz-root .kpi.critical { border-left-color: var(--status-critical); }
-  .viz-root .kpi .value, .viz-root .kpi-total-fixed .value, .viz-root .building-usage-percent {
+  .viz-root .kpi.good { border-top-color: var(--status-good); }
+  .viz-root .kpi.critical { border-top-color: var(--status-critical); }
+  .viz-root :where(.kpi .value, .kpi-total-fixed .value, .building-usage-percent) {
     font-variant-numeric: tabular-nums;
-    letter-spacing: -.045em;
+    letter-spacing: -.04em;
+    font-weight: 600;
   }
-  .viz-root .kpi-total-fixed { background: #e2ec75; border: 1px solid #cbd965; }
-  .viz-root .kpi-total-fixed :where(.label, .value, .sub) { color: #1a382c; }
-  .viz-root .building-usage-card { border-radius: 10px; background: var(--page-plane); }
-  .viz-root .building-usage-total { border: 1px solid var(--border); border-radius: 10px; }
-  .viz-root .building-usage-track { height: 9px; background: var(--gridline); }
-  .viz-root .filter-bar { border-radius: var(--radius-panel); }
-  .viz-root .filter-bar select { border-radius: 8px; }
-  .viz-root :where(.panel, .filter-bar, .incoming-step, .barcode-print-card) :where(input, select, textarea) { border-radius: 8px; }
-  .viz-root :where(input, select, textarea):focus-visible,
-  .viz-root :where(button, .tab-btn):focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+  .viz-root .kpi-total-fixed { background: #0f62fe; border: 1px solid #0f62fe; }
+  :root[data-theme="dark"] .viz-root .kpi-total-fixed { background: #0f62fe; border-color: #0f62fe; }
+  .viz-root .kpi-total-fixed :where(.label, .value, .sub),
+  :root[data-theme="dark"] .viz-root .kpi-total-fixed :where(.label, .value, .sub) { color: #fff; }
+  .viz-root .building-usage-card { background: var(--page-plane); border-radius: 0; }
+  .viz-root .building-usage-total { background: var(--page-plane); border: 1px solid var(--border); border-radius: 0; }
+  .viz-root .building-usage-track { height: 8px; background: var(--gridline); border-radius: 0; }
+  .viz-root .building-usage-fill { border-radius: 0; }
+  .viz-root .filter-bar { border-radius: 0; }
+  .viz-root .filter-bar select { border-radius: 0; }
+  .viz-root .wrap :where(button, input:not([type="checkbox"]):not([type="radio"]), select, textarea) { border-radius: 0 !important; }
+  .viz-root .wrap :where(.tab-badge, .notification-item, .product-history-product, .product-history-stock > div, .incoming-view-nav button, .incoming-nav-number, .incoming-record-status, .stock-reconcile-panel, .product-history-table-wrap) { border-radius: 0; }
+  .viz-root .wrap .badge, .viz-root .incoming-form-group h4 span, .viz-root .incoming-scan-card h4 span { border-radius: 0; }
+  .viz-root .dashboard-content :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+    background-color: var(--page-plane);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-bottom: 1px solid var(--text-secondary);
+  }
+  .viz-root .dashboard-content :where(input, textarea)::placeholder { color: var(--text-muted); opacity: 1; }
+  .viz-root .wrap :where(input, select, textarea, button, .tab-btn):focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
   .viz-root :where(.panel, .incoming-step, .product-history-panel, .stock-reconcile-panel) table { border-collapse: collapse; }
   .viz-root :where(.panel, .incoming-step, .product-history-panel, .stock-reconcile-panel) :where(th, thead td) {
-    background: var(--series-1-wash);
+    background: var(--gridline);
     color: var(--text-primary);
-    font-weight: 750;
+    font-weight: 600;
   }
-  .viz-root :where(.panel, .incoming-step, .product-history-panel, .stock-reconcile-panel) tbody tr:hover {
-    background: var(--series-1-wash);
-  }
-  .viz-root :where(td.num, .product-history-running, .stock-reconcile-panel td:nth-child(3), .stock-reconcile-panel td:nth-child(4), .stock-reconcile-panel td:nth-child(5)) {
-    font-variant-numeric: tabular-nums;
-  }
-  .viz-root .notification-panel { border-radius: 12px; box-shadow: var(--shadow-float); }
-  .viz-root .notification-item { border-radius: 8px; background: var(--page-plane); }
-  .viz-root .product-history-product { border: 1px solid var(--border); border-radius: 10px; }
-  .viz-root .product-history-stock > div { border-radius: 8px; }
+  .viz-root #stockReconcilePanel table thead th { background: var(--gridline) !important; color: var(--text-primary); }
+  .viz-root :where(.panel, .incoming-step, .product-history-panel, .stock-reconcile-panel) tbody tr:hover { background: var(--series-1-wash); }
+  .viz-root :where(td.num, .product-history-running, .stock-reconcile-panel td:nth-child(3), .stock-reconcile-panel td:nth-child(4), .stock-reconcile-panel td:nth-child(5)) { font-variant-numeric: tabular-nums; }
+  .viz-root .notification-panel { background: var(--surface-1); border-radius: 0; box-shadow: var(--shadow-float); }
+  .viz-root .notification-item { background: var(--page-plane); border-radius: 0; }
+  .viz-root .product-history-product { background: var(--page-plane); border: 1px solid var(--border); }
+  .viz-root .product-history-stock > div { background: var(--page-plane); }
+  .viz-root .stock-update-btn { background: #0f62fe !important; border-color: #0f62fe !important; color: #fff !important; }
+  .viz-root .stock-update-btn:hover { background: #0050e6 !important; }
+  .viz-root .bar-fill, .viz-root .barchart.vertical .bar-fill, .viz-root #whChart .bar-fill { background: var(--series-1); }
   :root[data-theme="dark"] .viz-root .filter-bar select { background-color: var(--surface-1) !important; color: var(--text-primary) !important; }
-  :root[data-theme="dark"] .viz-root .kpi-total-fixed { background: #d8e77a; border-color: #b4c45e; }
   :root[data-theme="dark"] .viz-root #themeToggle { background: var(--surface-1); color: var(--text-primary); }
-  :root[data-theme="dark"] #themeToggle .theme-option-moon { background: #d8e77a; color: #173a2e; }
+  :root[data-theme="dark"] #themeToggle .theme-option-moon { background: #4589ff; color: #161616; }
+  :root[data-theme="light"] #themeToggle .theme-option-sun { background: #0f62fe; color: #fff; }
   @media (min-width: 1024px) {
     .viz-root .wrap { grid-template-columns: 256px minmax(0, 1fr); }
-    .viz-root .dashboard-layout > .tabs { padding: 16px 12px 24px; }
-    .viz-root .dashboard-nav-brand { border-bottom-color: rgba(255, 255, 255, .14); }
-    .viz-root header.top { min-height: 76px; padding: 14px 28px; border-top: 0; border-right: 0; border-left: 0; border-radius: 0; }
+    .viz-root .dashboard-layout > .tabs { padding: 16px 0 24px; }
+    .viz-root .dashboard-nav-brand { border-bottom: 1px solid #393939; }
+    .viz-root header.top { min-height: 76px; padding: 14px 28px; border-top: 0; border-right: 0; border-left: 0; }
     .viz-root .dashboard-layout > .dashboard-content { padding: 28px clamp(20px, 2.4vw, 40px) 44px; }
   }
   @media (max-width: 700px) {
     .viz-root header.top { padding: 12px; }
-    .header-product-name { font-size: 16px; }
-    .viz-root .tabs { border-radius: 10px; }
+    .header-product-name { font-size: 17px; }
   }
   @media (prefers-reduced-motion: reduce) {
     .viz-root .tab-btn { transition: none; }
