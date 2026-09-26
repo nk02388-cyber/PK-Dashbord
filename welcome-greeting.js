@@ -1,9 +1,45 @@
 (function (root) {
-  function getWelcomeMessage(hour) {
-    if (hour >= 5 && hour < 12) return 'สวัสดีตอนเช้า ขอให้วันนี้เป็นวันที่ดี';
-    if (hour >= 12 && hour < 17) return 'สวัสดีตอนบ่าย ขอให้งานราบรื่นตลอดวัน';
-    if (hour >= 17 && hour < 21) return 'สวัสดีตอนเย็น ขอบคุณสำหรับความตั้งใจในวันนี้';
-    return 'สวัสดีตอนดึก ขอให้ทำงานอย่างปลอดภัย';
+  const messages = {
+    morning: [
+      'สวัสดีตอนเช้า ขอให้วันนี้เป็นวันที่ดี',
+      'สวัสดีตอนเช้า เริ่มวันด้วยพลังดีๆ',
+      'สวัสดีตอนเช้า ขอให้งานวันนี้ราบรื่น',
+      'สวัสดีตอนเช้า พร้อมเริ่มงานไปด้วยกัน',
+      'สวัสดีตอนเช้า ขอให้ทุกขั้นตอนเป็นไปด้วยดี',
+      'สวัสดีตอนเช้า ดูแลตัวเองระหว่างวันด้วยนะ'
+    ],
+    afternoon: [
+      'สวัสดีตอนบ่าย ขอให้งานราบรื่นตลอดวัน',
+      'สวัสดีตอนบ่าย พักสายตาสักครู่แล้วไปต่อ',
+      'สวัสดีตอนบ่าย ขอให้จัดการงานได้ตามแผน',
+      'สวัสดีตอนบ่าย ขอบคุณที่ใส่ใจทุกรายละเอียด',
+      'สวัสดีตอนบ่าย ขอให้ช่วงที่เหลือของวันราบรื่น',
+      'สวัสดีตอนบ่าย ค่อยๆ ทำงานทีละขั้นตอน'
+    ],
+    evening: [
+      'สวัสดีตอนเย็น ขอบคุณสำหรับความตั้งใจในวันนี้',
+      'สวัสดีตอนเย็น ขอให้ปิดงานได้เรียบร้อย',
+      'สวัสดีตอนเย็น เหนื่อยมาทั้งวัน อย่าลืมพักผ่อน',
+      'สวัสดีตอนเย็น ขอบคุณที่ช่วยดูแลงานวันนี้',
+      'สวัสดีตอนเย็น ขอให้ช่วงเย็นเป็นไปอย่างราบรื่น',
+      'สวัสดีตอนเย็น ตรวจงานให้ครบแล้วพักกันนะ'
+    ],
+    night: [
+      'สวัสดีตอนดึก ขอให้ทำงานอย่างปลอดภัย',
+      'สวัสดีตอนดึก อย่าลืมพักเมื่อมีโอกาส',
+      'สวัสดีตอนดึก ขอให้ทุกงานผ่านไปอย่างราบรื่น',
+      'สวัสดีตอนดึก ดูแลตัวเองระหว่างทำงานด้วยนะ',
+      'สวัสดีตอนดึก ขอบคุณที่ช่วยดูแลงานคืนนี้',
+      'สวัสดีตอนดึก ขอให้จบงานอย่างปลอดภัย'
+    ]
+  };
+
+  function getWelcomeMessage(hour, halfHourSlot = 0) {
+    const period = hour >= 5 && hour < 12 ? 'morning'
+      : hour >= 12 && hour < 17 ? 'afternoon'
+      : hour >= 17 && hour < 21 ? 'evening' : 'night';
+    const choices = messages[period];
+    return choices[((halfHourSlot % choices.length) + choices.length) % choices.length];
   }
 
   if (typeof module !== 'undefined' && module.exports) module.exports = { getWelcomeMessage };
@@ -13,19 +49,22 @@
   if (!greeting) return;
 
   function updateGreeting() {
-    let hour;
+    let hour, minute;
     try {
-      hour = Number(new Intl.DateTimeFormat('en-GB', {
-        hour: '2-digit', hourCycle: 'h23', timeZone: 'Asia/Bangkok'
-      }).format(new Date()));
+      const parts = new Intl.DateTimeFormat('en-GB', {
+        hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'Asia/Bangkok'
+      }).formatToParts(new Date());
+      hour = Number(parts.find(part => part.type === 'hour').value);
+      minute = Number(parts.find(part => part.type === 'minute').value);
     } catch (_) {
       hour = new Date().getHours();
+      minute = new Date().getMinutes();
     }
-    greeting.textContent = getWelcomeMessage(hour);
+    greeting.textContent = getWelcomeMessage(hour, hour * 2 + Math.floor(minute / 30));
   }
 
   updateGreeting();
-  root.setInterval(updateGreeting, 60_000);
+  root.setInterval(updateGreeting, 30_000);
   root.document.addEventListener('visibilitychange', () => {
     if (!root.document.hidden) updateGreeting();
   });
