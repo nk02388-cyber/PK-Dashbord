@@ -40,6 +40,16 @@
     box-shadow: none;
     background: var(--surface-1);
   }
+  header.top::after {
+    content: "";
+    position: absolute;
+    left: calc(-1 * var(--dashboard-sidebar-w));
+    bottom: 0;
+    width: var(--dashboard-sidebar-w);
+    height: 1px;
+    background: rgba(255, 255, 255, .22);
+    pointer-events: none;
+  }
   header.top .header-logo { display: none; }
   header.top .header-product-name { display: none; }
 
