@@ -57,24 +57,53 @@
   const badge = document.getElementById('notificationBadge');
   const list = document.getElementById('notificationItems');
   const clearButton = document.getElementById('notificationClear');
+  const toastStack = document.getElementById('notificationToastStack');
   if (!toggle || !panel || !badge || !list || !clearButton) return;
   const escape = value => escapeHtml(String(value ?? ''));
   const fmt = value => Number(value).toLocaleString('en-US',{maximumFractionDigits:3});
   let pending = {count:null,rows:[],error:''}, requestId = 0;
   const storageKey = 'pk-notifications-dismissed-v1';
+  const toastStorageKey = 'pk-notifications-toast-seen-v1';
   let activeDay = dayKey(new Date());
   let dismissed = (() => { try { return restoredDismissals(localStorage.getItem(storageKey),activeDay); } catch { return new Set(); } })();
+  let toastSeen = (() => { try { return restoredDismissals(sessionStorage.getItem(toastStorageKey),activeDay); } catch { return new Set(); } })();
   let currentActions = [];
+  let toastTimer = null;
   function saveDismissed() {
     try { localStorage.setItem(storageKey,JSON.stringify({day:activeDay,signatures:[...dismissed]})); } catch { /* storage may be unavailable */ }
+  }
+  function saveToastSeen() {
+    try { sessionStorage.setItem(toastStorageKey,JSON.stringify({day:activeDay,signatures:[...toastSeen]})); } catch { /* storage may be unavailable */ }
   }
   function ensureCurrentDay() {
     const today = dayKey(new Date());
     if (today === activeDay) return false;
     activeDay = today;
     dismissed.clear();
+    toastSeen.clear();
     saveDismissed();
+    saveToastSeen();
     return true;
+  }
+
+  function scheduleToast() {
+    if (!toastStack || toastTimer) return;
+    toastTimer = window.setTimeout(() => {
+      toastTimer = null;
+      const fresh = currentActions.filter(action => !toastSeen.has(actionSignature(action)));
+      if (!fresh.length) return;
+      for (const action of fresh) toastSeen.add(actionSignature(action));
+      saveToastSeen();
+      const toast = document.createElement('div');
+      toast.className = 'notification-toast';
+      toast.dataset.tone = fresh.some(action => action.tone === 'critical') ? 'critical' : 'warning';
+      const title = fresh.length === 1 ? fresh[0].title : `มีการแจ้งเตือน ${fresh.length} รายการ`;
+      const detail = fresh.length === 1 ? fresh[0].detail : `${fresh[0].title} · ดูทั้งหมดที่กระดิ่ง`;
+      toast.innerHTML = `<strong>${escape(title)}</strong><small>${escape(detail)}</small>`;
+      if (toastStack.children.length >= 2) toastStack.firstElementChild.remove();
+      toastStack.appendChild(toast);
+      window.setTimeout(() => toast.remove(), 6300);
+    },450);
   }
 
   function render() {
@@ -104,6 +133,7 @@
     toggle.setAttribute('aria-label',currentActions.length ? `เปิดการแจ้งเตือน ${currentActions.length} ประเภท` : 'เปิดการแจ้งเตือน');
     list.innerHTML = currentActions.length ? currentActions.map(action => `<button type="button" class="notification-item" data-action="${escape(action.kind)}" data-tone="${action.tone}"><strong>${escape(action.title)}</strong><small>${escape(action.detail)}</small></button>`).join('') : `<p class="notification-empty">${actions.length ? 'ล้างการแจ้งเตือนวันนี้แล้ว · รายการใหม่จะแสดงเมื่อข้อมูลเปลี่ยน' : 'ไม่มีรายการที่ต้องดำเนินการ'}</p>`;
     if (pending.count == null && !pending.error) list.insertAdjacentHTML('beforeend','<p class="notification-empty">กำลังตรวจรายการรอจัดเก็บ…</p>');
+    scheduleToast();
   }
 
   async function refreshPending() {
