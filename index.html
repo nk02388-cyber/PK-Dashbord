@@ -294,8 +294,6 @@
     font: inherit; font-size: 13px; color: var(--text-primary); background: var(--page-plane);
     border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; min-width: 260px; cursor: pointer;
   }
-  .filter-status { font-size: 12px; color: var(--text-muted); margin-left: auto; }
-  .filter-status b { color: var(--text-primary); font-weight: 600; }
 
   .stock-update-box { display:flex; align-items:center; gap:10px; flex-wrap:wrap; width:100%; padding-top:10px; margin-top:2px; border-top:1px dashed var(--border); }
   .stock-update-btn { display:inline-flex; align-items:center; min-height:44px; gap:8px; border:0; border-radius:8px; padding:8px 14px; font:inherit; font-size:13px; font-weight:700; cursor:pointer; color:#fff; background:#0b6bcb; box-shadow:0 2px 7px rgba(11,107,203,.24); }
@@ -1319,7 +1317,6 @@
     .bar-row { grid-template-columns: 90px 1fr 70px; }
     .bar-row .name { font-size: 11px; }
     .filter-bar select { min-width: 0; flex: 1; }
-    .filter-status { margin-left: 0; width: 100%; }
     .floorplan-zoom-modal { padding: 0; }
     .floorplan-zoom-box { width: 100vw; max-height: 100vh; height: 100vh; aspect-ratio: auto; border-radius: 0; }
     .floorplan-zoom-head { display:grid; grid-template-columns:minmax(0,1fr); flex-shrink: 0; padding: 10px 12px; }
@@ -1540,7 +1537,6 @@
     background: #262626 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23c6c6c6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center / 16px !important;
     color: #f8fafc !important;
   }
-  .filter-status { font-weight: 700; }
 
   .panel, .kpi, .speed-meter-card, .packaging-age-card {
     border-color: var(--border); border-radius: var(--radius-card); box-shadow: var(--shadow-card);
@@ -1967,7 +1963,7 @@ header.top .header-logo { border-radius: 14px; }
 <link rel="stylesheet" href="notifications.css?v=20260926-1">
 <link rel="stylesheet" href="event-calendar.css?v=20260924-1">
 <link rel="stylesheet" href="reorder-points.css?v=20260926-1">
-<link rel="stylesheet" href="wms-operations.css?v=20260926-7">
+<link rel="stylesheet" href="wms-operations.css?v=20260926-8">
 </head>
 <body class="viz-root">
 <a class="skip-link" href="#mainDashboard">ข้ามไปยังเนื้อหาหลัก</a>
@@ -2059,7 +2055,6 @@ header.top .header-logo { border-radius: 14px; }
   <div class="tab-pane" id="pane-stock" role="tabpanel" aria-labelledby="tab-stock">
 
     <div class="filter-bar">
-      <span class="filter-status" id="filterStatus">กำลังแสดง: <b>ทุกคลัง</b> · มูลค่ารวม ฿32.41M</span>
       <div class="stock-update-box" aria-label="อัปเดตสต็อก">
         <button class="stock-update-btn" id="stockUpdateBtn" type="button">↥ อัปเดตสต็อก</button>
         <input id="stockExcelInput" type="file" accept=".xlsx,.xls,.csv,.txt" multiple hidden>
@@ -2098,6 +2093,7 @@ header.top .header-logo { border-radius: 14px; }
           <div class="sm-sub" id="pkSpeedMeterSub">95/992 ช่อง</div>
         </div>
         <div class="kpi-total-fixed" id="stockTotalKpiFixed" title="มูลค่าคงเหลือรวม">
+    <div class="kpi-scope" id="filterStatus">กำลังแสดง: ทุกคลัง</div>
     <div class="label">มูลค่าคงเหลือรวม (บาท)</div>
     <div class="value">฿32.41M</div>
     <div class="sub">32,412,386 บาท</div>
@@ -6462,6 +6458,7 @@ function renderStockKpis(view, whCode) {
     ? {label:'มูลค่าคงเหลือรวม (บาท)', value: '฿' + fmtCompact(view.kpis.total_value), sub: fmt0(view.kpis.total_value) + ' บาท'}
     : {label:'มูลค่าคงเหลือ (คลังนี้)', value: '฿' + fmtCompact(view.kpis.total_value), sub: fmt0(view.kpis.total_value) + ' บาท'};
   document.getElementById('stockTotalKpiFixed').innerHTML = `
+    <div class="kpi-scope" id="filterStatus">กำลังแสดง: ${whCode === 'all' ? 'ทุกคลัง' : escapeHtml(warehouseLabel(whCode))}</div>
     <div class="label">${totalKpi.label}</div>
     <div class="value">${totalKpi.value}</div>
     <div class="sub">${totalKpi.sub}</div>
@@ -6475,9 +6472,6 @@ function renderStockAll(whCode) {
   renderWarehouseChart(whCode);
   renderCategories(view, whCode);
   renderTopItems(view, whCode);
-  document.getElementById('filterStatus').innerHTML = whCode === 'all'
-    ? `กำลังแสดง: <b>ทุกคลัง</b> · มูลค่ารวม ฿${fmtCompact(view.kpis.total_value)}`
-    : `กำลังแสดง: <b>${warehouseLabel(whCode)}</b> · มูลค่า ฿${fmtCompact(view.kpis.total_value)}`;
 }
 
 const warehouseChart = document.getElementById('whChart');

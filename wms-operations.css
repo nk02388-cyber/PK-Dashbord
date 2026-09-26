@@ -210,6 +210,12 @@
   :root[data-theme="dark"] .viz-root .kpi-total-fixed { background: #0f62fe; border-color: #0f62fe; }
   .viz-root .kpi-total-fixed :where(.label, .value, .sub),
   :root[data-theme="dark"] .viz-root .kpi-total-fixed :where(.label, .value, .sub) { color: #fff; }
+  .viz-root .kpi-total-fixed .kpi-scope {
+    max-width: 100%; margin-bottom: 8px; color: #fff;
+    font-size: 11px; line-height: 1.35; font-weight: 500;
+    overflow-wrap: anywhere;
+  }
+  .viz-root .stock-update-box { margin-top: 0; padding-top: 0; border-top: 0; }
   .viz-root .building-usage-card { background: var(--page-plane); border-radius: 0; }
   .viz-root .building-usage-total { background: var(--page-plane); border: 1px solid var(--border); border-radius: 0; }
   .viz-root .building-usage-track { height: 8px; background: var(--gridline); border-radius: 0; }
