@@ -45,6 +45,9 @@ drop policy if exists receive_read on public.receive_dates;
 create policy receive_read on public.receive_dates for select to authenticated using (public.is_app_user());
 revoke all on public.event_calendar, public.incoming_pallets, public.pallet_audit_log,
   public.pallet_slots, public.receive_dates from anon;
+-- Pallet writes go through the guarded save_pallet_changes RPC. Remove the
+-- old direct table grants so a disabled user's JWT cannot bypass that guard.
+revoke insert, update, delete on public.pallet_slots, public.receive_dates from authenticated;
 
 -- Restrict the existing security-definer RPCs as well as their table policies.
 do $$
@@ -70,7 +73,8 @@ end $$;
 
 create or replace function public.get_latest_stock_inventory()
 returns jsonb language sql stable security definer set search_path = '' as $$
-  select stock_data from public.stock_inventory_snapshots
+  select stock_data || jsonb_build_object('snapshot_saved_at', created_at)
+  from public.stock_inventory_snapshots
   where public.is_app_user() order by id desc limit 1;
 $$;
 revoke execute on all functions in schema public from public, anon;

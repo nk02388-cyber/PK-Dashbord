@@ -32,7 +32,7 @@ try {
     insert into public.app_users values ('${oldId}','Admin','old@example.test','admin');
     create table public.event_calendar(id uuid); create table public.incoming_pallets(id uuid);
     create table public.pallet_audit_log(id uuid); create table public.pallet_slots(id uuid);
-    create table public.receive_dates(id uuid); create table public.stock_inventory_snapshots(id int,stock_data jsonb);
+    create table public.receive_dates(id uuid); create table public.stock_inventory_snapshots(id int,stock_data jsonb,created_at timestamptz);
     alter table public.event_calendar enable row level security;
     alter table public.incoming_pallets enable row level security;
     alter table public.pallet_audit_log enable row level security;
@@ -45,6 +45,8 @@ try {
     create policy receive_read on public.receive_dates for select to anon,authenticated using(true);
     grant select on public.event_calendar, public.incoming_pallets, public.pallet_audit_log,
       public.pallet_slots, public.receive_dates to anon,authenticated;
+    grant insert,update on public.pallet_slots, public.receive_dates to anon,authenticated;
+    insert into public.stock_inventory_snapshots values (1,'{"items":[]}', '2026-09-26T00:00:00Z');
     create function public.save_calendar_event() returns text language plpgsql security definer as $$
       begin return 'ok'; end; $$;
     grant execute on function public.save_calendar_event() to anon,authenticated;`);
@@ -57,7 +59,10 @@ try {
   await db.query('set role authenticated');
   await db.query('select set_config($1,$2,false)',['request.jwt.claim.sub',oldId]);
   await assert.rejects(db.query('select public.save_calendar_event()'),error=>error.code==='42501');
+  await assert.rejects(db.query(`insert into public.pallet_slots values ('${oldId}')`),error=>error.code==='42501');
   await db.query('select set_config($1,$2,false)',['request.jwt.claim.sub',adminId]);
   assert.equal((await db.query('select public.save_calendar_event() value')).rows[0].value,'ok');
+  const snapshot=(await db.query('select public.get_latest_stock_inventory() value')).rows[0].value;
+  assert.equal(Date.parse(snapshot.snapshot_saved_at),Date.parse('2026-09-26T00:00:00Z'));
   console.log('PASS: one Admin, retired profile denied, anon RPC denied, Admin RPC allowed');
 } finally {if(db) await db.end(); await server.stop();}
