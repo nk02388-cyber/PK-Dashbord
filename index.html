@@ -1975,7 +1975,7 @@ header.top .header-logo { border-radius: 14px; }
     <h1 id="authTitle">เข้าสู่ระบบ BCL WMS</h1>
     <p>ใช้บัญชีที่ผู้ดูแลระบบกำหนดเพื่อเข้าถึงข้อมูลคลัง</p>
     <label>ชื่อผู้ใช้<input id="authUsername" name="username" autocomplete="username" required autofocus></label>
-    <label>รหัสผ่าน<input id="authPassword" name="password" type="password" autocomplete="current-password" required></label>
+    <label>รหัสผ่าน / PIN<input id="authPassword" name="password" type="password" autocomplete="current-password" required></label>
     <p class="auth-error" id="authError" role="alert" hidden></p>
     <button id="authSubmit" type="submit">เข้าสู่ระบบ</button>
     <span id="authLoading" role="status">กำลังตรวจสอบบัญชี…</span>
@@ -2010,7 +2010,7 @@ header.top .header-logo { border-radius: 14px; }
             <h3>จัดการผู้ใช้ย่อย</h3>
             <form id="accountCreateForm">
               <label>ชื่อผู้ใช้<input name="username" required minlength="3" maxlength="32" pattern="[A-Za-z][A-Za-z0-9._-]{2,31}" autocomplete="off"></label>
-              <label>รหัสผ่านเริ่มต้น<input name="password" type="password" required minlength="12" maxlength="128" autocomplete="new-password"></label>
+              <label>PIN 6 หลัก<input name="pin" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" title="กรอกตัวเลข 6 หลัก" required autocomplete="new-password"></label>
               <button type="submit">เพิ่มผู้ใช้</button>
             </form>
             <p id="accountManageMessage" role="status"></p>

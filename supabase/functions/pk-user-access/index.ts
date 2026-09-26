@@ -39,6 +39,17 @@ async function backend(path, key, init = {}) {
 
 
 const validUsername = (name) => typeof name === 'string' && /^[a-z][a-z0-9._-]{2,31}$/i.test(name);
+const validPin = (pin) => typeof pin === 'string' && /^[0-9]{6}$/.test(pin);
+
+async function pinPassword(username, pin) {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey('raw', encoder.encode(serviceKey),
+    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const signature = await crypto.subtle.sign('HMAC', key,
+    encoder.encode(`bcl-wms-pin-v1:${username}:${pin}`));
+  const hex = Array.from(new Uint8Array(signature), byte => byte.toString(16).padStart(2, '0')).join('');
+  return `Bcl!${hex}9`;
+}
 
 
 Deno.serve(async (request) => {
@@ -64,8 +75,12 @@ Deno.serve(async (request) => {
     if (!profileResponse.ok) return response(origin, 503, { error: 'ระบบเข้าสู่ระบบไม่พร้อม' });
     const [profile] = await profileResponse.json();
     if (!profile?.active) return response(origin, 401, { error: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' });
+    const usesPin = profile.email.endsWith('@pin.bcl-wms.local');
+    if (usesPin && !validPin(input.password))
+      return response(origin, 401, { error: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' });
+    const password = usesPin ? await pinPassword(username, input.password) : input.password;
     const signIn = await backend('/auth/v1/token?grant_type=password', anonKey, {
-      method: 'POST', body: JSON.stringify({ email: profile.email, password: input.password }),
+      method: 'POST', body: JSON.stringify({ email: profile.email, password }),
     });
     if (!signIn.ok) return response(origin, 401, { error: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' });
     const session = await signIn.json();
@@ -95,16 +110,17 @@ Deno.serve(async (request) => {
   if (action === 'create') {
     const username = typeof input.username === 'string' ? input.username.trim().toLowerCase() : '';
     // Supabase Auth needs an email identifier internally; staff sign in by username.
-    const email = `${username}@bcl-wms.local`;
-    const password = input.password;
+    const email = `${username}@pin.bcl-wms.local`;
+    const pin = input.pin;
     if (!validUsername(username) || username === 'admin'
-      || typeof password !== 'string' || password.length < 12 || password.length > 128)
-      return response(origin, 400, { error: 'กรุณาระบุชื่อผู้ใช้และรหัสผ่านอย่างน้อย 12 ตัวอักษร' });
+      || !validPin(pin))
+      return response(origin, 400, { error: 'กรุณาระบุชื่อผู้ใช้และ PIN ตัวเลข 6 หลัก' });
     const exists = await backend(`/rest/v1/app_users?select=id&or=(username.eq.${encodeURIComponent(username)},email.eq.${encodeURIComponent(email)})&limit=1`, serviceKey);
     if (!exists.ok) return response(origin, 503, { error: 'ตรวจสอบผู้ใช้ไม่สำเร็จ' });
     if ((await exists.json()).length) return response(origin, 409, { error: 'ชื่อผู้ใช้นี้มีอยู่แล้ว' });
+    const password = await pinPassword(username, pin);
     const createdResponse = await backend('/auth/v1/admin/users', serviceKey, {
-      method: 'POST', body: JSON.stringify({ email, password, email_confirm: true, user_metadata: { username } }),
+      method: 'POST', body: JSON.stringify({ email, password, email_confirm: true, user_metadata: { username, login_kind: 'pin-v1' } }),
     });
     if (!createdResponse.ok) return response(origin, 400, { error: 'สร้างบัญชีไม่สำเร็จ กรุณาลองชื่อผู้ใช้อื่น' });
     const created = await createdResponse.json();
