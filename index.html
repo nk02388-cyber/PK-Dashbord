@@ -88,12 +88,8 @@
   }
   .wrap { max-width: 1240px; margin: 0 auto; }
 
-  /* 21 Aug 2026: header + tabs + (on the stock tab) the warehouse filter-bar all stay
-     pinned to the top of the viewport while scrolling, stacked in that order. Each needs
-     its own opaque background (so scrolled-past content doesn't show through) and a `top`
-     offset equal to the combined height of whichever sticky rows come before it -- those
-     offsets are computed at runtime (updateStickyOffsets(), near the tab-click handler
-     below) rather than hardcoded, since header/tab-label wrapping can change their height. */
+  /* The header and tabs remain available while scrolling. Their offsets are
+     measured at runtime because the labels can wrap at different widths. */
   header.top {
     display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap;
     gap: 12px; margin-bottom: 18px; padding-bottom: 16px; border-bottom: 1px solid var(--border);
@@ -295,8 +291,6 @@
     display:flex; align-items:center; gap: 10px; flex-wrap: wrap;
     margin-bottom: 18px; padding: 12px 16px; background: var(--surface-1);
     border: 1px solid var(--border); border-radius: 10px;
-    /* Sticks below header + tabs, stock tab only (see comment above header.top). */
-    position: sticky; top: var(--sticky-stack-h, 0px); z-index: 98;
   }
   .filter-bar label { font-size: 12.5px; color: var(--text-secondary); font-weight:600; }
   .filter-bar select {
@@ -1707,7 +1701,6 @@
     .tabs #tab-bompk .tab-badge { margin-left: 28px; }
     .tabs .tab-badge { margin-left: auto; flex: none; }
     .dashboard-content .tab-pane { min-width: 0; }
-    .dashboard-content .filter-bar { top: calc(var(--sticky-header-h, 0px) + 8px); }
   }
   @media (max-width: 1023px) {
     .tabs { position: relative; top: auto; }
@@ -3028,7 +3021,7 @@ document.getElementById('tabs').addEventListener('keydown', (e) => {
 document.getElementById('tabBadgeStock').textContent = '฿' + fmtCompact(STOCK.kpis.total_value);
 document.getElementById('tabBadgeBompk').textContent = fmt0(BOMPK.kpis.fg_blocked) + ' ติดขัด';
 
-// ---------- Sticky header stack (header.top -> .tabs -> stock tab's .filter-bar) ----------
+// ---------- Sticky header and tabs ----------
 // Computed at runtime rather than hardcoded, since header/tab-label text can wrap
 // differently depending on window width, changing the actual pixel height of each row.
 function updateStickyOffsets() {
