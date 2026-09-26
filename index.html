@@ -1950,7 +1950,7 @@ header.top .header-logo { border-radius: 14px; }
 <link rel="stylesheet" href="notifications.css?v=20260926-1">
 <link rel="stylesheet" href="event-calendar.css?v=20260924-1">
 <link rel="stylesheet" href="reorder-points.css?v=20260926-1">
-<link rel="stylesheet" href="wms-operations.css?v=20260926-4">
+<link rel="stylesheet" href="wms-operations.css?v=20260926-5">
 </head>
 <body class="viz-root">
 <a class="skip-link" href="#mainDashboard">ข้ามไปยังเนื้อหาหลัก</a>
@@ -8768,20 +8768,13 @@ function renderFgBom(rawCode) {
   const diffValues = detail.lines.map(fgDiffValue).filter(v => v != null);
   const totalDiffValue = diffValues.reduce((s, v) => s + v, 0);
 
-  function stockAvailBg(qty) {
-    if (qty == null) return '';
-    if (qty <= 100) return 'background:rgba(208,59,59,0.18);';
-    if (qty <= 1000) return 'background:rgba(250,178,25,0.22);';
-    return 'background:rgba(12,163,12,0.18);';
-  }
-
   function excludedStockNote(l) {
     if (!l.stock_excluded_warehouses?.length) return '';
 
     const warehouses = (l.stock_excluded_warehouses || [])
       .map(item => `คลัง ${escapeHtml(item.warehouse)}: ${fmt3(item.qty)} ${escapeHtml(item.unit || l.unit || 'ไม่ระบุหน่วย')}`)
       .join(' · ');
-    return `<span class="code" style="display:block; margin-top:4px; color:#9a5b00; font-weight:600; white-space:normal;">ไม่รวมคำนวณ · ${warehouses || fmt3(l.stock_excluded) + ' ' + bomUnit(l)}</span>`;
+    return `<span class="code fg-bom-excluded-stock">ไม่รวมคำนวณ · ${warehouses || fmt3(l.stock_excluded) + ' ' + bomUnit(l)}</span>`;
   }
 
   function stockStatusCell(l) {
@@ -8814,11 +8807,11 @@ function renderFgBom(rawCode) {
   fgBomResult.innerHTML = `
     <div class="fg-bom-result-bar"><h3>ผลการตรวจ BOM</h3><button type="button" class="fg-bom-close" data-close-bom>✕ ปิดรายการ</button></div>
     <div class="fg-bom-head">
-      <div style="background:#166534; color:#ffffff; padding:10px 16px; border-radius:10px;">
-        <b style="font-size:14px;">${escapeHtml(detail.fg_name)}</b>
-        <span class="code" style="display:block;margin-top:2px;color:#ffffff;opacity:0.85;">${q} · ${fmt0(detail.line_count)} ส่วนประกอบที่ระบุปริมาณใช้</span>
+      <div class="fg-bom-product">
+        <b>${escapeHtml(detail.fg_name)}</b>
+        <span class="code">${q} · ${fmt0(detail.line_count)} ส่วนประกอบที่ระบุปริมาณใช้</span>
       </div>
-      <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
+      <div class="fg-bom-summary">
         <b>${isSimulation ? 'ผลทดลองไม่รวมบางรายการ' : 'ผลตามสูตรมาตรฐาน'}</b>
         ${statusBadge}
       </div>
@@ -8855,7 +8848,7 @@ function renderFgBom(rawCode) {
               <td class="num">${idx + 1}</td>
               <td class="name-cell">${escapeHtml(l.pk_name || '(ไม่พบในสต็อก)')}<span class="code">${escapeHtml(l.pk_code)}${l.unit ? ' · หน่วย: ' + escapeHtml(l.unit) : ''}${l.source_line_count > 1 ? ' · รวมยอดใช้จาก ' + l.source_line_count + ' บรรทัดต้นฉบับ' : ''}${isBottleneck ? ' · ข้อจำกัดบรรจุภัณฑ์' : ''}${isExcluded ? ' · ไม่รวมคำนวณ' : ''}${sharedFgNote(l)}</span></td>
               <td class="num">${l.qty_per_unit != null ? escapeHtml(formatBomQuantity(l.qty_per_unit)) : '<span style="color:var(--text-muted)">ไม่ระบุ</span>'}</td>
-              <td class="num" style="${stockAvailBg(l.stock_avail)}">${l.stock_avail == null ? '—' : escapeHtml(formatBomQuantity(l.stock_avail)) + ' ' + bomUnit(l)}${excludedStockNote(l)}${l.stock_source_note ? `<span class="code" style="display:block;white-space:normal">สต็อกต้นทาง · ${escapeHtml(l.stock_source_note)}</span>` : ''}${l.conversion_note ? `<span class="code" style="display:block;white-space:normal">${escapeHtml(l.conversion_note)}</span>` : ''}</td>
+              <td class="num">${l.stock_avail == null ? '—' : escapeHtml(formatBomQuantity(l.stock_avail)) + ' ' + bomUnit(l)}${excludedStockNote(l)}${l.stock_source_note ? `<span class="code" style="display:block;white-space:normal">สต็อกต้นทาง · ${escapeHtml(l.stock_source_note)}</span>` : ''}${l.conversion_note ? `<span class="code" style="display:block;white-space:normal">${escapeHtml(l.conversion_note)}</span>` : ''}</td>
               <td class="num col-highlight">${stockValueCell(l)}</td>
               <td class="num col-highlight">${l.producible != null ? fmt0(l.producible) : '-'}</td>
               <td>${stockStatusCell(l)}</td>
@@ -8868,12 +8861,12 @@ function renderFgBom(rawCode) {
             </tr>
           `;
           }).join('')}
-          <tr style="font-weight:700; background:var(--status-warning); color:#000000;">
-            <td colspan="4" style="text-align:right; border-top:2px solid var(--baseline); background:var(--status-warning); color:#000000;">รวมมูลค่าที่คำนวณได้</td>
-            <td class="num" style="border-top:2px solid var(--baseline); background:var(--status-warning); color:#000000;">฿${fmt0(totalStockValue)}</td>
-            <td colspan="3" style="border-top:2px solid var(--baseline); background:var(--status-warning);"></td>
-            <td class="num" style="border-top:2px solid var(--baseline); background:var(--status-warning); color:#000000;">฿${fmt0(totalDiffValue)}</td>
-            <td colspan="2" style="border-top:2px solid var(--baseline); background:var(--status-warning);"></td>
+          <tr class="fg-bom-total-row">
+            <td colspan="4" style="text-align:right;">รวมมูลค่าที่คำนวณได้</td>
+            <td class="num">฿${fmt0(totalStockValue)}</td>
+            <td colspan="3"></td>
+            <td class="num">฿${fmt0(totalDiffValue)}</td>
+            <td colspan="2"></td>
           </tr>
         </tbody>
       </table>

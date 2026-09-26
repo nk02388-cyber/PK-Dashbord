@@ -102,6 +102,91 @@
   :root[data-theme="dark"] .viz-root .kota-chip { background: #243f68; border-color: #4589ff; color: #f4f4f4; }
   :root[data-theme="dark"] .viz-root .kota-chip:hover:not(.selected) { background: #315787; border-color: #78a9ff; }
   :root[data-theme="dark"] .viz-root .kota-chip.selected { background: #4589ff; border-color: #78a9ff; color: #161616; }
+  .viz-root #fgBomResult.has-result {
+    background: var(--page-plane);
+    border-top: 2px solid var(--series-1);
+    border-radius: 0;
+  }
+  .viz-root #fgBomResult .fg-bom-result-bar h3 { font-size: 17px; font-weight: 600; }
+  .viz-root #fgBomResult .fg-bom-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(240px, auto);
+    align-items: stretch;
+    gap: 16px;
+  }
+  .viz-root #fgBomResult .fg-bom-product {
+    display: grid;
+    align-content: center;
+    gap: 4px;
+    min-width: 0;
+    padding: 12px 14px;
+    border-left: 3px solid var(--series-1);
+    background: var(--surface-1);
+    overflow-wrap: anywhere;
+  }
+  .viz-root #fgBomResult .fg-bom-product b { font-size: 14px; font-weight: 600; }
+  .viz-root #fgBomResult .fg-bom-product .code { display: block; color: var(--text-secondary); }
+  .viz-root #fgBomResult .fg-bom-summary {
+    display: grid;
+    align-content: center;
+    justify-items: end;
+    gap: 8px;
+    text-align: right;
+  }
+  .viz-root #fgBomResult .fg-bom-summary > b { font-size: 12px; color: var(--text-secondary); }
+  .viz-root #fgBomResult .fg-status-chip {
+    padding: 9px 12px;
+    border-left: 3px solid currentColor;
+    border-radius: 0;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.45;
+    text-align: left;
+  }
+  .viz-root #fgBomResult .fg-status-chip.good { background: var(--status-good-wash); color: var(--status-good); }
+  .viz-root #fgBomResult .fg-status-chip.critical { background: var(--status-critical-wash); color: var(--status-critical); }
+  .viz-root #fgBomResult .fg-status-chip.neutral { background: var(--surface-1); color: var(--text-secondary); }
+  .viz-root #fgBomResult .bom-simulation {
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--series-1);
+    border-radius: 0;
+    background: var(--surface-1);
+  }
+  .viz-root #fgBomResult .bom-simulation p { line-height: 1.55; }
+  .viz-root #fgBomResult .fg-bom-table-wrap { border-radius: 0; }
+  .viz-root #fgBomResult .fg-bom-table thead th {
+    background: var(--surface-1);
+    color: var(--text-primary);
+    border-bottom: 2px solid var(--baseline);
+    font-weight: 600;
+  }
+  .viz-root #fgBomResult .fg-bom-table td { border-bottom: 1px solid var(--border); }
+  .viz-root #fgBomResult .fg-bom-table .col-highlight { background: transparent; }
+  .viz-root #fgBomResult .fg-bom-table tr.bom-bottleneck-row td { background: transparent; font-weight: inherit; }
+  .viz-root #fgBomResult .fg-bom-table tr.bom-bottleneck-row td:first-child { border-left: 3px solid var(--status-warning); }
+  .viz-root #fgBomResult .fg-bom-table .fg-bom-total-row td {
+    background: var(--surface-1);
+    color: var(--text-primary);
+    border-top: 2px solid var(--baseline);
+    font-weight: 700;
+  }
+  .viz-root #fgBomResult .fg-bom-table .badge { border-radius: 0; }
+  .viz-root #fgBomResult .fg-bom-table .badge.good { background: var(--status-good-wash); color: var(--status-good); }
+  .viz-root #fgBomResult .fg-bom-table .badge.critical { background: var(--status-critical-wash); color: var(--status-critical); }
+  .viz-root #fgBomResult .fg-bom-table .badge.warn {
+    background: color-mix(in srgb, var(--status-warning) 16%, var(--page-plane));
+    color: var(--status-warning);
+  }
+  .viz-root #fgBomResult .fg-bom-table .badge.blue { background: var(--surface-1); color: var(--text-secondary); }
+  .viz-root #fgBomResult .fg-bom-excluded-stock {
+    display: block;
+    margin-top: 4px;
+    color: var(--status-warning);
+    font-weight: 600;
+    white-space: normal;
+  }
+  .viz-root #fgBomResult .excl-toggle-btn { min-height: 36px; padding: 6px 10px; }
   .viz-root .dashboard-nav-brand { color: #fff; font-weight: 600; }
   .viz-root :where(.panel, .kpi, .speed-meter-card, .packaging-age-card, .incoming-step, .incoming-record, .barcode-print-card, .daily-kpi, .filter-bar) {
     background: var(--surface-1);
@@ -209,6 +294,10 @@
   @media (max-width: 700px) {
     .viz-root header.top { padding: 12px; }
     .header-product-name { font-size: 17px; }
+  }
+  @media (max-width: 1200px) {
+    .viz-root #fgBomResult .fg-bom-head { grid-template-columns: minmax(0, 1fr); }
+    .viz-root #fgBomResult .fg-bom-summary { justify-items: start; text-align: left; }
   }
   @media (prefers-reduced-motion: reduce) {
     .viz-root .tab-btn { transition: none; }
