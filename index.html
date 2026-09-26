@@ -1961,7 +1961,7 @@ header.top .header-logo { border-radius: 14px; }
 <link rel="stylesheet" href="product-history.css?v=20260925-3">
 <link rel="stylesheet" href="top-withdrawals.css?v=20260925-1">
 <link rel="stylesheet" href="notifications.css?v=20260926-1">
-<link rel="stylesheet" href="event-calendar.css?v=20260924-1">
+<link rel="stylesheet" href="event-calendar.css?v=20260926-2">
 <link rel="stylesheet" href="reorder-points.css?v=20260926-1">
 <link rel="stylesheet" href="wms-operations.css?v=20260926-8">
 </head>
@@ -1999,7 +1999,7 @@ header.top .header-logo { border-radius: 14px; }
   <div class="notification-toast-stack" id="notificationToastStack" aria-live="polite" aria-atomic="false"></div>
 
   <dialog class="event-calendar-dialog" id="eventCalendarDialog" aria-labelledby="eventCalendarTitle">
-    <div class="event-calendar-head"><div><h2 id="eventCalendarTitle">ปฏิทินนัดหมาย</h2><p>นัดหมายและกิจกรรมล่วงหน้า</p></div><button type="button" id="eventCalendarClose" aria-label="ปิดปฏิทิน">×</button></div>
+    <div class="event-calendar-head"><div><h2 id="eventCalendarTitle">ปฏิทินนัดหมาย</h2><p>นัดหมายและกิจกรรมล่วงหน้า</p></div><button type="button" id="eventCalendarClose" aria-label="ปิดปฏิทิน"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button></div>
     <div class="event-calendar-content">
       <section class="event-calendar-main" aria-label="ปฏิทินรายเดือน"><div class="event-calendar-month-nav"><button type="button" id="eventCalendarPrev" aria-label="เดือนก่อนหน้า">‹</button><strong id="eventCalendarMonth"></strong><button type="button" id="eventCalendarNext" aria-label="เดือนถัดไป">›</button><button type="button" id="eventCalendarToday">วันนี้</button></div><div class="event-calendar-grid" id="eventCalendarGrid"></div><h3 id="eventCalendarSelectedHeading"></h3><div class="event-calendar-agenda" id="eventCalendarAgenda"></div></section>
       <form class="event-calendar-form" id="eventCalendarForm"><h3 id="eventCalendarFormHeading">เพิ่มกิจกรรม</h3><input type="hidden" id="eventCalendarId"><label>ชื่อกิจกรรม *<input id="eventCalendarName" type="text" maxlength="120" required placeholder="เช่น ประชุมวางแผนรับสินค้า"></label><label>วันที่ *<input id="eventCalendarDate" type="date" required></label><label>เวลา *<input id="eventCalendarTime" type="time" required></label><label>เตือนล่วงหน้า<select id="eventCalendarLead"><option value="0">เมื่อถึงเวลา</option><option value="15">15 นาที</option><option value="60">1 ชั่วโมง</option><option value="1440" selected>1 วัน</option><option value="10080">7 วัน</option></select></label><label>รายละเอียด<textarea id="eventCalendarDetails" rows="3" maxlength="500" placeholder="รายละเอียดเพิ่มเติม (ถ้ามี)"></textarea></label><p class="event-calendar-form-note">บันทึกในเบราว์เซอร์เครื่องนี้ · เปิดเว็บไว้เพื่อรับการเตือนในกระดิ่ง</p><p class="event-calendar-error" id="eventCalendarError" role="alert" hidden></p><div class="event-calendar-form-actions"><button type="submit" class="event-calendar-save">บันทึกกิจกรรม</button><button type="button" id="eventCalendarCancel" hidden>ยกเลิกแก้ไข</button></div></form>
