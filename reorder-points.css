@@ -20,7 +20,8 @@
 .reorder-code:hover{text-decoration:underline}
 .reorder-status{display:inline-block;padding:3px 7px;border-radius:999px;background:var(--page-plane);white-space:nowrap;font-weight:700}
 .reorder-status[data-status="alert"]{background:var(--status-critical-wash);color:var(--status-critical)}
-.reorder-status[data-status="review"]{background:var(--status-warning-wash,#fff0ca);color:var(--text-primary)}
+.reorder-status[data-status="review"]{background:#fff0ca;color:#5c4300}
+:root[data-theme="dark"] .reorder-status[data-status="review"]{background:#3b300f;color:#f1c21b}
 .reorder-empty{text-align:center!important;color:var(--text-secondary)}
 .reorder-controls input:focus-visible,.reorder-controls select:focus-visible,.reorder-code:focus-visible{outline:3px solid var(--focus-ring,#e0ce9c);outline-offset:2px}
 @media(max-width:700px){.reorder-panel{padding:16px}.reorder-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.reorder-controls select{flex:1 1 100%}.reorder-controls input{font-size:16px}}
