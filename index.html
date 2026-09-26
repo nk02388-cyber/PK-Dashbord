@@ -1962,7 +1962,7 @@ header.top .header-logo { border-radius: 14px; }
 <link rel="stylesheet" href="top-withdrawals.css?v=20260925-1">
 <link rel="stylesheet" href="notifications.css?v=20260926-1">
 <link rel="stylesheet" href="event-calendar.css?v=20260926-2">
-<link rel="stylesheet" href="cycle-counts.css?v=20260926-1">
+<link rel="stylesheet" href="cycle-counts.css?v=20260926-2">
 <link rel="stylesheet" href="reorder-points.css?v=20260926-1">
 <link rel="stylesheet" href="wms-operations.css?v=20260926-8">
 </head>
@@ -2646,8 +2646,9 @@ header.top .header-logo { border-radius: 14px; }
       <p class="panel-sub">กำหนดความถี่รายโซน นับตามตำแหน่งพาเลต และตรวจส่วนต่างก่อนปรับยอดจริง</p>
       <p class="cycle-counts-notice">แผนและผลตรวจนับบันทึกในเบราว์เซอร์เครื่องนี้เท่านั้น โปรดส่งออก CSV เพื่อเก็บหลักฐาน ชื่อผู้ตรวจนับเป็นชื่อที่กรอกเอง และผลตรวจนับไม่เปลี่ยนยอดพาเลตหรือสต็อกโดยอัตโนมัติ</p>
       <div class="cycle-counts-controls">
-        <label for="cycleCountZone">โซนที่ต้องการตรวจนับ<select id="cycleCountZone"></select></label>
-        <label for="cycleCountFrequency">นับทุก (วัน)<input id="cycleCountFrequency" type="number" min="0" max="3650" step="1" inputmode="numeric" value="0"><small>0 = ไม่ตั้งรอบนับ</small></label>
+        <label class="cycle-counts-zone-field" for="cycleCountZone">โซนที่ต้องการตรวจนับ<select id="cycleCountZone"></select></label>
+        <label class="cycle-counts-frequency-field" for="cycleCountFrequency">นับทุก (วัน)<input id="cycleCountFrequency" type="number" min="0" max="3650" step="1" inputmode="numeric" value="0" aria-describedby="cycleCountFrequencyHelp"></label>
+        <small class="cycle-counts-frequency-help" id="cycleCountFrequencyHelp">0 = ไม่ตั้งรอบนับ</small>
         <button id="cycleCountSaveFrequency" type="button">บันทึกรอบนับ</button>
         <button id="cycleCountStart" type="button" class="cycle-counts-primary">เริ่มตรวจนับโซนนี้</button>
       </div>

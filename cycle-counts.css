@@ -1,10 +1,15 @@
 .cycle-counts-panel{max-width:none}
 .cycle-counts-panel h3{font-size:16px;margin:22px 0 10px}
 .cycle-counts-notice{margin:12px 0 18px;padding:11px 14px;border-left:3px solid var(--series-1);background:var(--series-1-wash);color:var(--text-secondary);font-size:12px;line-height:1.6}
-.cycle-counts-controls{display:flex;align-items:end;gap:10px;flex-wrap:wrap}
-.cycle-counts-controls label,.cycle-counts-draft-meta label{display:grid;gap:5px;min-width:180px;flex:1 1 190px;font-size:12px;font-weight:700;color:var(--text-secondary)}
-.cycle-counts-controls label:first-child{flex:2 1 280px}
-.cycle-counts-controls label small{font-weight:400}
+.cycle-counts-controls{display:grid;grid-template-columns:minmax(0,2fr) minmax(190px,1.1fr) auto auto;gap:6px 10px;align-items:end}
+.cycle-counts-controls label,.cycle-counts-draft-meta label{display:grid;gap:5px;font-size:12px;font-weight:700;color:var(--text-secondary)}
+.cycle-counts-controls label{min-width:0}
+.cycle-counts-zone-field{grid-column:1;grid-row:1}
+.cycle-counts-frequency-field{grid-column:2;grid-row:1}
+.cycle-counts-frequency-help{grid-column:2;grid-row:2;color:var(--text-secondary);font-size:11px;line-height:1.3}
+#cycleCountSaveFrequency{grid-column:3;grid-row:1}
+#cycleCountStart{grid-column:4;grid-row:1}
+.cycle-counts-draft-meta label{min-width:180px;flex:1 1 190px}
 .cycle-counts-panel input,.cycle-counts-panel select{box-sizing:border-box;min-height:42px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-control);background:var(--surface-1);color:var(--text-primary);font:inherit}
 .cycle-counts-panel button{min-height:42px;padding:8px 13px;border:1px solid var(--border);border-radius:var(--radius-control);background:var(--surface-1);color:var(--text-primary);font:inherit;font-weight:700;cursor:pointer}
 .cycle-counts-panel button:hover{border-color:var(--series-1);background:var(--series-1-wash)}
@@ -44,4 +49,5 @@
 .cycle-counts-history{display:grid;gap:8px;font-size:12px}
 .cycle-counts-history details{padding:10px 12px;border:1px solid var(--border);background:var(--surface-1)}
 .cycle-counts-history summary{cursor:pointer}.cycle-counts-history p{color:var(--text-secondary)}
-@media(max-width:700px){.cycle-counts-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.cycle-counts-draft{padding:12px}.cycle-counts-controls>*{width:100%}.cycle-counts-table-wrap{font-size:11px}}
+@media(max-width:1100px){.cycle-counts-controls{grid-template-columns:repeat(2,minmax(0,1fr))}#cycleCountSaveFrequency{grid-column:1;grid-row:3}#cycleCountStart{grid-column:2;grid-row:3}}
+@media(max-width:700px){.cycle-counts-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.cycle-counts-draft{padding:12px}.cycle-counts-controls{grid-template-columns:minmax(0,1fr)}.cycle-counts-controls>*{grid-column:1!important;grid-row:auto!important;width:100%}.cycle-counts-table-wrap{font-size:11px}}
