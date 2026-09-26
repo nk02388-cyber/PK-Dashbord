@@ -284,9 +284,6 @@
   .callout p { margin: 4px 0 0 0; font-size: 12.5px; color: var(--text-secondary); line-height:1.5; }
   .callout ul { margin: 6px 0 0 0; padding-left: 18px; font-size: 12px; color: var(--text-secondary); }
 
-  footer { text-align:center; font-size:11px; color: var(--text-muted); padding: 20px 0 4px; }
-  .footer-actions { display: flex; justify-content: flex-end; margin-top: 12px; }
-
   .filter-bar {
     display:flex; align-items:center; gap: 10px; flex-wrap: wrap;
     margin-bottom: 18px; padding: 12px 16px; background: var(--surface-1);
@@ -2951,12 +2948,6 @@ header.top .header-logo { border-radius: 14px; }
   </main>
   </div>
 
-  <footer>
-    <span>ข้อมูลสำหรับใช้ภายในบริษัท</span>
-    <div class="footer-actions">
-      <button class="theme-toggle" id="saveIconsBtn" type="button" title="ดาวน์โหลดแดชบอร์ดพร้อมไอคอนล่าสุด"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 3h12l2 2v16H5V3Z" stroke-width="1.8"/><path d="M8 3v6h8V3M8 21v-7h8v7" stroke-width="1.8"/></svg><span>บันทึกไฟล์</span></button>
-    </div>
-  </footer>
 </div>
 
 <div class="tooltip" id="tooltip" role="tooltip"></div>
@@ -9695,47 +9686,6 @@ bomBrands.addEventListener('click', event => {
   if (event.target.closest('button[id$="QuickBtn"]')) syncBrandButtonStates();
 });
 syncBrandButtonStates();
-
-// ---------- Save-with-icons export ----------
-// This file has no server or database, so an icon picked via "เปลี่ยนไอคอน" only lives in the
-// live DOM of the current tab (as a data: URL) -- it's gone on refresh. This button works around
-// that entirely client-side: it serializes the page's CURRENT html (including whatever icon data:
-// URLs are sitting in the <img> tags right now) into a new standalone .html file and downloads it.
-// Opening that downloaded file in place of the original makes the icons permanent, because they're
-// now baked into that copy's markup -- no upload step needed the next time it's opened.
-//
-// Every save uses a unique, timestamped filename (instead of a fixed name) so it can never silently
-// collide with a previous download -- browsers auto-rename a repeat filename to "(1)", "(2)", etc.,
-// which is an easy way to end up opening/refreshing an OLDER saved copy without the new icon while
-// believing it's the latest one. The button also shows the exact filename it just saved, and the
-// blob URL is only revoked after a short delay so the file write can't be cut off mid-download.
-const saveIconsBtn = document.getElementById('saveIconsBtn');
-const saveIconsBtnDefaultHtml = saveIconsBtn.innerHTML;
-saveIconsBtn.addEventListener('click', () => {
-  const html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
-  const blob = new Blob([html], { type: 'text/html' });
-  const url = URL.createObjectURL(blob);
-  const now = new Date();
-  const pad = (n) => String(n).padStart(2, '0');
-  const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-  const filename = `combined_dashboard_saved_${stamp}.html`;
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  // Revoke after a delay, not immediately -- revoking too early can race with the browser
-  // actually finishing the write to disk for large files (this file embeds several images).
-  setTimeout(() => URL.revokeObjectURL(url), 4000);
-
-  saveIconsBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12 4 4L19 6" stroke-width="2"/></svg><span>บันทึกแล้ว</span>`;
-      saveIconsBtn.title = `ดาวน์โหลด "${filename}" แล้ว · เปิดไฟล์ใหม่นี้เพื่อใช้ไอคอนล่าสุด`;
-  setTimeout(() => {
-    saveIconsBtn.innerHTML = saveIconsBtnDefaultHtml;
-    saveIconsBtn.title = 'ดาวน์โหลดแดชบอร์ดพร้อมไอคอนล่าสุด';
-  }, 6000);
-});
 
 // ---------- Theme toggle ----------
 const btn = document.getElementById('themeToggle');
