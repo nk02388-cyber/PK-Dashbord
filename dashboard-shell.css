@@ -15,11 +15,11 @@
 }
 
 @media (min-width: 1024px) {
-  body.viz-root { padding: 0; }
+  body.viz-root { padding: 0; --dashboard-shell-header-h: 82px; }
   .wrap {
     display: grid;
     grid-template-columns: 276px minmax(0, 1fr);
-    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-rows: var(--dashboard-shell-header-h) minmax(0, 1fr);
     min-height: 100vh;
     margin: 0;
     background: var(--page-plane);
@@ -29,11 +29,12 @@
   header.top {
     grid-column: 2;
     grid-row: 1;
-    align-self: start;
+    align-self: stretch;
     min-width: 0;
-    min-height: 82px;
+    min-height: var(--dashboard-shell-header-h);
+    height: var(--dashboard-shell-header-h);
     margin: 0;
-    padding: 16px 28px;
+    padding: 0 28px;
     border: 0;
     border-bottom: 1px solid var(--border);
     border-radius: 0;
@@ -56,7 +57,7 @@
     max-height: 100vh;
     max-height: 100dvh;
     margin: 0;
-    padding: 20px 14px 24px;
+    padding: 0 14px 24px;
     gap: 4px;
     border: 0;
     border-radius: 0;
@@ -69,14 +70,15 @@
     align-items: center;
     gap: 11px;
     flex: none;
-    min-height: 82px;
-    margin: -20px -14px 14px;
-    padding: 19px 22px 18px;
+    min-height: var(--dashboard-shell-header-h);
+    height: var(--dashboard-shell-header-h);
+    margin: 0 -14px 14px;
+    padding: 0 22px;
     border-bottom: 1px solid rgba(255, 255, 255, .15);
     color: #f5f6ec;
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 800;
-    letter-spacing: .035em;
+    letter-spacing: .015em;
   }
   .dashboard-nav-brand img {
     display: block;
@@ -86,12 +88,12 @@
     object-fit: contain;
   }
   .dashboard-nav-name { display: grid; gap: 2px; line-height: 1.2; }
-  .dashboard-nav-name small { font-size: 10px; font-weight: 600; letter-spacing: .06em; }
+  .dashboard-nav-name small { font-size: 12px; font-weight: 600; line-height: 1.4; letter-spacing: normal; }
   .dashboard-layout > .dashboard-content {
     grid-column: 2;
     grid-row: 2;
     min-width: 0;
-    min-height: calc(100vh - 82px);
+    min-height: calc(100vh - var(--dashboard-shell-header-h));
     padding: 24px 28px 40px;
     background: var(--page-plane);
   }
