@@ -1963,6 +1963,7 @@ header.top .header-logo { border-radius: 14px; }
 <link rel="stylesheet" href="notifications.css?v=20260926-1">
 <link rel="stylesheet" href="event-calendar.css?v=20260926-2">
 <link rel="stylesheet" href="cycle-counts.css?v=20260926-2">
+<link rel="stylesheet" href="scrap-inventory.css?v=20260926-1">
 <link rel="stylesheet" href="reorder-points.css?v=20260926-1">
 <link rel="stylesheet" href="wms-operations.css?v=20260926-8">
 </head>
@@ -2019,6 +2020,7 @@ header.top .header-logo { border-radius: 14px; }
     <button class="tab-btn" id="tab-bom-plan" data-tab="bom-plan" type="button" role="tab" aria-selected="false" aria-controls="pane-bom-plan" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8 4h8l2 2v15H6V6l2-2Zm0 0v3h8V4M9 12h6m-6 4h6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>แผนบรรจุภัณฑ์หลาย FG</span></button>
     <button class="tab-btn" id="tab-reconcile" data-tab="reconcile" type="button" role="tab" aria-selected="false" aria-controls="pane-reconcile" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16m-3-3 3 3-3 3M20 17H4m3-3-3 3 3 3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>เปรียบเทียบสต็อกพาเลต</span></button>
     <button class="tab-btn" id="tab-cycle-counts" data-tab="cycle-counts" type="button" role="tab" aria-selected="false" aria-controls="pane-cycle-counts" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2" stroke-width="1.8"/><path d="M8 8h8M8 12h4m-4 4 2 2 4-4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Cycle Counts · ตรวจนับตามรอบ</span><span class="tab-badge" id="tabBadgeCycleCounts">ตั้งรอบนับ</span></button>
+    <button class="tab-btn" id="tab-scrap" data-tab="scrap" type="button" role="tab" aria-selected="false" aria-controls="pane-scrap" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M6 7l1 14h10l1-14M9 7V4h6v3M10 11v6m4-6v6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Scrap Inventory · ตัดจำหน่าย</span></button>
     <button class="tab-btn" id="tab-print-labels" data-tab="print-labels" type="button" role="tab" aria-selected="false" aria-controls="pane-print-labels" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9V3h12v6M6 17H4V9h16v8h-2M6 14h12v7H6v-7Zm11-2h1" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>พิมพ์ป้ายตำแหน่งและสินค้า</span></button>
     <button class="tab-btn" id="tab-daily-receive" data-tab="daily-receive" type="button" role="tab" aria-selected="false" aria-controls="pane-daily-receive" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v11m-4-4 4 4 4-4M4 16v4h16v-4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>รายการรับเข้าประจำวัน</span><span class="tab-badge" id="tabBadgeDailyReceive">วันนี้</span></button>
     <button class="tab-btn" id="tab-daily-issue" data-tab="daily-issue" type="button" role="tab" aria-selected="false" aria-controls="pane-daily-issue" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 15V4m-4 4 4-4 4 4M4 16v4h16v-4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>รายการเบิกประจำวัน</span><span class="tab-badge" id="tabBadgeDailyIssue">วันนี้</span></button>
@@ -2659,6 +2661,31 @@ header.top .header-logo { border-radius: 14px; }
       <section id="cycleCountDraft" class="cycle-counts-draft" hidden></section>
       <div class="cycle-counts-history-head"><h3>ประวัติการตรวจนับในเครื่องนี้</h3><button id="cycleCountExport" type="button">ส่งออก CSV</button></div>
       <div id="cycleCountHistory" class="cycle-counts-history"></div>
+    </section>
+  </div>
+
+  <div class="tab-pane" id="pane-scrap" role="tabpanel" aria-labelledby="tab-scrap" hidden>
+    <section class="panel scrap-panel" aria-labelledby="scrapTitle">
+      <h2 id="scrapTitle">Scrap Inventory · ตัดจำหน่ายสินค้าชำรุด</h2>
+      <p class="panel-sub">เลือกสินค้าในตำแหน่งพาเลต ระบุจำนวนและเหตุผล แล้วตรวจข้อมูลก่อนยืนยัน</p>
+      <p class="scrap-notice">เมื่อยืนยัน ระบบจะลดยอดคงเหลือในพาเลตและบันทึกประวัติ Scrap ใน STOCK CARD โดยถือเป็น Inventory Loss เสมือน ไม่มีการย้ายไปตำแหน่งจริงหรือปรับ Stock Snapshot และบัญชีอัตโนมัติ</p>
+      <form id="scrapForm" novalidate>
+        <div class="scrap-fields">
+          <label>โซนต้นทาง *<select id="scrapZone" required></select></label>
+          <label>ตำแหน่งพาเลต *<select id="scrapSlot" required></select></label>
+          <label class="scrap-product-field">สินค้า / Lot *<select id="scrapProduct" required></select></label>
+          <label>จำนวนที่ตัดจำหน่าย *<input id="scrapQty" type="number" min="0" step="any" inputmode="decimal" required></label>
+          <label>วันที่ *<input id="scrapDate" type="date" required></label>
+          <label>เหตุผล *<select id="scrapReason" required><option value="">เลือกเหตุผล</option><option value="ชำรุด">ชำรุด</option><option value="หมดอายุ">หมดอายุ</option><option value="ปนเปื้อน">ปนเปื้อน</option><option value="ไม่ผ่านคุณภาพ">ไม่ผ่านคุณภาพ</option><option value="อื่นๆ">อื่นๆ</option></select></label>
+          <label>เลขเอกสารอ้างอิง *<input id="scrapDocument" maxlength="200" autocomplete="off" required placeholder="เช่น SP-2026-001"></label>
+          <label>ผู้ทำรายการ *<input id="scrapActor" maxlength="100" autocomplete="name" required></label>
+          <label class="scrap-details-field">รายละเอียดเพิ่มเติม<textarea id="scrapNote" maxlength="500" rows="2" placeholder="ระบุสภาพสินค้า หรือแนวทางกำจัด (ถ้ามี)"></textarea></label>
+        </div>
+        <div id="scrapPreview" class="scrap-preview" aria-live="polite"></div>
+        <div class="scrap-actions"><button id="scrapSubmit" class="scrap-primary" type="submit">ตรวจสอบและยืนยัน Scrap</button><span id="scrapStatus" role="status" aria-live="polite"></span></div>
+      </form>
+      <div class="scrap-history-head"><h3>ประวัติ Scrap ในข้อมูลพาเลต</h3><button id="scrapExport" type="button">ส่งออก CSV</button></div>
+      <div class="scrap-table-wrap"><table><thead><tr><th>วันที่</th><th>เอกสาร</th><th>สินค้า / Lot</th><th>ต้นทาง</th><th>จำนวน</th><th>เหตุผล</th><th>ผู้ทำ</th></tr></thead><tbody id="scrapHistory"></tbody></table></div>
     </section>
   </div>
 
@@ -3809,10 +3836,10 @@ function buildSlotRow(zoneCode, slotCode) {
     updated_at: new Date().toISOString(),
   };
 }
-function palletAuditMetadata(action = 'adjust', documentNo = '') {
+function palletAuditMetadata(action = 'adjust', documentNo = '', actorName = '') {
   const actorInput = document.getElementById('palletAuditActor');
   const documentInput = document.getElementById('palletAuditDocument');
-  const actor = actorInput?.value.trim() || '';
+  const actor = actorName.trim() || actorInput?.value.trim() || '';
   const documentNumber = documentNo.trim() || documentInput?.value.trim() || '';
   if (!actor) throw new Error('กรุณาระบุชื่อผู้ทำรายการก่อนบันทึก');
   if (!documentNumber) throw new Error('กรุณาระบุเลขเอกสารอ้างอิงก่อนบันทึก');
@@ -3822,7 +3849,7 @@ function palletAuditMetadata(action = 'adjust', documentNo = '') {
 async function savePalletBatch(slots, dates = [], audit = {}) {
   if (!supabaseClient) throw new Error('ยังไม่ได้เชื่อมต่อระบบบันทึกพาเลต');
   if (!palletDataReady) throw new Error('ยังโหลดข้อมูลพาเลตไม่ครบ กรุณารีเฟรชก่อนแก้ไข');
-  const metadata = slots.length ? palletAuditMetadata(audit.action, audit.document_no || '') : null;
+  const metadata = slots.length ? palletAuditMetadata(audit.action, audit.document_no || '', audit.actor || '') : null;
   const auditedSlots = slots.map(slot => ({...slot, _audit:metadata}));
   const { data, error } = await supabaseClient.rpc('save_pallet_changes', { p_slots: auditedSlots, p_dates: dates });
   if (error) {
@@ -3935,6 +3962,7 @@ function refreshAfterRemoteChange(zoneCode, slotCode) {
   window.PKProductHistory?.refresh();
   window.PKNotifications?.refreshStock();
   window.PKTopWithdrawals?.refresh();
+  if (!document.getElementById('pane-scrap')?.hidden) window.PKScrapInventory?.refresh();
 }
 
 // initSupabaseSync(): initial full fetch -- Supabase's stored state overrides the Excel-seeded
@@ -4792,7 +4820,8 @@ function updateSlotItem(zoneCode, slotCode, index, updates) {
   const returned = (item.returns || []).reduce((sum, row) => sum + (Number(row.qty) || 0), 0);
   const movedOut = (item.transfersOut || []).reduce((sum, row) => sum + (Number(row.qty) || 0), 0);
   const movedIn = (item.transfersIn || []).reduce((sum, row) => sum + (Number(row.qty) || 0), 0);
-  if (updates.qty != null && (!Number.isFinite(updates.qty) || updates.qty - withdrawn + returned - movedOut + movedIn < -1e-8)) return false;
+  const scrapped = (item.scraps || []).reduce((sum, row) => sum + (Number(row.qty) || 0), 0);
+  if (updates.qty != null && (!Number.isFinite(updates.qty) || updates.qty - withdrawn + returned - movedOut + movedIn - scrapped < -1e-8)) return false;
   item.code = updates.code;
   item.name = updates.name;
   item.lotNo = updates.lotNo || '';
@@ -4801,7 +4830,7 @@ function updateSlotItem(zoneCode, slotCode, index, updates) {
   else delete item.receiveDate;
   if (updates.qty != null) {
     item.qty = updates.qty;
-    item.remainingQty = Math.max(0, Number((updates.qty - withdrawn + returned - movedOut + movedIn).toFixed(8)));
+    item.remainingQty = Math.max(0, Number((updates.qty - withdrawn + returned - movedOut + movedIn - scrapped).toFixed(8)));
   } else {
     delete item.qty;
     delete item.remainingQty;
@@ -4962,6 +4991,8 @@ function getStockMovement(item) {
     (item[key] || []).forEach((row, index) => rows.push({ type, index, label, date: row.date || '',
       qty: movementNumber(row.qty), lotNo: row.lotNo ?? item.lotNo ?? '', by: row.by || '', unit: row.unit || item.unit || '', reference: row.reference || '', recordedAt: row.recordedAt || '' }));
   }
+  (item.scraps || []).forEach((row, index) => rows.push({ type:'scrap', index, label:`Scrap · ${row.reason || 'ตัดจำหน่าย'}`, date:row.date || '',
+    qty:movementNumber(row.qty), lotNo:row.lotNo ?? item.lotNo ?? '', by:row.by || '', unit:row.unit || item.unit || '', reference:row.reference || '', recordedAt:row.recordedAt || '' }));
   for (const [key, type, prefix, other] of [['transfersOut','transfer_out','ย้ายไป','to'],['transfersIn','transfer_in','รับย้ายจาก','from']]) {
     (item[key] || []).forEach((row, index) => rows.push({ type, index, label: `${prefix} ${row[other] || 'พาเลตอื่น'}`, date: row.date || '',
       qty: movementNumber(row.qty), lotNo: item.lotNo || '', by: row.by || '', unit: row.unit || item.unit || '', reference: row.reference || '', recordedAt: row.recordedAt || '' }));
@@ -4973,7 +5004,7 @@ function getStockMovement(item) {
   let balance = movementNumber(item.qty) == null ? null : 0;
   for (const row of rows) {
     if (row.qty == null || (item.unit && row.unit && item.unit !== row.unit)) balance = null;
-    if (balance != null) balance = Number((balance + (row.type === 'withdraw' || row.type === 'transfer_out' ? -row.qty : row.qty)).toFixed(8));
+    if (balance != null) balance = Number((balance + (['withdraw','transfer_out','scrap'].includes(row.type) ? -row.qty : row.qty)).toFixed(8));
     row.balance = balance;
   }
   const stored = movementNumber(getRemainingQty(item));
@@ -5208,8 +5239,8 @@ function renderStockMovement(item, itemIndex) {
       <tbody>${ledger.rows.map(row => `<tr>
         <td class="sm-date">${formatMovementDate(row.date)}</td><td>${escapeHtml(row.lotNo || '—')}</td>
          <td class="sm-${row.type}">${escapeHtml(row.label)}</td>
-         <td class="num sm-in">${row.type === 'withdraw' || row.type === 'transfer_out' || row.type === 'move' ? '—' : number(row.qty)}</td>
-         <td class="num sm-out">${row.type === 'withdraw' || row.type === 'transfer_out' ? number(row.qty) : '—'}</td>
+         <td class="num sm-in">${['withdraw','transfer_out','scrap','move'].includes(row.type) ? '—' : number(row.qty)}</td>
+         <td class="num sm-out">${['withdraw','transfer_out','scrap'].includes(row.type) ? number(row.qty) : '—'}</td>
          <td class="num sm-balance">${number(row.balance)}</td><td>${escapeHtml(row.by || '—')}</td><td>${escapeHtml(row.reference || '—')}</td><td>${row.recordedAt ? escapeHtml(new Date(row.recordedAt).toLocaleString('th-TH')) : '—'}</td>
          <td>${['receive','withdraw','return'].includes(row.type) ? `<button type="button" class="sm-edit" data-item="${itemIndex}" data-type="${row.type}" data-index="${row.index}" aria-label="แก้ไข${row.label} ${formatMovementDate(row.date)}" ${busy ? 'disabled' : ''}>แก้ไข</button>` : '—'}</td>
       </tr>`).join('')}</tbody></table>
@@ -6202,7 +6233,7 @@ function buildPalletExcelTables(rows, dates, geometry, buildings, meta) {
       items.push([...base,index+1,String(item.code||''),String(item.name||''),String(item.lotNo||''),dateCell(received),item.receiveDate?'รายการสินค้า':received?'วันที่กลางตามรหัสสินค้า':'ไม่ระบุ',
         movementNumber(item.qty),quantity,String(item.unit||''),issues||'ข้อมูลครบ',String(item.note||''),row.version??null]);
       ledger.rows.forEach(m=>movements.push([...base,index+1,String(item.code||''),String(item.name||''),String(m.lotNo||''),dateCell(m.date),m.label,
-        ['receive','transfer_in'].includes(m.type)?m.qty:null,['withdraw','transfer_out'].includes(m.type)?m.qty:null,m.type==='return'?m.qty:null,m.balance,String(m.unit||''),String(m.by||''),
+        ['receive','transfer_in'].includes(m.type)?m.qty:null,['withdraw','transfer_out','scrap'].includes(m.type)?m.qty:null,m.type==='return'?m.qty:null,m.balance,String(m.unit||''),String(m.by||''),
         String(m.reference||''),String(m.recordedAt||''),
         [!movementDateKey(m.date)?'วันที่ไม่ครบ: '+String(m.date||'ไม่ระบุ'):'',m.qty==null?'ไม่ทราบจำนวน':'',issues].filter(Boolean).join(' · ')]));
     });
@@ -9783,7 +9814,7 @@ window.addEventListener('pageshow', () => {
   applyDashboardTheme(saved === 'dark' ? 'dark' : 'light');
 });
 </script>
-<script src="pallet-audit.js"></script>
+<script src="pallet-audit.js?v=20260926-1"></script>
 <script src="vendor/html5-qrcode.min.js"></script>
 <script src="vendor/qrcode-generator.js"></script>
 <script src="scan-sound.js?v=20260923-1"></script>
@@ -9806,6 +9837,8 @@ window.addEventListener('pageshow', () => {
 <script src="account-status.js?v=20260926-1"></script>
 <script src="cycle-counts-core.js?v=20260926-1"></script>
 <script src="cycle-counts.js?v=20260926-1"></script>
+<script src="scrap-inventory-core.js?v=20260926-1"></script>
+<script src="scrap-inventory.js?v=20260926-1"></script>
 
 
 </body></html>

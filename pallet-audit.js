@@ -7,6 +7,8 @@
   const more = document.getElementById('palletAuditMore');
   try { actor.value = localStorage.getItem('palletAuditActor') || ''; } catch (_) {}
   const labels = {receive:'รับเข้า',issue:'เบิก',return:'รับคืน',transfer:'ย้าย',adjust:'แก้ยอด / แก้รายการ',remove:'ลบ',import:'นำเข้าข้อมูล'};
+  const scrapCount = items => (Array.isArray(items) ? items : []).reduce((sum,item)=>sum+(Array.isArray(item.scraps)?item.scraps.length:0),0);
+  const actionLabel = row => row.action === 'adjust' && scrapCount(row.after_items) > scrapCount(row.before_items) ? 'Scrap · ตัดจำหน่าย' : (labels[row.action] || row.action);
   const pageSize = 100;
   let rows = [], cursor = null, loading = false;
   const safe = value => escapeHtml(String(value ?? ''));
@@ -32,7 +34,7 @@
     const q = search.value.trim().toLocaleLowerCase();
     const shown = rows.filter(row => !q || [row.zone,row.slot_code,row.actor_name,row.document_no,row.action,JSON.stringify(row.after_items)].join(' ').toLocaleLowerCase().includes(q));
     status.textContent = `${shown.length} รายการ${q ? ' จากข้อมูลที่โหลดแล้ว' : ''}`;
-    result.innerHTML = shown.length ? `<div class="audit-scroll"><table class="audit-table"><thead><tr><th>เวลา</th><th>รายการ / ตำแหน่ง</th><th>ผู้ทำ / เอกสาร</th><th>ยอดก่อน → หลัง</th></tr></thead><tbody>${shown.map(row => `<tr><td>${safe(new Date(row.occurred_at).toLocaleString('th-TH'))}</td><td><b>${safe(labels[row.action] || row.action)}</b><br>${safe(row.zone)} / ${safe(row.slot_code)}</td><td>${safe(row.actor_name)}<br><small>${safe(row.document_no)}</small></td><td>${changes(row)}</td></tr>`).join('')}</tbody></table></div>` : '<p>ไม่พบประวัติในข้อมูลที่โหลด</p>';
+    result.innerHTML = shown.length ? `<div class="audit-scroll"><table class="audit-table"><thead><tr><th>เวลา</th><th>รายการ / ตำแหน่ง</th><th>ผู้ทำ / เอกสาร</th><th>ยอดก่อน → หลัง</th></tr></thead><tbody>${shown.map(row => `<tr><td>${safe(new Date(row.occurred_at).toLocaleString('th-TH'))}</td><td><b>${safe(actionLabel(row))}</b><br>${safe(row.zone)} / ${safe(row.slot_code)}</td><td>${safe(row.actor_name)}<br><small>${safe(row.document_no)}</small></td><td>${changes(row)}</td></tr>`).join('')}</tbody></table></div>` : '<p>ไม่พบประวัติในข้อมูลที่โหลด</p>';
   }
   async function load(reset = false) {
     if (loading) return;
