@@ -6,7 +6,7 @@ async function main(){
   const ctx=vm.createContext({SLOT_ITEMS:{F:{'F-18':[{code:'TEST',qty:10,remainingQty:10}]}},PALLET_STATUS:{F:{'F-18':'occupied'}},
     palletCanEdit:true,palletDataReady:true,palletWriteBusy:false,palletVersions:new Map(),receiveVersions:new Map(),palletRemoteRows:new Map(),
     editingSlot:{zone:'F',slot:'F-18',version:3},slotEditPanel:{},renderOverviewSlotStatus(){},refreshAfterRemoteChange(){},
-    showFseFeedback:m=>feedback=m,setSyncStatus(){},window:{getWmsUsername:()=> 'tester'},document:{getElementById(){return {value:'DOC-1'}}},
+    showFseFeedback:m=>feedback=m,setSyncStatus(){},window:{getWmsUsername:()=> 'tester'},
     supabaseClient:{async rpc(name,args){calls++;sent=args;
       if(mode==='conflict')return {error:{code:'40001'}};
       if(mode==='denied')return {error:{code:'42501'}};
@@ -16,8 +16,9 @@ async function main(){
     'getRemainingQty','addSlotItem','removeSlotItem','updateSlotItem','withdrawSlotItem','returnSlotItem','syncReceiveDateToRemote','setReceiveDate'])vm.runInContext(extract(n),ctx);
   ctx.RECEIVE_DATES={};
   assert.equal(await ctx.runSlotMutation('F','F-18',()=>ctx.withdrawSlotItem('F','F-18',0,{qty:2,date:'2026-09-05',unit:'pcs',by:'tester'})),true);
-  assert.equal(sent.p_slots[0].expected_version,3);assert.equal(sent.p_slots[0]._audit.actor,'tester');assert.equal(sent.p_slots[0]._audit.document_no,'DOC-1');assert.equal(ctx.editingSlot.version,4);assert.equal(ctx.SLOT_ITEMS.F['F-18'][0].remainingQty,8);
+  assert.equal(sent.p_slots[0].expected_version,3);assert.equal(sent.p_slots[0]._audit.actor,'tester');assert.equal(sent.p_slots[0]._audit.document_no,'—');assert.equal(ctx.editingSlot.version,4);assert.equal(ctx.SLOT_ITEMS.F['F-18'][0].remainingQty,8);
   assert.equal(sent.p_slots[0]._audit.action,'adjust');
+  assert.equal(ctx.palletAuditMetadata('receive','DOC-1').document_no,'DOC-1','A reference supplied by a movement is preserved');
   assert.equal(ctx.palletAuditMetadata('adjust','DOC-2','forged').actor,'tester','An explicit actor must not override the logged-in user');
   ctx.window.getWmsUsername=()=>'';
   assert.throws(()=>ctx.palletAuditMetadata('adjust','DOC-2'),/เข้าสู่ระบบ/);

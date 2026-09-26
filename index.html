@@ -2748,9 +2748,6 @@ header.top .header-logo { border-radius: 14px; }
         <span class="sync-dot" id="syncStatusDot"></span>
         <span id="syncStatusText">เชื่อมต่อข้อมูลเรียลไทม์แล้ว</span>
       </div>
-      <div class="audit-entry-fields">
-        <label>เลขเอกสารอ้างอิงสำหรับการแก้ไข / นำเข้า *<input id="palletAuditDocument" type="text" maxlength="200" placeholder="เลขเอกสาร"></label>
-      </div>
       <section class="barcode-panel" aria-labelledby="barcodeTitle">
         <h3 id="barcodeTitle">สแกนป้ายพาเลต สินค้า หรือตำแหน่ง</h3>
         <p>สแกนป้าย FM-ST-019 หรือตำแหน่งเพื่อเปิดรายการเบิก</p>
@@ -3859,11 +3856,9 @@ function buildSlotRow(zoneCode, slotCode) {
   };
 }
 function palletAuditMetadata(action = 'adjust', documentNo = '') {
-  const documentInput = document.getElementById('palletAuditDocument');
   const actor = window.getWmsUsername?.() || '';
-  const documentNumber = documentNo.trim() || documentInput?.value.trim() || '';
+  const documentNumber = documentNo.trim() || '—';
   if (!actor) throw new Error('กรุณาเข้าสู่ระบบก่อนบันทึก');
-  if (!documentNumber) throw new Error('กรุณาระบุเลขเอกสารอ้างอิงก่อนบันทึก');
   return {actor, document_no:documentNumber, action};
 }
 async function savePalletBatch(slots, dates = [], audit = {}) {
