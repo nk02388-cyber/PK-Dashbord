@@ -314,6 +314,10 @@
   .bar-row.wh-selected .bar-fill { background: var(--status-good); }
   .bar-row.wh-selected .val { font-weight: 700; }
   .bar-row.wh-selected .name { color: var(--text-primary); font-weight: 600; }
+  #whChart .bar-row[role="button"] { cursor:pointer; }
+  #whChart .bar-row[role="button"]:focus-visible { outline:2px solid var(--series-1); outline-offset:3px; }
+  #whChart .bar-row[role="button"]:hover .name { text-decoration:underline; text-underline-offset:2px; }
+  #whChart .bar-row[aria-pressed="true"] .bar-fill { background:var(--status-good); opacity:1; }
   tr.wh-row-selected td { background: var(--series-1-wash); font-weight: 600; }
   tr.bom-bottleneck-row td { background: rgba(250,178,25,0.18); font-weight: 600; }
   tr.bom-excluded-row td:not(:last-child) { opacity: 0.45; }
@@ -2046,8 +2050,6 @@ header.top .header-logo { border-radius: 14px; }
   <div class="tab-pane" id="pane-stock" role="tabpanel" aria-labelledby="tab-stock">
 
     <div class="filter-bar">
-      <label for="whFilter">เลือกคลัง:</label>
-      <select id="whFilter"><option value="all">ทุกคลัง</option><option value="202">202 (OEM) — BCL - OEM</option><option value="201">201 (BW) — BW - นครชัยศรี</option><option value="900">900 (Reject) — รอทำลาย</option><option value="300-S">300-S (Supplier) — PVC ชริ้ง (ซัพพลายเออร์)</option><option value="800">800 (Hold) — Hold</option><option value="200">200 (Preparation) — PD - งานระหว่างทำ BCL</option><option value="204">204 (Customer) — ลูกค้าฝาก</option><option value="401">401 (Re-work) — นำกลับมาใช้ใหม่</option></select>
       <span class="filter-status" id="filterStatus">กำลังแสดง: <b>ทุกคลัง</b> · มูลค่ารวม ฿32.41M</span>
       <div class="stock-update-box" aria-label="อัปเดตสต็อก">
         <button class="stock-update-btn" id="stockUpdateBtn" type="button">↥ อัปเดตสต็อก</button>
@@ -2097,6 +2099,7 @@ header.top .header-logo { border-radius: 14px; }
     <div class="two-col">
       <div class="panel">
         <h2>มูลค่าคงเหลือตามคลัง</h2>
+        <p class="panel-sub">กดแท่งกราฟเพื่อเลือกคลัง · กดแท่งเดิมอีกครั้งเพื่อดูทุกคลัง</p>
         <div class="barchart vertical" id="whChart">
     <div class="bar-row">
       <div class="name" title="บรรจุภัณฑ์และแพ็คเกจจิ้ง-OEM">BCL - OEM</div>
@@ -6287,13 +6290,8 @@ function hideTip() { tooltip.classList.remove('show'); }
    TAB 1: STOCK DASHBOARD
    ====================================================================== */
 
-// ---------- Warehouse filter dropdown ----------
-const DROPDOWN_EXCLUDE_CODES = ['203'];
-
-const whFilter = document.getElementById('whFilter');
-whFilter.innerHTML = '<option value="all">ทุกคลัง</option>' +
-  STOCK.warehouses.filter(w => !DROPDOWN_EXCLUDE_CODES.includes(w.code))
-    .map(w => `<option value="${w.code}">${w.code} (${w.en_label}) — ${w.short}</option>`).join('');
+// ---------- Warehouse chart filter ----------
+let selectedWarehouse = 'all';
 
 function warehouseLabel(code) {
   const w = STOCK.warehouses.find(x => x.code === code);
@@ -6372,6 +6370,7 @@ function getView(whCode) {
 
 function buildBarChart(container, rows, opts) {
   const vertical = !!(opts && opts.vertical);
+  const interactive = !!(opts && opts.interactive);
   container.classList.toggle('vertical', vertical);
   const max = Math.max(...rows.map(r => r.value), 0);
   container.innerHTML = rows.map(r => {
@@ -6379,11 +6378,13 @@ function buildBarChart(container, rows, opts) {
     const rowClass = r.state ? ` wh-${r.state}` : '';
     const fillStyle = vertical ? `height:${pct}%` : `width:${pct}%`;
     const accessibleTip = r.tip.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const rowAttributes = interactive ? ` role="button" tabindex="0" data-warehouse="${escapeHtml(r.code)}" aria-pressed="${r.state==='selected'}" aria-label="${escapeHtml(`${r.state==='selected' ? 'ดูทุกคลังแทน' : 'เลือกคลัง'} ${r.name} มูลค่า ${fmt0(r.value)} บาท`)}"` : '';
+    const fillAttributes = interactive ? '' : ` tabindex="0" role="img" aria-label="${escapeHtml(accessibleTip)}"`;
     return `
-    <div class="bar-row${rowClass}">
+    <div class="bar-row${rowClass}"${rowAttributes}>
       <div class="name" title="${escapeHtml(r.fullName || r.name)}">${escapeHtml(r.name)}</div>
       <div class="bar-track">
-        <div class="bar-fill" style="${fillStyle}" tabindex="0" role="img" aria-label="${escapeHtml(accessibleTip)}"
+        <div class="bar-fill" style="${fillStyle}"${fillAttributes}
              data-tip="${escapeHtml(r.tip)}"></div>
       </div>
       <div class="val">฿${fmtCompact(r.value)}</div>
@@ -6405,10 +6406,10 @@ function renderWarehouseChart(whCode) {
   // Vertical (column) orientation per Pornchai's 21 Aug 2026 request -- the category
   // chart (renderCategories, below) stays horizontal.
   buildBarChart(document.getElementById('whChart'), STOCK.warehouses.map(w => ({
-    name: w.short, fullName: w.name, value: w.value,
+    code: w.code, name: w.short, fullName: w.name, value: w.value,
     state: whCode === 'all' ? null : (w.code === whCode ? 'selected' : 'dim'),
     tip: `<b>${escapeHtml(w.name)} (คลัง ${escapeHtml(w.code)})</b>${fmt0(w.items)} รายการ · มูลค่า ${fmt0(w.value)} บาท (${escapeHtml(String(w.pct))}%)`,
-  })), {vertical: true});
+  })), {vertical: true, interactive: true});
 }
 
 // renderWarehouseTable() (rendered #whTable) was deleted 21 Aug 2026 along with the
@@ -6459,6 +6460,7 @@ function renderStockKpis(view, whCode) {
 }
 
 function renderStockAll(whCode) {
+  selectedWarehouse = whCode;
   const view = getView(whCode);
   renderStockKpis(view, whCode);
   renderWarehouseChart(whCode);
@@ -6469,7 +6471,23 @@ function renderStockAll(whCode) {
     : `กำลังแสดง: <b>${warehouseLabel(whCode)}</b> · มูลค่า ฿${fmtCompact(view.kpis.total_value)}`;
 }
 
-whFilter.addEventListener('change', () => renderStockAll(whFilter.value));
+const warehouseChart = document.getElementById('whChart');
+function selectWarehouseFromChart(target) {
+  const row = target.closest('.bar-row[data-warehouse]');
+  if (!row || !warehouseChart.contains(row)) return;
+  renderStockAll(selectedWarehouse === row.dataset.warehouse ? 'all' : row.dataset.warehouse);
+}
+warehouseChart.addEventListener('click', event => selectWarehouseFromChart(event.target));
+warehouseChart.addEventListener('keydown', event => {
+  if (event.key !== 'Enter' && event.key !== ' ') return;
+  if (!event.target.matches('.bar-row[data-warehouse]')) return;
+  event.preventDefault();
+  const code = event.target.dataset.warehouse;
+  selectWarehouseFromChart(event.target);
+  warehouseChart.querySelectorAll('.bar-row[data-warehouse]').forEach(row => {
+    if (row.dataset.warehouse === code) row.focus();
+  });
+});
 renderStockAll('all');
 
 // ---------- Manual Stock Inventory update (isolated from Zone/pallet data) ----------
@@ -6578,13 +6596,10 @@ async function parseStockFiles(files) {
 
 function rebuildStockControls() {
   applyStockWarehouseLabels(STOCK);
-  const selected = whFilter.value;
-  whFilter.innerHTML = '<option value="all">ทุกคลัง</option>' +
-    STOCK.warehouses.filter(w => !DROPDOWN_EXCLUDE_CODES.includes(w.code)).map(w => `<option value="${w.code}">${w.code} (${w.en_label}) — ${w.short}</option>`).join('');
-  whFilter.value = STOCK.warehouses.some(w => w.code === selected) ? selected : 'all';
+  selectedWarehouse = STOCK.warehouses.some(w => w.code === selectedWarehouse) ? selectedWarehouse : 'all';
   document.getElementById('reportDate').textContent = String(STOCK.report_date || '').replace(/^ณ วันที่:\s*/, 'ข้อมูล ณ วันที่ ');
   document.getElementById('tabBadgeStock').textContent = '฿' + fmtCompact(STOCK.kpis.total_value);
-  renderStockAll(whFilter.value);
+  renderStockAll(selectedWarehouse);
   // The BOM tab must use the same latest Stock Inventory object. This guard lets the initial
   // embedded Stock render before the BOM UI is initialized, while every later Supabase load or
   // manual update recalculates BOM immediately.
