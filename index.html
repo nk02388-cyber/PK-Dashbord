@@ -303,10 +303,12 @@
   .stock-update-btn:focus-visible { outline:3px solid rgba(11,107,203,.28); outline-offset:2px; }
   .stock-update-btn[disabled] { opacity:.6; cursor:wait; }
   .stock-update-help { font-size:11.5px; color:var(--text-muted); }
-  .stock-update-status { margin-left:auto; font-size:12px; font-weight:600; color:var(--text-secondary); }
+  .stock-update-meta { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:10px; margin-left:auto; }
+  .stock-update-meta #reportDate { font-size:12px; white-space:nowrap; }
+  .stock-update-status { font-size:12px; font-weight:600; color:var(--text-secondary); }
   .stock-update-status.success { color:var(--status-good); }
   .stock-update-status.error { color:var(--status-critical); }
-  @media (max-width:700px) { .stock-update-status { width:100%; margin-left:0; } }
+  @media (max-width:700px) { .stock-update-meta { width:100%; justify-content:flex-start; margin-left:0; } }
 
   .bar-row.wh-dim .bar-fill { opacity: .28; }
   .bar-row.wh-selected .bar-fill { background: var(--status-good); }
@@ -1973,7 +1975,6 @@ header.top .header-logo { border-radius: 14px; }
       <div class="header-brand-copy"><strong class="header-product-name">BCL WMS</strong><p class="welcome-greeting" id="welcomeGreeting">ยินดีต้อนรับ ขอให้วันนี้เป็นวันที่ดี</p></div>
     </div>
     <div class="meta">
-      <span id="reportDate">ข้อมูล ณ วันที่ 17 ส.ค. 69</span>
       <button class="event-calendar-toggle" id="eventCalendarToggle" type="button" aria-label="เปิดปฏิทินนัดหมาย" title="ปฏิทินนัดหมาย"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M7 3v4m10-4v4M3 10h18M8 14h2m4 0h2m-8 4h2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span class="event-calendar-badge" id="eventCalendarBadge" hidden></span></button>
       <div class="notification-anchor">
         <button class="notification-toggle" id="notificationToggle" type="button" aria-label="เปิดการแจ้งเตือน" aria-expanded="false" aria-controls="notificationPanel" title="การแจ้งเตือน"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="notification-badge" id="notificationBadge" hidden></span></button>
@@ -2052,7 +2053,7 @@ header.top .header-logo { border-radius: 14px; }
         <button class="stock-update-btn" id="stockUpdateBtn" type="button">↥ อัปเดตสต็อก</button>
         <input id="stockExcelInput" type="file" accept=".xlsx,.xls,.csv,.txt" multiple hidden>
         <details class="method-note stock-update-help"><summary>ไฟล์ที่รองรับ</summary><p>Excel หรือ TXT · เลือกครบ 8 คลัง โดยไฟล์ 300 คือคลัง 300-S</p></details>
-        <span class="stock-update-status" id="stockUpdateStatus" role="status" aria-live="polite">ข้อมูลสต็อกวันที่ 29 ส.ค. 69</span>
+        <div class="stock-update-meta"><span id="reportDate">ข้อมูล ณ วันที่ 17 ส.ค. 69</span><span class="stock-update-status" id="stockUpdateStatus" role="status" aria-live="polite">ข้อมูลสต็อกวันที่ 29 ส.ค. 69</span></div>
       </div>
     </div>
 
