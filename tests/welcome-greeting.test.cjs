@@ -9,6 +9,9 @@ assert.match(getWelcomeMessage(17), /สวัสดีตอนเย็น/);
 assert.match(getWelcomeMessage(20), /ความตั้งใจ/);
 assert.match(getWelcomeMessage(21), /สวัสดีตอนดึก/);
 assert.match(getWelcomeMessage(4), /ปลอดภัย/);
+assert.match(getWelcomeMessage(12, 24, 'Somchai'), /^สวัสดีตอนบ่าย Somchai ขอให้/);
+assert.match(getWelcomeMessage(12, 24, '  Somchai  '), /^สวัสดีตอนบ่าย Somchai ขอให้/);
+assert.doesNotMatch(getWelcomeMessage(12, 24), /undefined|null/);
 
 for (const hour of [5, 12, 17, 21]) {
   const firstHalf = getWelcomeMessage(hour, hour * 2);

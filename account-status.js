@@ -45,6 +45,7 @@
         profile = null; showScreen(true); showError('บัญชีนี้ไม่ได้รับสิทธิ์เข้าใช้งาน'); return;
       }
       profile = data;
+      window.dispatchEvent(new Event('wms:account-changed'));
       status.textContent = `${data.username} · ${data.role === 'admin' ? 'ผู้ดูแลระบบ' : 'ผู้ใช้'}`;
       button.classList.add('is-logged-in');
       adminPanel.hidden = data.role !== 'admin';

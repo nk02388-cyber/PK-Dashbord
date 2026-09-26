@@ -34,12 +34,14 @@
     ]
   };
 
-  function getWelcomeMessage(hour, halfHourSlot = 0) {
+  function getWelcomeMessage(hour, halfHourSlot = 0, username = '') {
     const period = hour >= 5 && hour < 12 ? 'morning'
       : hour >= 12 && hour < 17 ? 'afternoon'
       : hour >= 17 && hour < 21 ? 'evening' : 'night';
     const choices = messages[period];
-    return choices[((halfHourSlot % choices.length) + choices.length) % choices.length];
+    const message = choices[((halfHourSlot % choices.length) + choices.length) % choices.length];
+    const name = String(username || '').trim();
+    return name ? message.replace(' ', ` ${name} `) : message;
   }
 
   if (typeof module !== 'undefined' && module.exports) module.exports = { getWelcomeMessage };
@@ -60,11 +62,12 @@
       hour = new Date().getHours();
       minute = new Date().getMinutes();
     }
-    greeting.textContent = getWelcomeMessage(hour, hour * 2 + Math.floor(minute / 30));
+    greeting.textContent = getWelcomeMessage(hour, hour * 2 + Math.floor(minute / 30), root.getWmsUsername?.());
   }
 
   updateGreeting();
   root.setInterval(updateGreeting, 30_000);
+  root.addEventListener('wms:account-changed', updateGreeting);
   root.document.addEventListener('visibilitychange', () => {
     if (!root.document.hidden) updateGreeting();
   });
