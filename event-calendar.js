@@ -2,6 +2,7 @@
   'use strict';
 
   const storageKey = 'pk-event-calendar-v1';
+  const migratedKey = 'pk-event-calendar-migrated-v1';
   const dateKey = date => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
   const validLeads = new Set([0,15,60,1440,10080]);
   function eventTime(event) {
@@ -34,7 +35,9 @@
       return start >= current && start <= end;
     });
   }
-  const api = {dateKey,eventTime,cleanEvents,dueEvents,upcomingEvents};
+  const fromRow = row => ({id:row.id,name:row.name,date:row.event_date,time:String(row.event_time || '').slice(0,5),lead:row.lead_minutes,details:row.details || ''});
+  const toParams = (event,expectedVersion) => ({p_id:event.id,p_name:event.name,p_date:event.date,p_time:event.time,p_lead:event.lead,p_details:event.details,p_expected_version:expectedVersion});
+  const api = {dateKey,eventTime,cleanEvents,dueEvents,upcomingEvents,fromRow,toParams};
   if (typeof module !== 'undefined' && module.exports) { module.exports = api; return; }
 
   const dialog = document.getElementById('eventCalendarDialog');
@@ -49,17 +52,71 @@
   const grid = byId('eventCalendarGrid');
   const agenda = byId('eventCalendarAgenda');
   const badge = byId('eventCalendarBadge');
+  const syncStatus = byId('eventCalendarSync');
+  const saveButton = form.querySelector('.event-calendar-save');
+  const client = typeof supabaseClient !== 'undefined' ? supabaseClient : null;
   let events = [];
+  let versions = new Map();
+  let syncState = 'connecting';
+  let busy = false;
+  let refreshId = 0;
+  let editingVersion = 0;
   let selected = dateKey(new Date());
   let view = new Date(new Date().getFullYear(),new Date().getMonth(),1);
 
-  function load() {
-    try { events = cleanEvents(JSON.parse(localStorage.getItem(storageKey) || '[]')); }
-    catch { events = []; }
+  function readLegacy() {
+    try { return cleanEvents(JSON.parse(localStorage.getItem(storageKey) || '[]')); }
+    catch { return []; }
   }
-  function persist() {
-    try { localStorage.setItem(storageKey,JSON.stringify(events)); return true; }
-    catch { error.textContent = 'บันทึกไม่ได้ กรุณาตรวจพื้นที่จัดเก็บของเบราว์เซอร์'; error.hidden = false; return false; }
+  function setSyncState(state,message) {
+    syncState = state;
+    syncStatus.dataset.state = state;
+    syncStatus.textContent = message;
+    saveButton.disabled = state !== 'ready' || busy;
+    render();
+  }
+  function showError(message) { error.textContent = message; error.hidden = false; }
+  async function fetchRows() {
+    if (!client) throw new Error('ยังไม่ได้เชื่อมต่อฐานข้อมูล');
+    const result=[];
+    for (let offset=0;offset<100000;offset+=500) {
+      const {data,error:fetchError}=await client.from('event_calendar')
+        .select('id,name,event_date,event_time,lead_minutes,details,version,updated_at')
+        .order('event_date',{ascending:true}).order('event_time',{ascending:true}).order('id',{ascending:true})
+        .range(offset,offset+499);
+      if (fetchError) throw fetchError;
+      result.push(...(data || []));
+      if (!data || data.length<500) return result;
+    }
+    throw new Error('รายการนัดหมายมากเกินช่วงที่รองรับ');
+  }
+  async function migrateLegacy() {
+    try { if (localStorage.getItem(migratedKey) === '1') return; } catch (_) { return; }
+    const legacy = readLegacy();
+    for (const event of legacy) {
+      const id=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(event.id) ? event.id : root.crypto.randomUUID();
+      const {error:saveError}=await client.rpc('save_calendar_event',toParams({...event,id},0));
+      if (saveError && saveError.code !== '40001') throw saveError;
+    }
+    try { localStorage.setItem(migratedKey,'1'); } catch (_) {}
+  }
+  async function refreshRemote({migrate=false}={}) {
+    const request=++refreshId;
+    try {
+      let rows=await fetchRows();
+      if (migrate) { await migrateLegacy(); rows=await fetchRows(); }
+      if (request!==refreshId) return;
+      events=cleanEvents(rows.map(fromRow));
+      versions=new Map(rows.map(row=>[row.id,Number(row.version)]));
+      try { localStorage.setItem(storageKey,JSON.stringify(events)); } catch (_) {}
+      setSyncState('ready','ซิงค์ทุกเครื่องแล้ว · กำลังแสดงข้อมูลล่าสุด');
+      notifyChange();
+    } catch (fetchError) {
+      if (request!==refreshId) return;
+      setSyncState('error','ซิงค์ไม่ได้ · กำลังแสดงข้อมูลที่บันทึกไว้ในเครื่องนี้');
+      if (dialog.open) showError(`โหลดปฏิทินไม่สำเร็จ: ${fetchError.message || 'กรุณาลองใหม่'}`);
+      notifyChange();
+    }
   }
   function notifyChange() {
     render();
@@ -84,17 +141,19 @@
     const selectedDate = new Date(selected+'T12:00');
     byId('eventCalendarSelectedHeading').textContent = `กิจกรรมวันที่ ${dateFormat.format(selectedDate)}`;
     const selectedEvents = events.filter(event => event.date === selected);
-    agenda.innerHTML = selectedEvents.length ? selectedEvents.map(event => `<article class="event-calendar-entry"><div><strong>${escape(event.time)} · ${escape(event.name)}</strong>${event.details ? `<p>${escape(event.details)}</p>` : ''}<small>เตือน${event.lead === 0 ? 'เมื่อถึงเวลา' : `ล่วงหน้า ${event.lead === 15 ? '15 นาที' : event.lead === 60 ? '1 ชั่วโมง' : event.lead === 1440 ? '1 วัน' : '7 วัน'}`}</small></div><div class="event-calendar-entry-actions"><button type="button" data-edit="${escape(event.id)}">แก้ไข</button><button type="button" data-delete="${escape(event.id)}">ลบ</button></div></article>`).join('') : '<p class="event-calendar-empty">ยังไม่มีกิจกรรมในวันนี้</p>';
+    agenda.innerHTML = selectedEvents.length ? selectedEvents.map(event => `<article class="event-calendar-entry"><div><strong>${escape(event.time)} · ${escape(event.name)}</strong>${event.details ? `<p>${escape(event.details)}</p>` : ''}<small>เตือน${event.lead === 0 ? 'เมื่อถึงเวลา' : `ล่วงหน้า ${event.lead === 15 ? '15 นาที' : event.lead === 60 ? '1 ชั่วโมง' : event.lead === 1440 ? '1 วัน' : '7 วัน'}`}</small></div><div class="event-calendar-entry-actions"><button type="button" data-edit="${escape(event.id)}" ${syncState === 'ready' && !busy ? '' : 'disabled'}>แก้ไข</button><button type="button" data-delete="${escape(event.id)}" ${syncState === 'ready' && !busy ? '' : 'disabled'}>ลบ</button></div></article>`).join('') : '<p class="event-calendar-empty">ยังไม่มีกิจกรรมในวันนี้</p>';
   }
   function resetForm() {
     form.reset();
     byId('eventCalendarId').value = '';
+    editingVersion = 0;
     byId('eventCalendarDate').value = selected;
     byId('eventCalendarTime').value = '09:00';
     byId('eventCalendarLead').value = '1440';
     byId('eventCalendarFormHeading').textContent = 'เพิ่มกิจกรรม';
     byId('eventCalendarCancel').hidden = true;
     error.hidden = true;
+    saveButton.disabled = syncState !== 'ready' || busy;
   }
   function open(id) {
     const event = events.find(item => item.id === id);
@@ -105,6 +164,7 @@
   }
   function edit(event) {
     byId('eventCalendarId').value = event.id;
+    editingVersion = versions.get(event.id) || 0;
     byId('eventCalendarName').value = event.name;
     byId('eventCalendarDate').value = event.date;
     byId('eventCalendarTime').value = event.time;
@@ -114,8 +174,8 @@
     byId('eventCalendarCancel').hidden = false;
     byId('eventCalendarName').focus();
   }
-  load();
-  byId('eventCalendarToggle').addEventListener('click',() => open());
+  events = readLegacy();
+  byId('eventCalendarToggle').addEventListener('click',() => { open(); if (syncState !== 'connecting') refreshRemote(); });
   byId('eventCalendarClose').addEventListener('click',() => dialog.close());
   dialog.addEventListener('click',event => { if (event.target === dialog) dialog.close(); });
   byId('eventCalendarPrev').addEventListener('click',() => { view = new Date(view.getFullYear(),view.getMonth()-1,1); render(); });
@@ -127,40 +187,54 @@
     selected = key; view = new Date(Number(key.slice(0,4)),Number(key.slice(5,7))-1,1);
     resetForm(); render();
   });
-  agenda.addEventListener('click',event => {
+  agenda.addEventListener('click',async event => {
     const editId = event.target.closest('[data-edit]')?.dataset.edit;
     if (editId) { const item = events.find(row => row.id === editId); if (item) edit(item); return; }
     const deleteId = event.target.closest('[data-delete]')?.dataset.delete;
     if (!deleteId) return;
     const item = events.find(row => row.id === deleteId);
-    if (!item || !confirm(`ลบกิจกรรม “${item.name}” หรือไม่?`)) return;
-    const previous = events;
-    events = events.filter(row => row.id !== deleteId);
-    if (!persist()) { events = previous; return; }
-    if (byId('eventCalendarId').value === deleteId) resetForm();
-    notifyChange();
+    if (!item || syncState !== 'ready' || busy || !confirm(`ลบกิจกรรม “${item.name}” หรือไม่?`)) return;
+    busy=true; setSyncState('ready','กำลังลบกิจกรรม…');
+    try {
+      const {error:deleteError}=await client.rpc('delete_calendar_event',{p_id:deleteId,p_expected_version:versions.get(deleteId)});
+      if (deleteError) throw deleteError;
+      if (byId('eventCalendarId').value === deleteId) resetForm();
+      await refreshRemote();
+    } catch (deleteError) {
+      showError(deleteError.code === '40001' ? 'กิจกรรมถูกแก้ไขจากเครื่องอื่นแล้ว กรุณาตรวจข้อมูลล่าสุด' : `ลบกิจกรรมไม่สำเร็จ: ${deleteError.message}`);
+      await refreshRemote();
+    } finally { busy=false; setSyncState(syncState,syncStatus.textContent); }
   });
   byId('eventCalendarCancel').addEventListener('click',resetForm);
-  form.addEventListener('submit',event => {
+  form.addEventListener('submit',async event => {
     event.preventDefault(); error.hidden = true;
-    const entry = {id:byId('eventCalendarId').value || (root.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`),
+    if (syncState !== 'ready' || busy) { showError('ยังซิงค์ปฏิทินไม่ได้ กรุณารอหรือลองใหม่'); return; }
+    const entry = {id:byId('eventCalendarId').value || root.crypto.randomUUID(),
       name:byId('eventCalendarName').value.trim(),date:byId('eventCalendarDate').value,time:byId('eventCalendarTime').value,
       lead:Number(byId('eventCalendarLead').value),details:byId('eventCalendarDetails').value.trim()};
     if (!entry.name || !eventTime(entry) || !validLeads.has(entry.lead)) {
-      error.textContent = 'กรุณาระบุชื่อ วันที่ และเวลาที่ถูกต้อง'; error.hidden = false; return;
+      showError('กรุณาระบุชื่อ วันที่ และเวลาที่ถูกต้อง'); return;
     }
-    const previous = events;
-    events = cleanEvents([...events.filter(row => row.id !== entry.id),entry]);
-    if (!persist()) { events = previous; return; }
-    selected = entry.date;
-    view = new Date(Number(selected.slice(0,4)),Number(selected.slice(5,7))-1,1);
-    resetForm(); notifyChange();
+    busy=true; setSyncState('ready','กำลังบันทึกกิจกรรม…');
+    try {
+      const {error:saveError}=await client.rpc('save_calendar_event',toParams(entry,editingVersion));
+      if (saveError) throw saveError;
+      selected = entry.date;
+      view = new Date(Number(selected.slice(0,4)),Number(selected.slice(5,7))-1,1);
+      resetForm();
+      await refreshRemote();
+    } catch (saveError) {
+      showError(saveError.code === '40001' ? 'กิจกรรมถูกแก้ไขจากเครื่องอื่นแล้ว กรุณาตรวจข้อมูลล่าสุดก่อนบันทึกอีกครั้ง' : `บันทึกกิจกรรมไม่สำเร็จ: ${saveError.message}`);
+      await refreshRemote();
+    } finally { busy=false; setSyncState(syncState,syncStatus.textContent); }
   });
-  root.addEventListener('storage',event => { if (event.key === storageKey) { load(); notifyChange(); } });
-  document.addEventListener('visibilitychange',() => { if (!document.hidden) notifyChange(); });
-  setInterval(notifyChange,60000);
-  api.getDue = () => dueEvents(events);
+  root.addEventListener('storage',event => { if (event.key === storageKey && syncState !== 'ready') { events = readLegacy(); notifyChange(); } });
+  document.addEventListener('visibilitychange',() => { if (!document.hidden) refreshRemote(); });
+  setInterval(() => { if (!document.hidden) refreshRemote(); else notifyChange(); },30000);
+  api.getDue = () => syncState === 'ready' ? dueEvents(events) : [];
   api.open = open;
   root.PKEvents = api;
   render();
+  refreshRemote({migrate:true});
+  if (client?.channel) client.channel('bcl-event-calendar').on('postgres_changes',{event:'*',schema:'public',table:'event_calendar'},() => refreshRemote()).subscribe();
 })(typeof window !== 'undefined' ? window : globalThis);
