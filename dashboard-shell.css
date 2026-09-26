@@ -40,18 +40,6 @@
     box-shadow: none;
     background: var(--surface-1);
   }
-  header.top::after {
-    content: "";
-    position: absolute;
-    left: calc(-1 * var(--dashboard-sidebar-w));
-    right: 0;
-    bottom: 0;
-    height: 1px;
-    pointer-events: none;
-    background: linear-gradient(to right,
-      rgba(255, 255, 255, .15) 0 var(--dashboard-sidebar-w),
-      var(--border) var(--dashboard-sidebar-w) 100%);
-  }
   header.top .header-logo { display: none; }
   header.top .header-product-name { display: none; }
 
