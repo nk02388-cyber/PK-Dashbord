@@ -7,6 +7,7 @@
   const userList = $('accountUserList'), message = $('accountManageMessage');
   const functionUrl = `${SUPABASE_URL}/functions/v1/pk-user-access`;
   let profile = null, refreshId = 0;
+  window.getWmsUsername = () => profile?.username || '';
 
   function showError(text) { error.textContent = text || ''; error.hidden = !text; }
   function showScreen(visible) {

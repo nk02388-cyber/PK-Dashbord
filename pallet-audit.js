@@ -1,11 +1,9 @@
 // History is read from the database, never reconstructed from this browser's cache.
 (() => {
-  const actor = document.getElementById('palletAuditActor');
   const search = document.getElementById('palletAuditSearch');
   const status = document.getElementById('palletAuditStatus');
   const result = document.getElementById('palletAuditResult');
   const more = document.getElementById('palletAuditMore');
-  try { actor.value = localStorage.getItem('palletAuditActor') || ''; } catch (_) {}
   const labels = {receive:'รับเข้า',issue:'เบิก',return:'รับคืน',transfer:'ย้าย',adjust:'แก้ยอด / แก้รายการ',remove:'ลบ',import:'นำเข้าข้อมูล'};
   const scrapCount = items => (Array.isArray(items) ? items : []).reduce((sum,item)=>sum+(Array.isArray(item.scraps)?item.scraps.length:0),0);
   const actionLabel = row => row.action === 'adjust' && scrapCount(row.after_items) > scrapCount(row.before_items) ? 'Scrap · ตัดจำหน่าย' : (labels[row.action] || row.action);
