@@ -1958,6 +1958,7 @@ header.top .header-logo { border-radius: 14px; }
 }
 </style>
 <link rel="stylesheet" href="dashboard-shell.css?v=20260926-9">
+<link rel="stylesheet" href="account-login.css?v=20260926-1">
 <link rel="stylesheet" href="product-history.css?v=20260925-3">
 <link rel="stylesheet" href="top-withdrawals.css?v=20260925-1">
 <link rel="stylesheet" href="notifications.css?v=20260926-1">
@@ -1967,7 +1968,19 @@ header.top .header-logo { border-radius: 14px; }
 <link rel="stylesheet" href="reorder-points.css?v=20260926-1">
 <link rel="stylesheet" href="wms-operations.css?v=20260926-8">
 </head>
-<body class="viz-root">
+<body class="viz-root auth-pending">
+<main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
+  <form class="auth-card" id="authLoginForm">
+    <img src="assets/bcl-logo-monochrome.png?v=2" alt="" width="52" height="52">
+    <h1 id="authTitle">เข้าสู่ระบบ BCL WMS</h1>
+    <p>ใช้บัญชีที่ผู้ดูแลระบบกำหนดเพื่อเข้าถึงข้อมูลคลัง</p>
+    <label>ชื่อผู้ใช้<input id="authUsername" name="username" autocomplete="username" required autofocus></label>
+    <label>รหัสผ่าน<input id="authPassword" name="password" type="password" autocomplete="current-password" required></label>
+    <p class="auth-error" id="authError" role="alert" hidden></p>
+    <button id="authSubmit" type="submit">เข้าสู่ระบบ</button>
+    <span id="authLoading" role="status">กำลังตรวจสอบบัญชี…</span>
+  </form>
+</main>
 <a class="skip-link" href="#mainDashboard">ข้ามไปยังเนื้อหาหลัก</a>
 <div class="wrap" id="mainDashboard" tabindex="-1">
 
@@ -1991,8 +2004,20 @@ header.top .header-logo { border-radius: 14px; }
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.7"/><path d="M4.5 20c.4-4.1 3-6.2 7.5-6.2s7.1 2.1 7.5 6.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
           <span class="account-indicator" id="accountIndicator" aria-hidden="true"></span>
         </button>
-        <div class="account-panel" id="accountPanel" role="status" hidden>
+        <div class="account-panel" id="accountPanel" hidden>
           <strong>บัญชีผู้ใช้</strong><span id="accountStatus">กำลังตรวจสอบการเข้าสู่ระบบ…</span>
+          <div id="accountAdmin" hidden>
+            <h3>จัดการผู้ใช้ย่อย</h3>
+            <form id="accountCreateForm">
+              <label>ชื่อผู้ใช้<input name="username" required minlength="3" maxlength="32" pattern="[A-Za-z][A-Za-z0-9._-]{2,31}" autocomplete="off"></label>
+              <label>อีเมล<input name="email" type="email" required autocomplete="off"></label>
+              <label>รหัสผ่านเริ่มต้น<input name="password" type="password" required minlength="12" maxlength="128" autocomplete="new-password"></label>
+              <button type="submit">เพิ่มผู้ใช้</button>
+            </form>
+            <p id="accountManageMessage" role="status"></p>
+            <div id="accountUserList" aria-label="รายชื่อผู้ใช้ย่อย"></div>
+          </div>
+          <button type="button" id="accountLogout">ออกจากระบบ</button>
         </div>
       </div>
     </div>
@@ -9834,7 +9859,7 @@ window.addEventListener('pageshow', () => {
 <script src="notifications.js?v=20260926-1"></script>
 <script src="receipt-plan.js?v=20260926-1"></script>
 <script src="welcome-greeting.js?v=20260926-1" defer></script>
-<script src="account-status.js?v=20260926-1"></script>
+<script src="account-status.js?v=20260926-2"></script>
 <script src="cycle-counts-core.js?v=20260926-1"></script>
 <script src="cycle-counts.js?v=20260926-1"></script>
 <script src="scrap-inventory-core.js?v=20260926-1"></script>
