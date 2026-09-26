@@ -3,7 +3,7 @@ const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
 const extract=n=>html.match(new RegExp(`function ${n}\\([^]*?\\n\\}`))[0];
 const ctx=vm.createContext({BOM_UNIT_ALIASES:{pcs:'pcs',ชิ้น:'pcs',kg:'kg'}});
 vm.runInContext(html.match(/const RECONCILE_EXCLUDED_WAREHOUSES = [^\n]+/)[0],ctx);
-for(const n of ['normalizeBomUnit','movementNumber','getRemainingQty','buildStockReconciliation','filterStockReconciliation','stockReconciliationTables'])vm.runInContext(extract(n),ctx);
+for(const n of ['normalizeBomUnit','movementNumber','getRemainingQty','buildStockReconciliation','filterStockReconciliation','sortStockReconciliation','stockReconciliationTables'])vm.runInContext(extract(n),ctx);
 const stock=[{code:' a ',name:'Updated',unit:'ชิ้น',qty:10,wh:'201'},{code:'A',unit:'pcs',qty:5,wh:'202'},
   {code:'B',unit:'kg',qty:3,wh:'201'},{code:'C',unit:'pcs',qty:null,wh:'201'},{code:'D',unit:'pcs',qty:0,wh:'201'},
   ...['200','800','900','300-S','300'].map(wh=>({code:'A',unit:'pcs',qty:100,wh})),
@@ -25,6 +25,10 @@ assert.deepEqual(Array.from(ctx.filterStockReconciliation(rows,'all','updated'))
 assert.deepEqual(Array.from(ctx.filterStockReconciliation(rows,'all','F-01 updated')).map(r=>r.code),['A']);
 assert.deepEqual(Array.from(ctx.filterStockReconciliation(rows,'mismatch','202')).map(r=>r.code),['A']);
 assert.equal(ctx.filterStockReconciliation(rows,'mismatch','ไม่พบ').length,0);
+const differences=[{difference:-3},{difference:8},{difference:null},{difference:0}];
+assert.deepEqual(Array.from(ctx.sortStockReconciliation(differences,'desc')).map(r=>r.difference),[8,0,-3,null]);
+assert.deepEqual(Array.from(ctx.sortStockReconciliation(differences,'asc')).map(r=>r.difference),[-3,0,8,null]);
+assert.deepEqual(Array.from(differences).map(r=>r.difference),[-3,8,null,0]);
 const tables=ctx.stockReconciliationTables(rows,{exportedAt:'now',stockDate:'date',stockStatus:'latest'});
 assert.equal(tables.length,2);assert.equal(tables[1].rows.length,rows.length+1);assert.match(tables[0].rows.find(r=>r[0]==='ส่วนต่าง')[1],/พาเลต/);
 assert.match(tables[0].rows.find(r=>r[0]==='ขอบเขตสต็อกที่อัปเดต')[1],/200, 800, 900 และ 300-S/);
