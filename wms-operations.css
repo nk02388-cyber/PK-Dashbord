@@ -153,8 +153,43 @@
   :root[data-theme="dark"] #themeToggle .theme-option-moon { background: #4589ff; color: #161616; }
   :root[data-theme="light"] #themeToggle .theme-option-sun { background: #0f62fe; color: #fff; }
   @media (min-width: 1024px) {
+    body.viz-root { --dashboard-sidebar-w: 288px; }
     .viz-root .wrap { grid-template-columns: var(--dashboard-sidebar-w) minmax(0, 1fr); }
     .viz-root .dashboard-layout > .tabs { padding: 0 14px 24px; }
+    .viz-root .dashboard-layout > .tabs .tab-btn {
+      display: grid;
+      grid-template-columns: 18px minmax(0, 1fr) auto;
+      align-items: center;
+      column-gap: 10px;
+      row-gap: 4px;
+      height: auto;
+      padding: 9px 12px;
+      white-space: normal;
+    }
+    .viz-root .dashboard-layout > .tabs .tab-btn > .tab-icon { grid-column: 1; grid-row: 1; }
+    .viz-root .dashboard-layout > .tabs .tab-btn > span:first-of-type {
+      grid-column: 2;
+      grid-row: 1;
+      min-width: 0;
+      white-space: normal;
+      line-height: 1.4;
+      overflow-wrap: break-word;
+    }
+    .viz-root .dashboard-layout > .tabs .tab-btn > .tab-badge {
+      grid-column: 3;
+      grid-row: 1;
+      justify-self: end;
+      margin-left: 0;
+      white-space: nowrap;
+    }
+    .viz-root .dashboard-layout > .tabs :is(#tab-bompk, #tab-daily-receive, #tab-daily-issue) {
+      grid-template-columns: 18px minmax(0, 1fr);
+    }
+    .viz-root .dashboard-layout > .tabs :is(#tab-bompk, #tab-daily-receive, #tab-daily-issue) > .tab-badge {
+      grid-column: 2;
+      grid-row: 2;
+      justify-self: start;
+    }
     .viz-root .dashboard-nav-brand { border-bottom: 1px solid #393939; }
     .viz-root header.top { min-height: var(--dashboard-shell-header-h); padding: 0 28px; border-top: 0; border-right: 0; border-left: 0; }
     .viz-root .dashboard-layout > .dashboard-content { padding: 0 clamp(20px, 2.4vw, 40px) 44px; }
