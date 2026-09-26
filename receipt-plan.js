@@ -137,6 +137,13 @@
 
   date.addEventListener('change', () => {followToday = date.value === localToday(); render();});
   query.addEventListener('input', render);
+  document.getElementById('receiptPlanPrev').addEventListener('click', () => {
+    const day = new Date(`${date.value || localToday()}T12:00:00`);
+    day.setDate(day.getDate() - 1);
+    date.value = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+    followToday = false;
+    render();
+  });
   document.getElementById('receiptPlanToday').addEventListener('click', () => {followToday = true; date.value = localToday(); render();});
   refreshButton.addEventListener('click', () => refresh(true));
   document.getElementById('tab-receipt-plan').addEventListener('click', () => refresh());

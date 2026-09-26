@@ -2938,6 +2938,7 @@ header.top .header-logo { border-radius: 14px; }
       <p class="panel-sub">รายการในแผนยังไม่ใช่รายการรับเข้าจริง</p>
       <div class="daily-controls">
         <label>วันที่ <input type="date" id="receiptPlanDate" aria-label="วันที่แผนรับเข้า"></label>
+        <button type="button" id="receiptPlanPrev" aria-label="วันก่อนหน้า">← วันก่อน</button>
         <button type="button" id="receiptPlanToday">วันนี้</button>
         <label class="daily-search">ค้นหารายการ <input type="search" id="receiptPlanQuery" placeholder="PO รหัส ชื่อสินค้า หรือบริษัท"></label>
         <button type="button" id="receiptPlanRefresh">รีเฟรชข้อมูล</button>
@@ -9739,7 +9740,7 @@ window.addEventListener('pageshow', () => {
 <script src="reorder-points.js?v=20260924-1"></script>
 <script src="event-calendar.js?v=20260924-1"></script>
 <script src="notifications.js?v=20260926-1"></script>
-<script src="receipt-plan.js"></script>
+<script src="receipt-plan.js?v=20260926-1"></script>
 <script src="welcome-greeting.js?v=20260926-1" defer></script>
 
 
