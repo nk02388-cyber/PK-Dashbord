@@ -87,25 +87,26 @@ Deno.serve(async (request) => {
 
 
   if (action === 'list') {
-    const result = await backend('/rest/v1/app_users?select=id,username,email,role,created_at&active=eq.true&order=created_at.asc', serviceKey);
+    const result = await backend('/rest/v1/app_users?select=id,username,role,created_at&active=eq.true&order=created_at.asc', serviceKey);
     return response(origin, result.ok ? 200 : 503, result.ok ? { users: await result.json() } : { error: 'โหลดรายชื่อไม่สำเร็จ' });
   }
 
 
   if (action === 'create') {
     const username = typeof input.username === 'string' ? input.username.trim().toLowerCase() : '';
-    const email = typeof input.email === 'string' ? input.email.trim().toLowerCase() : '';
+    // Supabase Auth needs an email identifier internally; staff sign in by username.
+    const email = `${username}@bcl-wms.local`;
     const password = input.password;
-    if (!validUsername(username) || username === 'admin' || !/^\S+@\S+\.\S+$/.test(email)
+    if (!validUsername(username) || username === 'admin'
       || typeof password !== 'string' || password.length < 12 || password.length > 128)
-      return response(origin, 400, { error: 'กรุณาระบุชื่อผู้ใช้ อีเมล และรหัสผ่านอย่างน้อย 12 ตัวอักษร' });
+      return response(origin, 400, { error: 'กรุณาระบุชื่อผู้ใช้และรหัสผ่านอย่างน้อย 12 ตัวอักษร' });
     const exists = await backend(`/rest/v1/app_users?select=id&or=(username.eq.${encodeURIComponent(username)},email.eq.${encodeURIComponent(email)})&limit=1`, serviceKey);
     if (!exists.ok) return response(origin, 503, { error: 'ตรวจสอบผู้ใช้ไม่สำเร็จ' });
-    if ((await exists.json()).length) return response(origin, 409, { error: 'ชื่อผู้ใช้หรืออีเมลนี้มีอยู่แล้ว' });
+    if ((await exists.json()).length) return response(origin, 409, { error: 'ชื่อผู้ใช้นี้มีอยู่แล้ว' });
     const createdResponse = await backend('/auth/v1/admin/users', serviceKey, {
       method: 'POST', body: JSON.stringify({ email, password, email_confirm: true, user_metadata: { username } }),
     });
-    if (!createdResponse.ok) return response(origin, 400, { error: 'สร้างบัญชีไม่สำเร็จ กรุณาตรวจสอบอีเมล' });
+    if (!createdResponse.ok) return response(origin, 400, { error: 'สร้างบัญชีไม่สำเร็จ กรุณาลองชื่อผู้ใช้อื่น' });
     const created = await createdResponse.json();
     const id = created.id || created.user?.id;
     if (!id) return response(origin, 503, { error: 'สร้างบัญชีไม่ครบ กรุณาตรวจสอบใน Supabase' });
@@ -117,7 +118,7 @@ Deno.serve(async (request) => {
       await backend(`/auth/v1/admin/users/${encodeURIComponent(id)}`, serviceKey, { method: 'DELETE' });
       return response(origin, 503, { error: 'สร้างโปรไฟล์ไม่สำเร็จและย้อนบัญชีแล้ว' });
     }
-    return response(origin, 201, { id, username, email, role: 'user' });
+    return response(origin, 201, { id, username, role: 'user' });
   }
 
 

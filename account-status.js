@@ -60,8 +60,7 @@
         const row = document.createElement('div'); row.className = 'account-user';
         const info = document.createElement('div');
         const name = document.createElement('strong'); name.textContent = user.username;
-        const email = document.createElement('span'); email.textContent = user.email;
-        info.append(name, email);
+        info.append(name);
         const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'ลบ';
         remove.setAttribute('aria-label', `ลบผู้ใช้ ${user.username}`);
         remove.addEventListener('click', async () => {
