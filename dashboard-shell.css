@@ -9,9 +9,35 @@
   font-weight: 600;
   line-height: 1.4;
 }
+.account-anchor { position: relative; flex: none; }
+.account-toggle {
+  position: relative; display: grid; place-items: center;
+  width: 42px; height: 42px; padding: 0;
+  border: 1px solid var(--border); border-radius: var(--radius-control);
+  background: var(--surface-1); color: var(--text-primary); cursor: pointer;
+}
+.account-toggle svg { width: 21px; height: 21px; }
+.account-toggle:hover, .account-toggle[aria-expanded="true"] { border-color: var(--series-1); background: var(--series-1-wash); }
+.account-toggle:focus-visible { outline: 3px solid var(--focus-ring, #e0ce9c); outline-offset: 2px; }
+.account-indicator {
+  position: absolute; right: 4px; bottom: 4px; width: 7px; height: 7px;
+  border: 1px solid var(--surface-1); border-radius: 50%; background: var(--text-muted);
+}
+.account-toggle.is-logged-in .account-indicator { background: var(--status-good); }
+.account-panel {
+  position: absolute; z-index: 250; top: calc(100% + 8px); right: 0;
+  display: grid; gap: 5px; width: max-content; min-width: 210px;
+  max-width: min(320px, calc(100vw - 24px)); padding: 12px 14px;
+  border: 1px solid var(--border); border-radius: var(--radius-card);
+  background: var(--surface-1); color: var(--text-primary); box-shadow: var(--shadow-card);
+  overflow-wrap: anywhere; font-size: 12px;
+}
+.account-panel[hidden] { display: none; }
+.account-panel span { color: var(--text-secondary); }
 @media (max-width: 700px) {
   .header-product-name { font-size: 14px; }
   .welcome-greeting { font-size: 11px; }
+  .account-toggle { width: 44px; height: 44px; }
 }
 
 @media (min-width: 1024px) {
@@ -34,7 +60,7 @@
     min-height: var(--dashboard-shell-header-h);
     height: var(--dashboard-shell-header-h);
     margin: 0;
-    padding: 0 28px;
+    padding: 0 16px 0 28px;
     border: 0;
     border-radius: 0;
     box-shadow: none;
