@@ -153,11 +153,11 @@
   :root[data-theme="dark"] #themeToggle .theme-option-moon { background: #4589ff; color: #161616; }
   :root[data-theme="light"] #themeToggle .theme-option-sun { background: #0f62fe; color: #fff; }
   @media (min-width: 1024px) {
-    .viz-root .wrap { grid-template-columns: 256px minmax(0, 1fr); }
-    .viz-root .dashboard-layout > .tabs { padding: 16px 0 24px; }
+    .viz-root .wrap { grid-template-columns: var(--dashboard-sidebar-w) minmax(0, 1fr); }
+    .viz-root .dashboard-layout > .tabs { padding: 0 14px 24px; }
     .viz-root .dashboard-nav-brand { border-bottom: 1px solid #393939; }
-    .viz-root header.top { min-height: 76px; padding: 14px 28px; border-top: 0; border-right: 0; border-left: 0; }
-    .viz-root .dashboard-layout > .dashboard-content { padding: 28px clamp(20px, 2.4vw, 40px) 44px; }
+    .viz-root header.top { min-height: var(--dashboard-shell-header-h); padding: 0 28px; border-top: 0; border-right: 0; border-left: 0; }
+    .viz-root .dashboard-layout > .dashboard-content { padding: 0 clamp(20px, 2.4vw, 40px) 44px; }
   }
   @media (max-width: 700px) {
     .viz-root header.top { padding: 12px; }

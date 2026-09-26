@@ -15,7 +15,7 @@
 }
 
 @media (min-width: 1024px) {
-  body.viz-root { padding: 0; --dashboard-shell-header-h: 82px; --dashboard-sidebar-w: 276px; }
+  body.viz-root { padding: 0; --dashboard-shell-header-h: 76px; --dashboard-sidebar-w: 256px; }
   .wrap {
     display: grid;
     grid-template-columns: var(--dashboard-sidebar-w) minmax(0, 1fr);
@@ -73,7 +73,7 @@
     min-height: var(--dashboard-shell-header-h);
     height: var(--dashboard-shell-header-h);
     box-sizing: border-box;
-    margin: 0 -14px 14px;
+    margin: 0 -14px 0;
     padding: 0 22px;
     color: #f5f6ec;
     font-size: 15px;
