@@ -194,10 +194,10 @@
       margin-left: 0;
       white-space: nowrap;
     }
-    .viz-root .dashboard-layout > .tabs :is(#tab-bompk, #tab-daily-receive, #tab-daily-issue) {
+    .viz-root .dashboard-layout > .tabs #tab-bompk {
       grid-template-columns: 18px minmax(0, 1fr);
     }
-    .viz-root .dashboard-layout > .tabs :is(#tab-bompk, #tab-daily-receive, #tab-daily-issue) > .tab-badge {
+    .viz-root .dashboard-layout > .tabs #tab-bompk > .tab-badge {
       grid-column: 2;
       grid-row: 2;
       justify-self: start;
