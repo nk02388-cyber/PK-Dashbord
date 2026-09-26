@@ -154,7 +154,8 @@
     background: var(--surface-1);
   }
   .viz-root #fgBomResult .bom-simulation p { line-height: 1.55; }
-  .viz-root #fgBomResult .fg-bom-table-wrap { border-radius: 0; }
+  .viz-root #fgBomResult .fg-bom-table-wrap { border-radius: 0; overflow-x: auto; }
+  .viz-root #fgBomResult .fg-bom-table { min-width: 1320px; }
   .viz-root #fgBomResult .fg-bom-table thead th {
     background: var(--surface-1);
     color: var(--text-primary);
