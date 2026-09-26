@@ -1962,6 +1962,7 @@ header.top .header-logo { border-radius: 14px; }
 <link rel="stylesheet" href="top-withdrawals.css?v=20260925-1">
 <link rel="stylesheet" href="notifications.css?v=20260926-1">
 <link rel="stylesheet" href="event-calendar.css?v=20260926-2">
+<link rel="stylesheet" href="cycle-counts.css?v=20260926-1">
 <link rel="stylesheet" href="reorder-points.css?v=20260926-1">
 <link rel="stylesheet" href="wms-operations.css?v=20260926-8">
 </head>
@@ -2017,6 +2018,7 @@ header.top .header-logo { border-radius: 14px; }
     <button class="tab-btn" id="tab-bompk" data-tab="bompk" type="button" role="tab" aria-selected="false" aria-controls="pane-bompk" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 21V9l6 3V8l6 4V5h6v16H3Z" stroke-width="1.8"/><path d="M7 17h2m3 0h2m3 0h2" stroke-width="1.8"/></svg><span>ความพร้อมบรรจุภัณฑ์ (BOM PK)</span><span class="tab-badge critical" id="tabBadgeBompk">612 ติดขัด</span></button>
     <button class="tab-btn" id="tab-bom-plan" data-tab="bom-plan" type="button" role="tab" aria-selected="false" aria-controls="pane-bom-plan" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8 4h8l2 2v15H6V6l2-2Zm0 0v3h8V4M9 12h6m-6 4h6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>แผนบรรจุภัณฑ์หลาย FG</span></button>
     <button class="tab-btn" id="tab-reconcile" data-tab="reconcile" type="button" role="tab" aria-selected="false" aria-controls="pane-reconcile" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16m-3-3 3 3-3 3M20 17H4m3-3-3 3 3 3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>เปรียบเทียบสต็อกพาเลต</span></button>
+    <button class="tab-btn" id="tab-cycle-counts" data-tab="cycle-counts" type="button" role="tab" aria-selected="false" aria-controls="pane-cycle-counts" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2" stroke-width="1.8"/><path d="M8 8h8M8 12h4m-4 4 2 2 4-4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Cycle Counts · ตรวจนับตามรอบ</span><span class="tab-badge" id="tabBadgeCycleCounts">ตั้งรอบนับ</span></button>
     <button class="tab-btn" id="tab-print-labels" data-tab="print-labels" type="button" role="tab" aria-selected="false" aria-controls="pane-print-labels" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9V3h12v6M6 17H4V9h16v8h-2M6 14h12v7H6v-7Zm11-2h1" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>พิมพ์ป้ายตำแหน่งและสินค้า</span></button>
     <button class="tab-btn" id="tab-daily-receive" data-tab="daily-receive" type="button" role="tab" aria-selected="false" aria-controls="pane-daily-receive" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v11m-4-4 4 4 4-4M4 16v4h16v-4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>รายการรับเข้าประจำวัน</span><span class="tab-badge" id="tabBadgeDailyReceive">วันนี้</span></button>
     <button class="tab-btn" id="tab-daily-issue" data-tab="daily-issue" type="button" role="tab" aria-selected="false" aria-controls="pane-daily-issue" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 15V4m-4 4 4-4 4 4M4 16v4h16v-4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>รายการเบิกประจำวัน</span><span class="tab-badge" id="tabBadgeDailyIssue">วันนี้</span></button>
@@ -2636,6 +2638,27 @@ header.top .header-logo { border-radius: 14px; }
       <div id="bomPlanResult" aria-live="polite"></div>
     </div>
 
+  </div>
+
+  <div class="tab-pane" id="pane-cycle-counts" role="tabpanel" aria-labelledby="tab-cycle-counts" hidden>
+    <section class="panel cycle-counts-panel" aria-labelledby="cycleCountsTitle">
+      <h2 id="cycleCountsTitle">Cycle Counts · ตรวจนับสต็อกตามรอบ</h2>
+      <p class="panel-sub">กำหนดความถี่รายโซน นับตามตำแหน่งพาเลต และตรวจส่วนต่างก่อนปรับยอดจริง</p>
+      <p class="cycle-counts-notice">แผนและผลตรวจนับบันทึกในเบราว์เซอร์เครื่องนี้เท่านั้น โปรดส่งออก CSV เพื่อเก็บหลักฐาน ชื่อผู้ตรวจนับเป็นชื่อที่กรอกเอง และผลตรวจนับไม่เปลี่ยนยอดพาเลตหรือสต็อกโดยอัตโนมัติ</p>
+      <div class="cycle-counts-controls">
+        <label for="cycleCountZone">โซนที่ต้องการตรวจนับ<select id="cycleCountZone"></select></label>
+        <label for="cycleCountFrequency">นับทุก (วัน)<input id="cycleCountFrequency" type="number" min="0" max="3650" step="1" inputmode="numeric" value="0"><small>0 = ไม่ตั้งรอบนับ</small></label>
+        <button id="cycleCountSaveFrequency" type="button">บันทึกรอบนับ</button>
+        <button id="cycleCountStart" type="button" class="cycle-counts-primary">เริ่มตรวจนับโซนนี้</button>
+      </div>
+      <p id="cycleCountStatus" role="status" aria-live="polite"></p>
+      <div class="cycle-counts-summary" id="cycleCountSummary"></div>
+      <h3>กำหนดการตามโซน</h3>
+      <div class="cycle-counts-table-wrap"><table><thead><tr><th>โซน</th><th>ตำแหน่ง</th><th>รอบนับ</th><th>นับล่าสุด</th><th>นับครั้งถัดไป</th><th>สถานะ</th></tr></thead><tbody id="cycleCountSchedule"></tbody></table></div>
+      <section id="cycleCountDraft" class="cycle-counts-draft" hidden></section>
+      <div class="cycle-counts-history-head"><h3>ประวัติการตรวจนับในเครื่องนี้</h3><button id="cycleCountExport" type="button">ส่งออก CSV</button></div>
+      <div id="cycleCountHistory" class="cycle-counts-history"></div>
+    </section>
   </div>
 
   <div class="tab-pane" id="pane-reconcile" role="tabpanel" aria-labelledby="tab-reconcile" hidden>
@@ -9780,6 +9803,8 @@ window.addEventListener('pageshow', () => {
 <script src="receipt-plan.js?v=20260926-1"></script>
 <script src="welcome-greeting.js?v=20260926-1" defer></script>
 <script src="account-status.js?v=20260926-1"></script>
+<script src="cycle-counts-core.js?v=20260926-1"></script>
+<script src="cycle-counts.js?v=20260926-1"></script>
 
 
 </body></html>
