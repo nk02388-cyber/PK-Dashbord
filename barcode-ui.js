@@ -143,6 +143,9 @@
       }
       cameraRunning = true; startButton.hidden = true; stopButton.hidden = false;
       message('เล็งกล้องไปที่ QR หรือบาร์โค้ด');
+      requestAnimationFrame(() => {
+        if (cameraRunning && !view.hidden) view.scrollIntoView({behavior:'smooth',block:'center',inline:'nearest'});
+      });
     } catch (error) {
       if (generation === cameraGeneration) { await stopCamera(); message('เปิดกล้องไม่ได้ · ตรวจสิทธิ์กล้องหรือใช้เครื่องสแกน: '+error,true); }
     } finally {
